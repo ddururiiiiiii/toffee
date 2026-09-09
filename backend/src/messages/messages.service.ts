@@ -1,7 +1,8 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PushService } from '../notifications/push.service.js';
-import { MessageSenderType, Role } from '../generated/prisma/enums.js';
+import { MessageSenderType } from '../generated/prisma/enums.js';
+import { ensureStaffOfActor } from '../common/authorization/ensure-staff-of-actor.js';
 import type { SendReplyDto } from './dto/send-reply.dto.js';
 import type { SendBroadcastDto } from './dto/send-broadcast.dto.js';
 
@@ -51,7 +52,7 @@ export class MessagesService {
   }
 
   async sendBroadcast(staffUserId: string, actorId: string, dto: SendBroadcastDto) {
-    await this.ensureStaffOfActorOrThrow(staffUserId, actorId);
+    await ensureStaffOfActor(this.prisma, staffUserId, actorId);
 
     const message = await this.prisma.message.create({
       data: { actorId, senderType: MessageSenderType.ARTIST, mediaType: dto.mediaType, body: dto.body, mediaUrl: dto.mediaUrl },
@@ -80,7 +81,7 @@ export class MessagesService {
 
   // 콘솔 "구독자 답장 모아보기" — 스태프/관리자만
   async listReplies(requesterId: string, actorId: string) {
-    await this.ensureStaffOfActorOrThrow(requesterId, actorId);
+    await ensureStaffOfActor(this.prisma, requesterId, actorId);
     return this.prisma.message.findMany({
       where: { actorId, senderType: MessageSenderType.FAN },
       include: { fanUser: { select: { id: true, displayName: true } } },
@@ -96,16 +97,5 @@ export class MessagesService {
       throw new ForbiddenException('이 아티스트를 구독해야 대화를 볼 수 있어요.');
     }
     return subscription;
-  }
-
-  private async ensureStaffOfActorOrThrow(userId: string, actorId: string) {
-    const requester = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    if (requester.role === Role.ADMIN) return;
-
-    const isStaff = await this.prisma.actor.findFirst({
-      where: { id: actorId, staff: { some: { id: userId } } },
-      select: { id: true },
-    });
-    if (!isStaff) throw new ForbiddenException('이 아티스트의 담당 스태프만 접근할 수 있어요.');
   }
 }

@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ensureStaffOfActor } from '../common/authorization/ensure-staff-of-actor.js';
+import { MessageSenderType, Role } from '../generated/prisma/enums.js';
 
 // legalName/officialProfileImageUrl는 탐색 화면(공식 프로필)에, chatDisplayName/chatProfileImageUrl는
 // 채팅방 안에서(대화방 프로필)에 씀 — 어느 쪽을 보여줄지는 클라이언트가 화면 맥락에 맞게 고름
@@ -28,5 +30,27 @@ export class ActorsService {
     const actor = await this.prisma.actor.findUnique({ where: { id }, select: LIST_SELECT });
     if (!actor) throw new NotFoundException('배우를 찾을 수 없습니다.');
     return actor;
+  }
+
+  // 콘솔 진입점 — 스태프는 본인이 담당하는 배우만, ADMIN은 전체
+  findMine(userId: string, role: Role) {
+    return this.prisma.actor.findMany({
+      where: role === Role.ADMIN ? undefined : { staff: { some: { id: userId } } },
+      select: LIST_SELECT,
+      orderBy: { legalName: 'asc' },
+    });
+  }
+
+  async getStats(userId: string, actorId: string) {
+    await ensureStaffOfActor(this.prisma, userId, actorId);
+    const [subscriberCount, lastBroadcast] = await Promise.all([
+      this.prisma.subscription.count({ where: { actorId, cancelledAt: null } }),
+      this.prisma.message.findFirst({
+        where: { actorId, senderType: MessageSenderType.ARTIST },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true },
+      }),
+    ]);
+    return { subscriberCount, lastBroadcastAt: lastBroadcast?.createdAt ?? null };
   }
 }

@@ -11,9 +11,10 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
-// 토큰 없이 (tabs) 진입 시 /login으로, 토큰 있는데 /login에 있으면 홈으로 — 둘 다 로딩 끝난 뒤에만 판단
+// 토큰 없이 진입 시 /login으로, 로그인 후엔 role 따라 콘솔(스태프/관리자) 또는 팬 탭으로 —
+// 전부 로딩(토큰+role 조회) 끝난 뒤에만 판단
 function AuthGate({ children }: { children: ReactNode }) {
-  const { token, isLoading } = useAuth();
+  const { token, role, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -23,9 +24,9 @@ function AuthGate({ children }: { children: ReactNode }) {
     if (!token && !onLoginScreen) {
       router.replace('/login');
     } else if (token && onLoginScreen) {
-      router.replace('/');
+      router.replace(role === 'AGENCY_STAFF' || role === 'ADMIN' ? '/console' : '/');
     }
-  }, [token, isLoading, segments, router]);
+  }, [token, role, isLoading, segments, router]);
 
   return children;
 }
@@ -43,6 +44,8 @@ export default function RootLayout() {
               <Stack.Screen name="login" />
               <Stack.Screen name="actor/[id]" options={{ headerShown: true, title: '' }} />
               <Stack.Screen name="chat/[actorId]" options={{ headerShown: true, title: '' }} />
+              <Stack.Screen name="console/index" options={{ headerShown: true, title: '콘솔' }} />
+              <Stack.Screen name="console/[actorId]" options={{ headerShown: true, title: '' }} />
             </Stack>
           </AuthGate>
         </ThemeProvider>
