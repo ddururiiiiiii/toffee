@@ -21,6 +21,8 @@ CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "role" "Role" NOT NULL DEFAULT 'USER',
     "displayName" TEXT NOT NULL,
+    "email" TEXT,
+    "fcmToken" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -122,6 +124,12 @@ CREATE TABLE "_ActorStaff" (
 
     CONSTRAINT "_ActorStaff_AB_pkey" PRIMARY KEY ("A","B")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE INDEX "AuthIdentity_userId_idx" ON "AuthIdentity"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "AuthIdentity_provider_providerId_key" ON "AuthIdentity"("provider", "providerId");

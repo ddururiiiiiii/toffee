@@ -42,9 +42,13 @@ enum ReportStatus {
 }
 
 model User {
+  // email은 로그인 제공자가 달라도 같은 사람이면 계정을 하나로 합치는 데 씀
+  // (예: 구글로 먼저 가입 후 나중에 카카오로 로그인해도 AuthIdentity만 추가되고 User는 그대로)
   id          String   @id @default(uuid())
   role        Role     @default(USER)
   displayName String
+  email       String?  @unique
+  fcmToken    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -65,6 +69,7 @@ model AuthIdentity {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerId])
+  @@index([userId])
 }
 
 model Actor {
