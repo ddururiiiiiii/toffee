@@ -87,7 +87,6 @@ CREATE TABLE "Message" (
     "mediaType" "MessageMediaType" NOT NULL DEFAULT 'TEXT',
     "body" TEXT,
     "mediaUrl" TEXT,
-    "recipientNameVar" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Message_pkey" PRIMARY KEY ("id")

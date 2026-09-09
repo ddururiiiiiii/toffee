@@ -123,16 +123,17 @@ model Subscription {
 }
 
 model Message {
-  // recipientNameVar: Bubble식 이름 삽입 개인화("OO야, 오늘 뭐해?")에 쓰는 수신자 이름 변수
-  id               String            @id @default(uuid())
-  actorId          String
-  senderType       MessageSenderType
-  fanUserId        String?
-  mediaType        MessageMediaType  @default(TEXT)
-  body             String?
-  mediaUrl         String?
-  recipientNameVar String?
-  createdAt        DateTime          @default(now())
+  // 아티스트 메시지는 구독자 전체에게 방송되는 한 건이라(fanUserId가 없음), 팬 이름
+  // 하나를 필드로 못 박아둘 수 없음 — 대신 body에 "{{name}}" 플레이스홀더를 넣어두면
+  // 조회 시점에 요청한 팬 본인의 displayName으로 치환해서 내려줌(Bubble 개인화 메시지 방식)
+  id         String            @id @default(uuid())
+  actorId    String
+  senderType MessageSenderType
+  fanUserId  String?
+  mediaType  MessageMediaType  @default(TEXT)
+  body       String?
+  mediaUrl   String?
+  createdAt  DateTime          @default(now())
 
   actor        Actor                @relation(fields: [actorId], references: [id], onDelete: Cascade)
   fanUser      User?                @relation("FanMessages", fields: [fanUserId], references: [id])
