@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { GoogleLoginDto } from './dto/google-login.dto.js';
@@ -6,9 +6,11 @@ import { AppleLoginDto } from './dto/apple-login.dto.js';
 import { NaverLoginDto } from './dto/naver-login.dto.js';
 import { KakaoLoginDto } from './dto/kakao-login.dto.js';
 import { LineLoginDto } from './dto/line-login.dto.js';
-import { AuthProvider } from '../generated/prisma/enums.js';
+import { DevLoginDto } from './dto/dev-login.dto.js';
+import { AuthProvider, Role } from '../generated/prisma/enums.js';
 import { Public } from '../common/decorators/public.decorator.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { DevOnlyGuard } from '../common/guards/dev-only.guard.js';
 import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
 
 const LOGIN_THROTTLE = { default: { limit: 5, ttl: 60_000 } };
@@ -64,6 +66,14 @@ export class AuthController {
   async loginWithLine(@Body() dto: LineLoginDto) {
     const identity = await this.authService.verifyLineToken(dto.idToken);
     const user = await this.authService.findOrCreateUser(AuthProvider.LINE, identity, dto.agreedToTerms);
+    return this.authService.issueAccessToken(user);
+  }
+
+  @Public()
+  @UseGuards(DevOnlyGuard)
+  @Post('dev-login')
+  async devLogin(@Body() dto: DevLoginDto) {
+    const user = await this.authService.devLogin(dto.email, dto.name, dto.role as Role | undefined);
     return this.authService.issueAccessToken(user);
   }
 

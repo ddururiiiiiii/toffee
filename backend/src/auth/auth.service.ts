@@ -33,6 +33,17 @@ export class AuthService {
     return { accessToken };
   }
 
+  // Google/Apple/Naver/Kakao/LINE 자격증명 없이 앱을 끝까지 테스트하기 위한 개발용 로그인.
+  // DevOnlyGuard가 프로덕션에서 라우트 자체를 404로 숨김.
+  async devLogin(email: string, name?: string, role?: Role): Promise<AuthenticatedUser> {
+    const user = await this.prisma.user.upsert({
+      where: { email },
+      update: role ? { role } : {},
+      create: { email, displayName: name ?? this.generateFallbackName(), role: role ?? Role.USER },
+    });
+    return { id: user.id, role: user.role };
+  }
+
   // ── 소셜 토큰 검증 ──────────────────────────────────────────────
 
   async verifyGoogleToken(idToken: string): Promise<ExternalIdentity> {
