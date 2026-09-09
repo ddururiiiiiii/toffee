@@ -1,0 +1,162 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  AGENCY_STAFF
+  ADMIN
+}
+
+enum AuthProvider {
+  GOOGLE
+  APPLE
+  NAVER
+  KAKAO
+  LINE
+}
+
+enum MessageSenderType {
+  ARTIST
+  FAN
+}
+
+enum MessageMediaType {
+  TEXT
+  PHOTO
+  AUDIO
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+model User {
+  id          String   @id @default(uuid())
+  role        Role     @default(USER)
+  displayName String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authIdentities AuthIdentity[]
+  subscriptions  Subscription[]
+  fanMessages    Message[]      @relation("FanMessages")
+  staffOfActors  Actor[]        @relation("ActorStaff")
+  reportsFiled   Report[]       @relation("ReportsFiled")
+}
+
+model AuthIdentity {
+  id         String       @id @default(uuid())
+  provider   AuthProvider
+  providerId String
+  userId     String
+  createdAt  DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+}
+
+model Actor {
+  // 공식 프로필(실명+공식 사진)과 대화방 프로필(닉네임+사진)을 분리 — 대화방 쪽은
+  // 소속사가 메신저 프로필 바꾸듯 자유롭게 변경 가능 (Bubble/Weverse 벤치마킹).
+  // 이모지는 쓰지 않고 이름+이미지만 사용.
+  id                      String   @id @default(uuid())
+  legalName               String
+  officialProfileImageUrl String?
+  chatDisplayName         String
+  chatProfileImageUrl     String?
+  monthlyPriceCents       Int
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  staff            User[]         @relation("ActorStaff")
+  subscriptions    Subscription[]
+  messages         Message[]
+  pairingsAsFirst  GlCp[]         @relation("PairingActorOne")
+  pairingsAsSecond GlCp[]         @relation("PairingActorTwo")
+}
+
+// 팬에게 노출되는 탐색/발견 화면 없음 — 동시구독 할인 계산에만 쓰는 내부 페어링
+model GlCp {
+  id              String   @id @default(uuid())
+  actorOneId      String
+  actorTwoId      String
+  discountPercent Int      @default(10)
+  createdAt       DateTime @default(now())
+
+  actorOne Actor @relation("PairingActorOne", fields: [actorOneId], references: [id])
+  actorTwo Actor @relation("PairingActorTwo", fields: [actorTwoId], references: [id])
+
+  @@unique([actorOneId, actorTwoId])
+}
+
+model Subscription {
+  // lastArtistMessageAt / lastFanReplyAt는 30일 무사용 환불 판정에 그대로 사용
+  id                  String    @id @default(uuid())
+  userId              String
+  actorId             String
+  startedAt           DateTime  @default(now())
+  lastArtistMessageAt DateTime?
+  lastFanReplyAt      DateTime?
+  cancelledAt         DateTime?
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actor Actor @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, actorId])
+}
+
+model Message {
+  // recipientNameVar: Bubble식 이름 삽입 개인화("OO야, 오늘 뭐해?")에 쓰는 수신자 이름 변수
+  id               String            @id @default(uuid())
+  actorId          String
+  senderType       MessageSenderType
+  fanUserId        String?
+  mediaType        MessageMediaType  @default(TEXT)
+  body             String?
+  mediaUrl         String?
+  recipientNameVar String?
+  createdAt        DateTime          @default(now())
+
+  actor        Actor                @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  fanUser      User?                @relation("FanMessages", fields: [fanUserId], references: [id])
+  translations MessageTranslation[]
+  reports      Report[]
+}
+
+// 원문은 한 번만 저장, 언어별 번역본은 필요할 때 생성해서 여기 캐싱 (lazy translation)
+model MessageTranslation {
+  id             String   @id @default(uuid())
+  messageId      String
+  languageCode   String
+  translatedText String
+  createdAt      DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, languageCode])
+}
+
+model Report {
+  id           String       @id @default(uuid())
+  messageId    String
+  reportedById String
+  reason       String
+  status       ReportStatus @default(PENDING)
+  createdAt    DateTime     @default(now())
+  resolvedAt   DateTime?
+
+  message    Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  reportedBy User    @relation("ReportsFiled", fields: [reportedById], references: [id])
+}
