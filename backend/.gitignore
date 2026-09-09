@@ -10,3 +10,4 @@ dist
 .claude/
 .windsurf/
 skills-lock.json
+*.tsbuildinfo
