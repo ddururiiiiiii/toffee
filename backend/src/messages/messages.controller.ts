@@ -25,7 +25,8 @@ export class MessagesController {
     return this.messagesService.sendReply(user.id, actorId, dto);
   }
 
-  @Roles(Role.AGENCY_STAFF, Role.ADMIN)
+  // 배우 본인만 발송 가능 — 소속사는 발송 권한 없음(읽기 전용 모니터링만)
+  @Roles(Role.ACTOR, Role.ADMIN)
   @Post('broadcast')
   sendBroadcast(
     @CurrentUser() user: AuthenticatedUser,
@@ -36,7 +37,7 @@ export class MessagesController {
   }
 
   // 'replies'가 아무 :id 라우트보다 먼저 매칭될 필요는 없음 — 형제 라우트가 reply/broadcast뿐이라 충돌 없음
-  @Roles(Role.AGENCY_STAFF, Role.ADMIN)
+  @Roles(Role.AGENCY_STAFF, Role.ACTOR, Role.ADMIN)
   @Get('replies')
   listReplies(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string) {
     return this.messagesService.listReplies(user.id, actorId);

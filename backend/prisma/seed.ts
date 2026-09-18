@@ -60,6 +60,15 @@ async function main() {
     data: { role: Role.ADMIN, displayName: '데모 운영자', email: 'admin@toffee.demo' },
   });
 
+  // 배우 본인 계정 — 메시지·스토리 발송은 이제 이 계정만 할 수 있음(소속사는 열람 전용)
+  await prisma.user.create({
+    data: { role: Role.ACTOR, displayName: '캐러멜(본인)', email: 'caramel-self@toffee.demo' },
+  });
+  await prisma.actor.update({
+    where: { id: caramel.id },
+    data: { selfUser: { connect: { email: 'caramel-self@toffee.demo' } } },
+  });
+
   // 팬 2명 — fan1은 caramel만, fan2는 둘 다 구독(CP 할인 시나리오)
   const fan1 = await prisma.user.create({
     data: { role: Role.USER, displayName: '민지', email: 'fan1@toffee.demo' },
@@ -142,6 +151,7 @@ async function main() {
     admin: admin.displayName,
     fans: [fan1.displayName, fan2.displayName],
     sampleFanReplyId: fanReply.id,
+    actorSelfLoginEmail: 'caramel-self@toffee.demo',
   });
 }
 

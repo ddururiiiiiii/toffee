@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { ensureStaffOfActor } from '../common/authorization/ensure-staff-of-actor.js';
+import { ensureCanViewActor } from '../common/authorization/actor-access.js';
 import { MessageSenderType, Role } from '../generated/prisma/enums.js';
 
 // legalName/officialProfileImageUrl는 탐색 화면(공식 프로필)에, chatDisplayName/chatProfileImageUrl는
@@ -32,17 +32,17 @@ export class ActorsService {
     return actor;
   }
 
-  // 콘솔 진입점 — 스태프는 본인이 담당하는 배우만, ADMIN은 전체
+  // 콘솔 진입점 — 스태프/배우 본인은 본인이 담당(또는 본인)하는 배우만, ADMIN은 전체
   findMine(userId: string, role: Role) {
     return this.prisma.actor.findMany({
-      where: role === Role.ADMIN ? undefined : { staff: { some: { id: userId } } },
+      where: role === Role.ADMIN ? undefined : { OR: [{ staff: { some: { id: userId } } }, { selfUserId: userId }] },
       select: LIST_SELECT,
       orderBy: { legalName: 'asc' },
     });
   }
 
   async getStats(userId: string, actorId: string) {
-    await ensureStaffOfActor(this.prisma, userId, actorId);
+    await ensureCanViewActor(this.prisma, userId, actorId);
     const [subscriberCount, lastBroadcast] = await Promise.all([
       this.prisma.subscription.count({ where: { actorId, cancelledAt: null } }),
       this.prisma.message.findFirst({

@@ -2,7 +2,7 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PushService } from '../notifications/push.service.js';
 import { MessageSenderType } from '../generated/prisma/enums.js';
-import { ensureStaffOfActor } from '../common/authorization/ensure-staff-of-actor.js';
+import { ensureCanViewActor, ensureIsActorSelf } from '../common/authorization/actor-access.js';
 import type { SendReplyDto } from './dto/send-reply.dto.js';
 import type { SendBroadcastDto } from './dto/send-broadcast.dto.js';
 
@@ -51,8 +51,8 @@ export class MessagesService {
     return message;
   }
 
-  async sendBroadcast(staffUserId: string, actorId: string, dto: SendBroadcastDto) {
-    await ensureStaffOfActor(this.prisma, staffUserId, actorId);
+  async sendBroadcast(actorSelfUserId: string, actorId: string, dto: SendBroadcastDto) {
+    await ensureIsActorSelf(this.prisma, actorSelfUserId, actorId);
 
     const message = await this.prisma.message.create({
       data: { actorId, senderType: MessageSenderType.ARTIST, mediaType: dto.mediaType, body: dto.body, mediaUrl: dto.mediaUrl },
@@ -79,9 +79,9 @@ export class MessagesService {
     return message;
   }
 
-  // 콘솔 "구독자 답장 모아보기" — 스태프/관리자만
+  // 콘솔 "구독자 답장 모아보기" — 스태프/배우 본인/관리자
   async listReplies(requesterId: string, actorId: string) {
-    await ensureStaffOfActor(this.prisma, requesterId, actorId);
+    await ensureCanViewActor(this.prisma, requesterId, actorId);
     return this.prisma.message.findMany({
       where: { actorId, senderType: MessageSenderType.FAN },
       include: { fanUser: { select: { id: true, displayName: true } } },

@@ -18,7 +18,7 @@ export class ActorsController {
   }
 
   // 'mine'은 ':id'보다 먼저 등록해야 함 — 안 그러면 "mine"이 id로 잡혀버림
-  @Roles(Role.AGENCY_STAFF, Role.ADMIN)
+  @Roles(Role.AGENCY_STAFF, Role.ACTOR, Role.ADMIN)
   @Get('mine')
   findMine(@CurrentUser() user: AuthenticatedUser) {
     return this.actorsService.findMine(user.id, user.role);
@@ -30,7 +30,7 @@ export class ActorsController {
     return this.actorsService.findOne(id);
   }
 
-  @Roles(Role.AGENCY_STAFF, Role.ADMIN)
+  @Roles(Role.AGENCY_STAFF, Role.ACTOR, Role.ADMIN)
   @Get(':id/stats')
   getStats(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.actorsService.getStats(user.id, id);
