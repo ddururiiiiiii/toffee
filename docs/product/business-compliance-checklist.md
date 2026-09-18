@@ -3,6 +3,10 @@
 기능 기획과 별개로, 상업 서비스를 처음 하는 입장에서 놓치기 쉬운 것들을 정리한다.
 전문 자문(변호사·세무사)이 필요한 항목은 그렇게 표시했다.
 
+**2026-09-18: 4개 항목 전부 구현 범위에 포함하기로 확정.** 실제 구현은 다음 세션부터
+진행 — 기술 작업 목록은 [`docs/engineering/architecture-notes.md`](../engineering/architecture-notes.md)
+참고.
+
 ## 1. 인앱결제(IAP) 의무 — 가장 먼저 확인할 것
 
 Apple App Store / Google Play는 앱 안에서 소비되는 디지털 콘텐츠(구독형 DM 접근권 포함)를

@@ -116,6 +116,26 @@ enum UserStatus {
   유저 목록 조회 및 정지/차단(`GET /admin/users`, `PATCH /admin/users/:id/suspend`,
   `PATCH /admin/users/:id/ban`) — 전부 `@Roles(Role.ADMIN)`.
 
+## 사업 운영 체크리스트 항목 — 구현 범위 확정 (2026-09-18)
+
+제품 결정은 `docs/product/business-compliance-checklist.md` 참고. 4개 항목 전부
+구현 범위에 포함하기로 함, 아래는 기술 작업 목록(아직 미착수):
+
+- **IAP**: `backend/src/subscriptions/subscriptions.service.ts:20`에 이미
+  "결제(IAP)는 계약 성사 후에 붙임 — 지금은 결제 없이 구독 레코드만 만드는 샌드박스
+  플로우"라는 주석이 있어서, 애초에 IAP로 갈 계획이었던 것과 일치함. 실제 연동 시
+  `react-native-iap`(또는 Expo의 IAP 모듈) + 백엔드 영수증 검증 엔드포인트 필요,
+  구독 가격에 앱스토어 수수료(15~30%) 반영 필요.
+- **약관/개인정보처리방침 화면**: 앱 `Profile` 메뉴에 "Terms & Privacy" 항목이 이미
+  디자인 가이드(`docs/product/brand/DESIGN_GUIDE.md` 10절)에 있음 — 정적 페이지/화면과
+  앱스토어 메타데이터 링크 추가 필요. 실제 법률 문구는 변호사 자문 후 채워 넣을 것
+  (지금은 placeholder로 화면 뼈대만 만들 수 있음).
+- **해외 정산 세무**: 코드 작업 아님, 내부 운영 프로세스 — 정산 배치 로직을 만들 때
+  "원천징수분 차감" 여지를 미리 필드로 남겨두는 정도만 고려(예: `Subscription`이나
+  향후 정산 모델에 세금 관련 필드).
+- **연령/미성년자 정책**: 구현 방식(가입 시 생년월일 입력 후 자기신고 vs 별도 부모
+  동의 플로우 등) 미정 — 다음 세션에서 구체화 필요.
+
 ## 브랜드 팔레트/폰트 구현 메모
 
 - `app/src/constants/theme.ts`의 `Colors`가 Charcoal(`#0F1115`)/Lavender(`#7C8CFF`)/
