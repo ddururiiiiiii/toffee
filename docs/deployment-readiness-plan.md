@@ -355,3 +355,13 @@ model StoryView {
 - [ ] `t-icon-black-mono-a/b.png` 두 변형의 실제 용도(OS 모노크롬 아이콘 등) 확인
 - [ ] 앱스토어 제출용 정사각형(모서리 비둥근) 아이콘 원본 유무 확인
 - [ ] Expo 기본 템플릿 잔여 에셋(`expo-logo.png`, `react-logo*.png` 등) 정리, 실제 브랜드 아이콘으로 `app.json` 참조 교체
+
+#### 추가 수령분 (같은 날, 2번째 전달)
+
+5장을 추가로 받았는데, 4장(`03-fandom-discovery`, `b3-fandom-inbox`, `2a-chat-minimal-premium`,
+`p2-subscription-flow`)은 앞서 받은 것과 **완전히 동일한 파일**(md5 일치) — 새 정보 없음.
+브랜드 보드만 새 버전("Pure A Direction")이라 `docs/brand/exploration/02-brand-board-pure-a-direction.png`로
+추가 저장. 팔레트·로고·레이아웃은 기존 "Refined Candidate A" 보드와 동일하고, 태그라인에서
+"subscription"이라는 단어만 빠짐("A fandom messaging platform..." vs 기존
+"A subscription fandom messaging platform...") — 실제 비즈니스 규칙(유료 구독 전용)엔
+영향 없는 문구 차이로 판단, 별도 조치 불필요.
