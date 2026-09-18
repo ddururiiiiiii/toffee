@@ -34,6 +34,7 @@ enum MessageMediaType {
   TEXT
   PHOTO
   AUDIO
+  VIDEO
 }
 
 enum ReportStatus {
@@ -59,6 +60,7 @@ model User {
   staffOfActors  Actor[]        @relation("ActorStaff")
   reportsFiled   Report[]       @relation("ReportsFiled")
   actorSelf      Actor?         @relation("ActorSelf")
+  storyViews     StoryView[]
 }
 
 model AuthIdentity {
@@ -95,6 +97,7 @@ model Actor {
   messages         Message[]
   pairingsAsFirst  GlCp[]         @relation("PairingActorOne")
   pairingsAsSecond GlCp[]         @relation("PairingActorTwo")
+  stories          Story[]
 }
 
 // 팬에게 노출되는 탐색/발견 화면 없음 — 동시구독 할인 계산에만 쓰는 내부 페어링
@@ -157,6 +160,33 @@ model MessageTranslation {
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@unique([messageId, languageCode])
+}
+
+// 인스타그램 스토리처럼 24시간 뒤 사라지는 콘텐츠 — 배우 본인만 업로드, 구독자만 열람
+// 가능. mediaType은 TEXT를 쓰지 않음(DTO에서 검증) — Message와 enum을 공유하는 이유는
+// 미디어 종류가 같기 때문일 뿐, 스토리는 항상 미디어가 있어야 함.
+model Story {
+  id        String           @id @default(uuid())
+  actorId   String
+  mediaType MessageMediaType
+  mediaUrl  String
+  createdAt DateTime         @default(now())
+  expiresAt DateTime
+
+  actor Actor       @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  views StoryView[]
+}
+
+model StoryView {
+  id        String   @id @default(uuid())
+  storyId   String
+  fanUserId String
+  viewedAt  DateTime @default(now())
+
+  story   Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  fanUser User  @relation(fields: [fanUserId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, fanUserId])
 }
 
 model Report {

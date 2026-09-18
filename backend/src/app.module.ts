@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { ReportsModule } from './reports/reports.module.js';
 import { MessagesModule } from './messages/messages.module.js';
+import { StoriesModule } from './stories/stories.module.js';
 import { ActorsModule } from './actors/actors.module.js';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
@@ -23,6 +24,7 @@ import { RolesGuard } from './common/guards/roles.guard.js';
     NotificationsModule,
     ReportsModule,
     MessagesModule,
+    StoriesModule,
     ActorsModule,
     SubscriptionsModule,
   ],

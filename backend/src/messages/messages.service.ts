@@ -1,8 +1,9 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PushService } from '../notifications/push.service.js';
 import { MessageSenderType } from '../generated/prisma/enums.js';
 import { ensureCanViewActor, ensureIsActorSelf } from '../common/authorization/actor-access.js';
+import { ensureActiveSubscription } from '../common/authorization/ensure-active-subscription.js';
 import type { SendReplyDto } from './dto/send-reply.dto.js';
 import type { SendBroadcastDto } from './dto/send-broadcast.dto.js';
 
@@ -17,7 +18,7 @@ export class MessagesService {
 
   // 팬 본인의 대화방: 구독 시작일 이후의 방송 메시지 + 본인이 보낸 답장만, 시간순
   async listForFan(userId: string, actorId: string) {
-    const subscription = await this.getActiveSubscriptionOrThrow(userId, actorId);
+    const subscription = await ensureActiveSubscription(this.prisma, userId, actorId);
     const messages = await this.prisma.message.findMany({
       where: {
         actorId,
@@ -38,7 +39,7 @@ export class MessagesService {
   }
 
   async sendReply(userId: string, actorId: string, dto: SendReplyDto) {
-    await this.getActiveSubscriptionOrThrow(userId, actorId);
+    await ensureActiveSubscription(this.prisma, userId, actorId);
     const [message] = await this.prisma.$transaction([
       this.prisma.message.create({
         data: { actorId, senderType: MessageSenderType.FAN, fanUserId: userId, body: dto.body },
@@ -87,15 +88,5 @@ export class MessagesService {
       include: { fanUser: { select: { id: true, displayName: true } } },
       orderBy: { createdAt: 'desc' },
     });
-  }
-
-  private async getActiveSubscriptionOrThrow(userId: string, actorId: string) {
-    const subscription = await this.prisma.subscription.findUnique({
-      where: { userId_actorId: { userId, actorId } },
-    });
-    if (!subscription || subscription.cancelledAt) {
-      throw new ForbiddenException('이 아티스트를 구독해야 대화를 볼 수 있어요.');
-    }
-    return subscription;
   }
 }
