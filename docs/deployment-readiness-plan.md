@@ -306,3 +306,52 @@ model StoryView {
 - [ ] 만료 스토리 정리 cron(레코드 삭제 + 스토리지 파일 삭제) 구현
 - [ ] 배우용 업로드 화면(카메라 촬영 → 즉시 업로드, 메시지 작성) UX·진입점 설계 — 다음 세션 논의
 - [ ] 배우 프로필 수정 권한도 배우 본인 전용으로 갈지 재확인
+
+### 9. 브랜드 디자인 가이드 수령 + 팬 앱 화면 목업 대조 (2026-09-18)
+
+사용자가 `DESIGN_GUIDE.md`와 로고/브랜드 보드/화면 목업 이미지를 전달함. 전부
+`toffee/docs/brand/`에 저장해둠(`DESIGN_GUIDE.md`, `logo/*.png` 7개, `exploration/*.png` 6개).
+
+#### 확정 컬러 팔레트 (브랜드 보드에 명시된 공식 값)
+
+| 이름 | Hex |
+|---|---|
+| Charcoal | `#0F1115` |
+| Lavender | `#7C8CFF` |
+| Periwinkle | `#DCE1FF` |
+| Cloud | `#F4F6FB` |
+| White | `#FFFFFF` |
+
+로고 PNG에서 픽셀 값을 직접 추출해 교차 검증함(`#0B0B0F`, `#8688FE` 등 — 브랜드
+보드 공식 값과 거의 일치, 안티앨리어싱 수준의 오차). 지금 `app/src/constants/theme.ts`의
+브라운/앰버 계열(`tint: #B8732E`)은 이 팔레트로 전면 교체 필요.
+
+#### 로고 에셋 인벤토리 (`docs/brand/logo/`)
+
+- `wordmark-black.png` / `wordmark-white.png` — "Toffee" 풀 워드마크(다크/라이트 배경용), 슬로건 "CLOSER TO WHAT MATTERS" 포함
+- `t-icon-dark-bg.png` / `t-icon-app-icon-light.png` — T 아이콘 심볼(다크 배경용 화이트 T, 라이트/앱아이콘용 블랙 T)
+- `t-icon-black-mono-a.png` / `t-icon-black-mono-b.png` — 톤온톤 모노크롬 변형(용도 미확인 — OS 모노크롬 아이콘용으로 추정, 다음에 확인 필요)
+- `background-gradient-texture.png` — 라벤더 톤 그라데이션 배경 텍스처(마케팅/스플래시용으로 추정)
+- 앱스토어 제출용 "모서리 안 둥근 정사각형 원본"은 아직 확인 안 됨 — `t-icon-app-icon-light.png`는 이미 둥근 사각형으로 보임
+
+#### 화면 목업 대조 결과 및 결정 (`docs/brand/exploration/`)
+
+| 목업 | `DESIGN_GUIDE.md` 대응 절 | 결과 |
+|---|---|---|
+| `p2-subscription-flow.png` (P-2) | 6절 구독 체크아웃 | 일치 — 그대로 참고 |
+| `2a-chat-minimal-premium.png` (2A) | 9절 채팅 | 일치 — 팬 텍스트/이모지만, 배우 사진/음성 비대칭 정책 반영됨. Verified 배지(✓)도 노출됨 |
+| `b3-fandom-inbox.png` (B-3) | 8절 인박스 | 상단 스토리형 아바타 행이 정확히 요구사항과 일치 — **24시간 소멸 스토리 기능(7·8절)의 실제 진입점으로 그대로 쓸 수 있음** |
+| `hybrid-recommendation-profile.png` | 5절 배우 프로필 | **충돌 발견 → 사용자 확인 후 해결**: 목업엔 "127 Posts"/"Latest from [배우]" 콘텐츠 피드 섹션이 있었으나, 가이드 문서는 이를 명시적으로 제거하라고 규정 → **가이드 문서대로 제거하기로 결정(2026-09-18)**. "No free tier. DM access requires paid subscription." 카피는 그대로 채택 |
+| `03-fandom-discovery.png` | 4절 Discover | **충돌 발견 → 사용자 확인 후 해결**: 목업 하단 탭이 "Home/Discover/Inbox/Library/Profile" 5개였으나, 가이드 문서는 "Discover/Inbox/Profile" 3개만, Home 탭 금지를 명시 → **가이드 문서대로 3탭 유지하기로 결정(2026-09-18)**, 지금 앱 코드(`(tabs)/_layout.tsx`)도 이미 3탭이라 추가 변경 불필요. "BL/GL" 필터 칩과 "Explore by Vibe" 무드별 카드는 실제 사업 방향(태국 BL/GL 배우)과 맞고 "소셜 피드 금지" 규칙 위반이 아니라고 판단해 그대로 유지 |
+| `01-brand-board-candidate-a.png` | `DESIGN_GUIDE.md` 레퍼런스 매핑의 `01_brand_A_original.png`로 추정 | 이름("Candidate A") 일치 — 확인 필요하지만 사실상 확정으로 간주 |
+
+#### 다음 액션(브랜드/디자인 관련)
+
+- [x] 팬 앱 하단 탭 3개 유지 결정 (Home/Library 없음) — 코드 변경 불필요, 이미 일치
+- [x] 배우 프로필 화면에서 게시물/피드 섹션 제거 결정
+- [ ] `theme.ts` 색상을 확정 팔레트(Charcoal/Lavender/Periwinkle/Cloud/White)로 교체
+- [ ] `Actor.verified Boolean` 필드 추가 (채팅·프로필 목업 둘 다에서 확인된 요구사항) — 마이그레이션 SQL 작성
+- [ ] 태국어 지원 폰트 최종 선택(Noto Sans Thai / IBM Plex Sans Thai 등) 후 `expo-font`로 로드
+- [ ] `t-icon-black-mono-a/b.png` 두 변형의 실제 용도(OS 모노크롬 아이콘 등) 확인
+- [ ] 앱스토어 제출용 정사각형(모서리 비둥근) 아이콘 원본 유무 확인
+- [ ] Expo 기본 템플릿 잔여 에셋(`expo-logo.png`, `react-logo*.png` 등) 정리, 실제 브랜드 아이콘으로 `app.json` 참조 교체
