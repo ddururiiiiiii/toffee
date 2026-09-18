@@ -1,5 +1,6 @@
-import { Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service.js';
+import { VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
 
@@ -15,6 +16,15 @@ export class SubscriptionsController {
   @Post('actors/:actorId/subscribe')
   subscribe(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string) {
     return this.subscriptionsService.subscribe(user.id, actorId);
+  }
+
+  @Post('actors/:actorId/verify-purchase')
+  verifyPurchase(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('actorId') actorId: string,
+    @Body() dto: VerifyPurchaseDto,
+  ) {
+    return this.subscriptionsService.verifyPurchase(user.id, actorId, dto);
   }
 
   @Delete('actors/:actorId/subscribe')

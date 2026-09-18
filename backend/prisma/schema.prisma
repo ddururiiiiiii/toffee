@@ -43,6 +43,11 @@ enum ReportStatus {
   DISMISSED
 }
 
+enum IapPlatform {
+  IOS
+  ANDROID
+}
+
 enum UserStatus {
   ACTIVE
   SUSPENDED
@@ -125,13 +130,19 @@ model GlCp {
 
 model Subscription {
   // lastArtistMessageAt / lastFanReplyAt는 30일 무사용 환불 판정에 그대로 사용
-  id                  String    @id @default(uuid())
+  // iapPlatform/iapTransactionId/iapExpiresAt는 실제 결제(IAP) 연동 전까지는 전부 null —
+  // 계약 성사 전 샌드박스 플로우에서는 startedAt/cancelledAt만으로 구독 상태를 판단함
+  id                  String       @id @default(uuid())
   userId              String
   actorId             String
-  startedAt           DateTime  @default(now())
+  startedAt           DateTime     @default(now())
   lastArtistMessageAt DateTime?
   lastFanReplyAt      DateTime?
   cancelledAt         DateTime?
+  iapPlatform         IapPlatform?
+  // Apple의 originalTransactionId 또는 Google의 purchaseToken — 스토어 쪽 구독 인스턴스 식별자
+  iapTransactionId    String?      @unique
+  iapExpiresAt        DateTime?
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   actor Actor @relation(fields: [actorId], references: [id], onDelete: Cascade)

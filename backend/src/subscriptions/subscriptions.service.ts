@@ -1,9 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { IapVerificationService } from './iap-verification.service.js';
+import type { VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
 
 @Injectable()
 export class SubscriptionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly iapVerificationService: IapVerificationService,
+  ) {}
 
   async listMine(userId: string) {
     return this.prisma.subscription.findMany({
@@ -37,6 +42,37 @@ export class SubscriptionsService {
           data: { startedAt: new Date(), cancelledAt: null, lastArtistMessageAt: null, lastFanReplyAt: null },
         })
       : await this.prisma.subscription.create({ data: { userId, actorId } });
+
+    return { subscription, ...priceInfo };
+  }
+
+  // 실제 IAP 결제 검증 후 구독 활성화 — 스토어 계정/상품 등록이 끝나면 이걸로 subscribe()를 대체
+  async verifyPurchase(userId: string, actorId: string, dto: VerifyPurchaseDto) {
+    const actor = await this.prisma.actor.findUnique({ where: { id: actorId } });
+    if (!actor) throw new NotFoundException('배우를 찾을 수 없습니다.');
+
+    const verified =
+      dto.platform === 'IOS'
+        ? await this.iapVerificationService.verifyApple(dto.signedTransaction!)
+        : await this.iapVerificationService.verifyGoogle(dto.purchaseToken!, dto.productId!);
+
+    const existing = await this.prisma.subscription.findUnique({
+      where: { userId_actorId: { userId, actorId } },
+    });
+    const priceInfo = await this.calculatePrice(userId, actorId, actor.monthlyPriceCents);
+
+    const data = {
+      startedAt: new Date(),
+      cancelledAt: null,
+      lastArtistMessageAt: null,
+      lastFanReplyAt: null,
+      iapPlatform: dto.platform,
+      iapTransactionId: verified.transactionId,
+      iapExpiresAt: verified.expiresAt,
+    };
+    const subscription = existing
+      ? await this.prisma.subscription.update({ where: { id: existing.id }, data })
+      : await this.prisma.subscription.create({ data: { userId, actorId, ...data } });
 
     return { subscription, ...priceInfo };
   }
