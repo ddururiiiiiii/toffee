@@ -56,10 +56,15 @@
 디자인 가이드는 영상 메시지도 요구). 스토리 작업 중 발견해서 enum에 추가, `Message`
 모델의 영상 전송도 이걸로 같이 고쳐짐.
 
+**만료 스토리 정리 cron — 구현 완료 (2026-09-18)**: `@nestjs/schedule` 추가,
+`StoriesModule`에 `StoryCleanupService.removeExpiredStories()`가 매시간
+(`CronExpression.EVERY_HOUR`) 만료된 `Story` 레코드를 삭제(`StoryView`는
+`onDelete: Cascade`로 같이 지워짐). **스토리지 파일 삭제는 여전히 안 함** —
+Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 있지 않아서,
+`mediaUrl`이 가리키는 파일은 그대로 남음(스토리지 프로바이더 연동 이후에 후속
+작업으로).
+
 **아직 안 한 것**:
-- 만료 스토리 정리 cron — 레코드 삭제 + 스토리지 파일 삭제. `@nestjs/schedule`
-  같은 스케줄러 자체가 아직 의존성에 없음, 실제 스토리지 프로바이더(Supabase
-  Storage 등)도 아직 코드에 연동 안 됨.
 - 배우 전용 업로드 화면(카메라 촬영 → 즉시 업로드)과 그 진입점 — `Role.ACTOR` 절
   참고, 여전히 미착수.
 
