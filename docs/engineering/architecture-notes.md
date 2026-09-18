@@ -35,31 +35,33 @@
   작성) 자체와 그 진입점(앱 `_layout.tsx`의 `AuthGate`가 지금 `ACTOR` role을 아무데도
   리다이렉트하지 않음 — 로그인해도 팬 화면으로 빠짐). 다음 세션에서 화면 설계 필요.
 
-## `Story`/`StoryView` 모델 — 설계, 아직 미구현
+## `Story`/`StoryView` 모델 — 구현 완료 (2026-09-18)
 
-```prisma
-model Story {
-  id         String   @id @default(uuid())
-  actorId    String
-  mediaType  MessageMediaType   // 기존 enum 재사용
-  mediaUrl   String
-  createdAt  DateTime @default(now())
-  expiresAt  DateTime           // createdAt + 24h
-  views      StoryView[]
-}
+스키마는 설계안 그대로 반영됨(마이그레이션 `20260918043620_add_story_and_video_media_type`).
+`backend/src/stories/`에 모듈 추가:
 
-model StoryView {
-  id        String   @id @default(uuid())
-  storyId   String
-  fanUserId String
-  viewedAt  DateTime @default(now())
-  @@unique([storyId, fanUserId])
-}
-```
+- `POST actors/:actorId/stories` — `@Roles(ACTOR, ADMIN)` + `ensureIsActorSelf`.
+  `CreateStoryDto`가 `mediaType !== TEXT`를 검증(스토리는 항상 미디어 있음).
+- `GET actors/:actorId/stories` — 로그인만 하면 접근 가능하되 서비스 내부에서
+  `ensureActiveSubscription`으로 구독 여부 확인, `expiresAt > now()`인 것만
+  `createdAt asc`로 반환.
+- `POST actors/:actorId/stories/:storyId/view` — `StoryView.upsert`로 조회 기록
+  (중복 호출 안전).
+- `GET actors/:actorId/stories/:storyId/views` — `@Roles(AGENCY_STAFF, ACTOR, ADMIN)`
+  + `ensureCanViewActor`, 조회한 팬 목록(`viewedAt desc`) 반환.
+- 메시지 서비스에 있던 활성 구독 체크를
+  `common/authorization/ensure-active-subscription.ts`로 추출해서 재사용.
 
-- 조회는 `expiresAt > now()`인 것만 반환, 만료분은 별도 cron이 레코드+스토리지 파일 정리.
-- 구독자 전용 — 메시지 조회와 동일하게 활성 구독 체크 선행.
-- 업로드 주체는 `ensureIsActorSelf` 권한 체크 (위 참고).
+**버그 수정**: `MessageMediaType`에 `VIDEO`가 없었음(`TEXT`/`PHOTO`/`AUDIO`뿐 —
+디자인 가이드는 영상 메시지도 요구). 스토리 작업 중 발견해서 enum에 추가, `Message`
+모델의 영상 전송도 이걸로 같이 고쳐짐.
+
+**아직 안 한 것**:
+- 만료 스토리 정리 cron — 레코드 삭제 + 스토리지 파일 삭제. `@nestjs/schedule`
+  같은 스케줄러 자체가 아직 의존성에 없음, 실제 스토리지 프로바이더(Supabase
+  Storage 등)도 아직 코드에 연동 안 됨.
+- 배우 전용 업로드 화면(카메라 촬영 → 즉시 업로드)과 그 진입점 — `Role.ACTOR` 절
+  참고, 여전히 미착수.
 
 ## 소속사 모니터링 기능 — 설계, 아직 미구현
 

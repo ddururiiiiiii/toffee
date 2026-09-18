@@ -8,7 +8,9 @@
 
 ## 참고 — 진행 중 밝혀진 정정 사항
 
-- (아직 없음. 이후 세션에서 버그·정정 사항 발견 시 이 목록에 날짜와 함께 추가할 것.)
+- **2026-09-18**: `MessageMediaType`에 `VIDEO`가 빠져 있었음(`TEXT`/`PHOTO`/`AUDIO`뿐).
+  디자인 가이드·개발 로드맵 둘 다 "배우가 사진/음성/영상을 보낼 수 있다"고 돼 있는데
+  실제로는 영상 전송이 불가능한 상태였음 — `Story` 모델 작업 중 발견해서 같이 고침.
 
 ---
 
@@ -474,3 +476,25 @@ IAP로 붙일 예정"이라는 주석이 있어서 IAP 방향은 기존 계획�
 아직 안 한 것: 배우 본인이 실제로 쓸 화면(카메라 촬영 업로드, 메시지 작성)과 그
 진입점 — 지금 로그인해도 앱이 `ACTOR` role을 어디로도 보내주지 않음. 다음 세션에서
 화면 설계 필요. 상세는 `docs/engineering/architecture-notes.md` 참고.
+
+---
+
+## 2026-09-18 (계속) — `Story`/`StoryView` 모델 구현
+
+이어서 대기 목록의 스토리 기능 착수. 구현한 것:
+
+- `Story`(actorId, mediaType, mediaUrl, expiresAt)/`StoryView`(storyId, fanUserId,
+  viewedAt, 쌍마다 유일) 모델 + 마이그레이션 추가.
+- 새 `stories` 모듈: `POST actors/:id/stories`(배우 본인만, `ensureIsActorSelf`),
+  `GET actors/:id/stories`(구독자만, 만료 안 된 것만), `POST .../stories/:id/view`
+  (팬이 봤음을 기록, 중복 호출해도 안전), `GET .../stories/:id/views`(스태프/배우
+  본인/ADMIN — 누가 봤는지).
+- 메시지 서비스에 있던 "활성 구독 확인" 로직을 `ensure-active-subscription.ts`로
+  뽑아내서 스토리 쪽과 같이 씀(중복 제거).
+- **버그 발견·수정**: `MessageMediaType`에 `VIDEO`가 없었음(위 "정정 사항" 참고) —
+  스토리 작업 중 발견해서 같이 추가.
+- `backend` `tsc`/lint/`nest build` 통과 확인.
+
+아직 안 한 것: 만료된 스토리 정리(레코드+스토리지 파일 삭제) cron, 배우용 업로드
+화면(둘 다 이전부터 대기 중인 항목). `docs/engineering/architecture-notes.md`에 상세
+정리.
