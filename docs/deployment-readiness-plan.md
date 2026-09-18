@@ -373,10 +373,10 @@ model StoryView {
 
 - [x] 팬 앱 하단 탭 3개 유지 결정 (Home/Library 없음) — 코드 변경 불필요, 이미 일치
 - [x] 배우 프로필 화면에서 게시물/피드 섹션 제거 결정
-- [ ] `theme.ts` 색상을 확정 팔레트(Charcoal/Lavender/Periwinkle/Cloud/White)로 교체
-- [ ] `Actor.verified Boolean` 필드 추가 (채팅·프로필 목업 둘 다에서 확인된 요구사항) — 마이그레이션 SQL 작성
-- [ ] 태국어 지원 폰트 최종 선택(Noto Sans Thai / IBM Plex Sans Thai 등) 후 `expo-font`로 로드
-- [ ] `t-icon-black-mono-a/b.png` 두 변형의 실제 용도(OS 모노크롬 아이콘 등) 확인
+- [x] `theme.ts` 색상을 확정 팔레트(Charcoal/Lavender/Periwinkle/Cloud/White)로 교체 — 구현 완료(2026-09-18, `app/src/constants/theme.ts`)
+- [x] `Actor.verified Boolean` 필드 추가 — 구현 완료(2026-09-18, 스키마+마이그레이션만; 채팅/프로필 화면 배지 UI 자체는 아직 미구현, 별도 후속 작업)
+- [x] 태국어 지원 폰트 → **Noto Sans Thai로 확정**, `expo-font`(`@expo-google-fonts/noto-sans-thai`)로 로드 완료(2026-09-18, `app/src/app/_layout.tsx`+`themed-text.tsx`+`global.css`). Regular(400) 굵기만 우선 로드 — 굵기별 파일 추가는 후속 작업
+- [x] 모노크롬 T 아이콘 두 변형(`t-icon-black-mono-a/b`) 용도 → **iOS/Android 다크모드·틴트 아이콘용으로 확정**(2026-09-18) — `app.json`의 `android-icon-monochrome` 슬롯 등에 적용은 후속 작업
 - [ ] 앱스토어 제출용 정사각형(모서리 비둥근) 아이콘 원본 유무 확인
 - [ ] Expo 기본 템플릿 잔여 에셋(`expo-logo.png`, `react-logo*.png` 등) 정리, 실제 브랜드 아이콘으로 `app.json` 참조 교체
 
