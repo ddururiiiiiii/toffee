@@ -76,6 +76,10 @@ export class MessagesService {
           .catch(() => {}),
       ),
     );
+    // 소속사 모니터링용 알림 — 팬 알림과 별개, 실패해도 발송 자체엔 영향 없음
+    await this.pushService
+      .notifyActorStaff(actorId, '아티스트가 새 메시지를 보냈어요', dto.body?.slice(0, 60) ?? '새로운 콘텐츠를 확인해보세요')
+      .catch(() => {});
 
     return message;
   }
@@ -86,6 +90,15 @@ export class MessagesService {
     return this.prisma.message.findMany({
       where: { actorId, senderType: MessageSenderType.FAN },
       include: { fanUser: { select: { id: true, displayName: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // 소속사 모니터링 — 배우가 실제로 보낸 메시지를 읽기 전용으로 확인(개인화 치환 없이 원문 그대로)
+  async listBroadcasts(requesterId: string, actorId: string) {
+    await ensureCanViewActor(this.prisma, requesterId, actorId);
+    return this.prisma.message.findMany({
+      where: { actorId, senderType: MessageSenderType.ARTIST },
       orderBy: { createdAt: 'desc' },
     });
   }

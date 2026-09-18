@@ -19,7 +19,7 @@ export class StoriesController {
 
   @Get()
   listActive(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string) {
-    return this.storiesService.listActive(user.id, actorId);
+    return this.storiesService.listActive(user.id, actorId, user.role);
   }
 
   @Post(':storyId/view')

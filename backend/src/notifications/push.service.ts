@@ -41,6 +41,13 @@ export class PushService implements OnModuleInit {
     }
   }
 
+  // 배우가 새 메시지/스토리를 보낼 때 담당 소속사 스태프 전원에게 알림(모니터링용) — best-effort
+  async notifyActorStaff(actorId: string, title: string, body: string, data?: Record<string, string>): Promise<void> {
+    const actor = await this.prisma.actor.findUnique({ where: { id: actorId }, select: { staff: { select: { id: true } } } });
+    if (!actor) return;
+    await Promise.all(actor.staff.map((staffUser) => this.sendToUser(staffUser.id, title, body, data).catch(() => {})));
+  }
+
   private async send(
     token: string,
     title: string,

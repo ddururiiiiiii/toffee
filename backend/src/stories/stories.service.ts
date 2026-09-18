@@ -1,19 +1,25 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { PushService } from '../notifications/push.service.js';
 import { ensureCanViewActor, ensureIsActorSelf } from '../common/authorization/actor-access.js';
 import { ensureActiveSubscription } from '../common/authorization/ensure-active-subscription.js';
+import { Role } from '../generated/prisma/enums.js';
 import type { CreateStoryDto } from './dto/create-story.dto.js';
 
 const STORY_LIFETIME_MS = 24 * 60 * 60 * 1000;
+const CAN_MONITOR_ROLES = new Set<Role>([Role.AGENCY_STAFF, Role.ACTOR, Role.ADMIN]);
 
 @Injectable()
 export class StoriesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pushService: PushService,
+  ) {}
 
   // 배우 본인만 업로드 가능, 24시간 뒤 만료
   async create(actorSelfUserId: string, actorId: string, dto: CreateStoryDto) {
     await ensureIsActorSelf(this.prisma, actorSelfUserId, actorId);
-    return this.prisma.story.create({
+    const story = await this.prisma.story.create({
       data: {
         actorId,
         mediaType: dto.mediaType,
@@ -21,11 +27,20 @@ export class StoriesService {
         expiresAt: new Date(Date.now() + STORY_LIFETIME_MS),
       },
     });
+
+    // 소속사 모니터링용 알림 — 실패해도 업로드 자체엔 영향 없음
+    await this.pushService.notifyActorStaff(actorId, '아티스트가 새 스토리를 올렸어요', '지금 확인해보세요').catch(() => {});
+
+    return story;
   }
 
-  // 팬용 — 구독자만, 만료 안 된 것만
-  async listActive(userId: string, actorId: string) {
-    await ensureActiveSubscription(this.prisma, userId, actorId);
+  // 팬은 구독자만, 소속사/배우 본인/관리자는 모니터링 목적으로 구독 여부와 무관하게 조회 가능
+  async listActive(requesterId: string, actorId: string, requesterRole: Role) {
+    if (CAN_MONITOR_ROLES.has(requesterRole)) {
+      await ensureCanViewActor(this.prisma, requesterId, actorId);
+    } else {
+      await ensureActiveSubscription(this.prisma, requesterId, actorId);
+    }
     return this.prisma.story.findMany({
       where: { actorId, expiresAt: { gt: new Date() } },
       orderBy: { createdAt: 'asc' },

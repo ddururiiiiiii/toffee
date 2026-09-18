@@ -42,4 +42,11 @@ export class MessagesController {
   listReplies(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string) {
     return this.messagesService.listReplies(user.id, actorId);
   }
+
+  // 소속사 모니터링용 — 배우가 실제로 보낸 메시지를 읽기 전용으로 확인
+  @Roles(Role.AGENCY_STAFF, Role.ACTOR, Role.ADMIN)
+  @Get('broadcasts')
+  listBroadcasts(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string) {
+    return this.messagesService.listBroadcasts(user.id, actorId);
+  }
 }
