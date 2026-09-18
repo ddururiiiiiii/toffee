@@ -155,6 +155,42 @@ UI가 없어서 지금은 API를 직접 호출해야만 씀. 곧 만들 콘텐�
 - `Actor.verified Boolean @default(false)` 필드 추가됨(마이그레이션
   `20260918035538_add_actor_verified`). 배지 UI 자체(채팅 헤더, 프로필 화면)는 아직 안 붙임.
 
+## IAP(인앱결제) 검증 — 스캐폴딩 완료, 실 연동 전 (2026-09-18)
+
+`Subscription`에 `iapPlatform`/`iapTransactionId`(unique)/`iapExpiresAt` 추가
+(마이그레이션 `20260918070818_add_iap_fields`). `POST /actors/:actorId/verify-purchase`
+신규 — 기존 `POST /actors/:actorId/subscribe`(샌드박스, 결제 없음)는 그대로 두고 병행.
+
+- `backend/src/subscriptions/iap-verification.service.ts`:
+  - **Apple**: `@apple/app-store-server-library`의 `SignedDataVerifier`로 로컬 검증.
+    StoreKit2가 클라이언트에 주는 건 옛날 base64 영수증이 아니라 **서명된 JWS
+    트랜잭션**이라, Apple 서버의 `verifyReceipt`(레거시, deprecated)를 호출하는 방식이
+    아니라 Apple 루트 인증서(`AppleRootCA-G3.cer`, 최초 호출 시 받아서 프로세스
+    메모리에 캐싱)로 서명을 직접 검증하고 페이로드(`originalTransactionId`,
+    `expiresDate`)를 디코딩함.
+  - **Google**: Play Developer API `purchases.subscriptions.get`을
+    `google-auth-library`(이미 Google 로그인용으로 있던 의존성)의 서비스 계정
+    액세스 토큰으로 직접 호출 — `googleapis` 패키지 전체를 새로 넣지 않음.
+  - 둘 다 필요한 환경변수(`APPLE_BUNDLE_ID`, `APPLE_IAP_ENVIRONMENT`,
+    `GOOGLE_PLAY_PACKAGE_NAME`, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`)가 없으면
+    `getOrThrow`로 바로 에러 — FCM처럼 조용히 비활성화되지 않음(결제 검증은 절대
+    묵시적으로 통과시키면 안 되는 영역이라 의도적으로 이렇게 함).
+- 앱: `app/src/hooks/use-purchase.ts`의 `usePurchaseSubscription(actorId)` —
+  `expo-iap`의 `useIAP()`로 구매 요청 후 `verify-purchase`에 결과를 넘김.
+  **`react-native-iap`가 아니라 `expo-iap`를 씀** — `react-native-iap`(v14+, Nitro
+  Modules 기반)는 README에 "Expo Go/Expo Dev Client 미지원, Expo 프로젝트는
+  `expo-iap` 쓸 것"이라고 명시돼 있음(처음에 `react-native-iap`를 설치했다가 이
+  사실을 확인하고 되돌림 — 같은 실수 반복하지 않도록 기록).
+- `app.json` `plugins`에 `"expo-iap"` 추가(별도 옵션 불필요, 기본 StoreKit2 지원).
+
+**아직 실제로 못 하는 것**: 앱스토어 상품(구독) 자체가 등록 안 돼 있어서 이 플로우
+전체가 테스트 불가능. 필요한 것: (1) 정식 Bundle ID/패키지명으로 앱스토어/플레이
+개발자 계정에 앱 등록, (2) 구독 상품 ID를 `subscriptionSkuForActor()`
+(`toffee_sub_{actorId}`) 규칙대로 등록, (3) 위 4개 환경변수 채우기, (4) 실제 EAS
+빌드로 기기 테스트(Expo Go/Dev Client에서 결제 자체가 안 됨). 이것들이 끝나기
+전까지는 계속 `subscribe`(샌드박스) 플로우를 씀 — `actor/[id].tsx`의 구독 버튼도
+아직 `usePurchaseSubscription`으로 안 바꿨음(스토어 준비된 뒤에 교체).
+
 ## 알려진 인프라 이슈
 
 - `backend`의 `npm ci`가 `@nestjs/config@^4.0.4`(peer: `@nestjs/common@^10||^11`)와
