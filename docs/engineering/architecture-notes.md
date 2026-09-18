@@ -86,56 +86,39 @@ UI가 없어서 지금은 API를 직접 호출해야만 씀. 곧 만들 콘텐�
 기능이 쌓임 — 다음 논의·구현 대상. 제품 관점 결정은 `docs/product/feature-decisions.md`
 참고.
 
-## 콘텐츠 모더레이션 / 회원 관리 — 조사 완료, 설계 전
+## 콘텐츠 모더레이션 / 회원 관리 / 운영자 UI — 구현 완료 (2026-09-18)
 
-2026-09-18 조사 결과, 아래는 전부 **없음**:
+마이그레이션 `20260918044811_add_moderation_and_user_status`.
 
-- 욕설/음란어 등 텍스트 필터링 로직 — `messages.service.ts`의 `sendReply()`는 아무 검사
-  없이 `dto.body`를 그대로 저장. 금칙어 사전이나 필터 모델도 없음.
-- `User` 모델에 정지/차단 관련 필드 (`banned`, `suspended`, `status` 등) 없음.
-- 관리자용 유저 목록 조회, 정지/차단 엔드포인트(`users`/`admin` 모듈 자체가 없음) 없음.
-- 배우가 특정 팬을 차단하는 관계(예: `Actor.blockedFans`) 없음.
+- `BannedWord`(term, language) 모델 + `backend/src/moderation/ModerationService
+  .assertNoBannedWords(text)` — 전체 목록을 매번 조회해서 대소문자 무시 부분
+  문자열 매치(언어 구분 없이 전체 대조). `messages.service.ts`의 `sendReply()`가
+  저장 전에 호출, 걸리면 400으로 거부(마스킹 아님).
+- `User.status`(`ACTIVE`/`SUSPENDED`/`BANNED`) + `suspendedUntil`/`bannedAt`.
+  `JwtStrategy.validate()`에서 매 요청마다 체크: `BANNED`는 항상 거부,
+  `SUSPENDED`는 `suspendedUntil`이 아직 안 지났을 때만 거부 — 기간이 지나면
+  상태값을 안 건드려도 자동으로 다시 로그인 가능(별도 재활성화 불필요).
+- 신규 `admin` 모듈: `GET/PATCH /admin/users`(목록+검색, `:id/suspend`
+  `{ until }`, `:id/ban`, `:id/reactivate`) — 전부 `@Roles(ADMIN)`.
+- 신규 `moderation` 모듈의 `BannedWordsController`: `GET/POST/DELETE
+  /admin/banned-words` — 전부 `@Roles(ADMIN)`.
+- `prisma/seed.ts`에 데모 금칙어 3개(언어별 테스트 문자열, 실제 욕설 아님) 추가.
 
-지금 "모더레이션 큐"라고 부를 만한 건 `reports` 모듈(팬이 신고 → ADMIN이 승인/기각)
-하나뿐이고, 신고 처리 시 메시지 삭제나 유저 제재 같은 부수 효과는 없음(상태값만 바뀜).
+**앱 쪽 — 운영자 전용 화면 자체가 아예 없었음(신고 처리 기능도 UI 없이 방치돼
+있었음)**. `app/src/app/admin/`에 신규:
+- `admin/index.tsx` — 메뉴(신고 처리/금칙어 관리/회원 관리) + 로그아웃.
+- `admin/reports.tsx` — 기존 `GET /reports/pending` + resolve/dismiss 연결.
+- `admin/banned-words.tsx` — 목록 + 추가 폼(언어 선택 칩) + 삭제.
+- `admin/users.tsx` — 검색 + 정지(1/3/7일 버튼)/영구차단/재활성화.
+- `_layout.tsx`의 `AuthGate`: 로그인 후 분기를 `ADMIN → /admin`,
+  `AGENCY_STAFF → /console`, 나머지 → 팬 탭으로 3분기.
 
-### 결정된 스펙 (2026-09-18, 제품 결정은 `docs/product/feature-decisions.md` 참고)
-
-- 팬 답장에 금칙어가 있으면 **전송 자체를 차단**(마스킹 아님) — 서버에서 저장 전에 검사.
-- 금칙어 목록은 **ko/th/en** 3개 언어로 관리.
-- 팬 계정 제재는 **일시정지 / 영구차단** 2단계.
-
-### 스키마 설계안 (아직 미구현)
-
-```prisma
-model BannedWord {
-  id        String   @id @default(uuid())
-  term      String
-  language  String   // 'ko' | 'th' | 'en'
-  createdAt DateTime @default(now())
-  @@unique([term, language])
-}
-
-enum UserStatus {
-  ACTIVE
-  SUSPENDED
-  BANNED
-}
-```
-
-`User`에 `status UserStatus @default(ACTIVE)`, `suspendedUntil DateTime?`,
-`bannedAt DateTime?` 추가.
-
-### 구현 지점
-
-- `messages.service.ts`의 `sendReply()` — 저장 전에 `dto.body`를 `BannedWord` 목록과
-  대조(대소문자 무시, 부분 문자열 매치)해서 걸리면 400으로 거부. 팬이 어떤 언어로
-  쓰든 3개 언어 목록 전체와 대조(언어 감지 없이 그냥 전체 매치).
-- 전역 인증 가드(`JwtAuthGuard`) 또는 별도 인터셉터에서 `User.status`가 `SUSPENDED`/
-  `BANNED`면 요청 자체를 거부하도록 추가.
-- 신규 `admin`(또는 `users`) 모듈 필요: 금칙어 CRUD(`GET/POST/DELETE /admin/banned-words`),
-  유저 목록 조회 및 정지/차단(`GET /admin/users`, `PATCH /admin/users/:id/suspend`,
-  `PATCH /admin/users/:id/ban`) — 전부 `@Roles(Role.ADMIN)`.
+**같이 발견해서 고친 회귀**: `console/[actorId].tsx`의 "발송" 탭이 여전히
+`useSendBroadcast`(`POST .../broadcast`)를 호출하고 있었는데, 그 엔드포인트는
+이전 커밋에서 이미 `AGENCY_STAFF`를 빼고 `ACTOR`/`ADMIN`만 허용하도록 바꿔서
+소속사 계정으로는 403이 나는 상태였음. "발송" 탭을 지우고, 새로 만든
+`GET .../messages/broadcasts` + `GET .../stories`를 합쳐 보여주는 읽기 전용
+"모니터링" 탭으로 교체.
 
 ## 사업 운영 체크리스트 항목 — 구현 범위 확정 (2026-09-18)
 
