@@ -1,5 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
+import { NotoSansThai_400Regular } from '@expo-google-fonts/noto-sans-thai';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
+import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -33,6 +35,10 @@ function AuthGate({ children }: { children: ReactNode }) {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const [fontsLoaded, fontError] = useFonts({ NotoSansThai_400Regular });
+
+  if (!fontsLoaded && !fontError) return null;
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

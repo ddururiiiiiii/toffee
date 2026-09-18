@@ -82,6 +82,7 @@ model Actor {
   chatDisplayName         String
   chatProfileImageUrl     String?
   monthlyPriceCents       Int
+  verified                Boolean  @default(false)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
