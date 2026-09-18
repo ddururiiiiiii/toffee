@@ -63,16 +63,28 @@
 - 배우 전용 업로드 화면(카메라 촬영 → 즉시 업로드)과 그 진입점 — `Role.ACTOR` 절
   참고, 여전히 미착수.
 
-## 소속사 모니터링 기능 — 설계, 아직 미구현
+## 소속사 모니터링 기능 — 백엔드 구현 완료 (2026-09-18)
 
-소속사가 배우가 보낸 메시지를 팬 화면과 동일하게 읽기 전용으로 볼 수 있어야 함.
+- `PushService.notifyActorStaff(actorId, title, body)` 신규 — `Actor.staff` 전원에게
+  best-effort로 푸시. `sendBroadcast`, 스토리 `create` 양쪽에서 팬 알림과 별개로 호출.
+- `GET actors/:actorId/messages/broadcasts`(신규, `AGENCY_STAFF/ACTOR/ADMIN`) — 배우가
+  보낸 메시지를 `{{name}}` 치환 없이 원문 그대로 반환(`ensureCanViewActor`).
+- `stories.listActive`가 `requesterRole`을 받아서, `AGENCY_STAFF/ACTOR/ADMIN`이면
+  `ensureCanViewActor`로(구독 여부 무관하게 모니터링 목적 접근), 일반 팬이면 기존대로
+  `ensureActiveSubscription`으로 분기.
+- **아직 안 한 것**: 앱/웹 쪽에 이 엔드포인트들을 실제로 보여주는 화면 자체가 없음
+  (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
+  여전히 미확인.
 
-- `GET /actors/:id/messages`(팬용 전체 대화 조회)를 `AGENCY_STAFF`도 읽기 전용으로 접근
-  가능하게 확장 검토. 지금 있는 `GET /actors/:id/messages/replies`는 팬 답장만 보여주고
-  배우가 보낸 본문 자체는 안 보여줘서 이 요구를 못 채움.
-- 배우가 메시지/스토리를 보낼 때 담당 소속사 스태프에게 FCM 푸시 발송 필요(신규).
-- 팬 개인정보 노출 범위 검토 필요 — 답장 조회 API가 노출하는 "팬 이름"이 닉네임인지
-  실명인지 아직 미확인, 노출 범위에 따라 태국 PDPA 이슈 가능.
+## 관리자(ADMIN) 전용 UI — 아직 전혀 없음 (2026-09-18 확인)
+
+사용자 질문으로 확인된 사실: `ADMIN` role은 모든 엔드포인트에 접근은 가능하지만
+(`ensureCanViewActor`/`ensureIsActorSelf`가 ADMIN을 항상 통과시킴), **ADMIN 전용
+화면이 웹/앱 어디에도 없음** — 이미 백엔드가 완성된 신고 처리(`reports` 모듈)조차
+UI가 없어서 지금은 API를 직접 호출해야만 씀. 곧 만들 콘텐츠 모더레이션/회원 관리도
+전부 ADMIN 전용 기능이라, 이 문제를 먼저 정리하지 않으면 계속 "백엔드만 있고 못 쓰는"
+기능이 쌓임 — 다음 논의·구현 대상. 제품 관점 결정은 `docs/product/feature-decisions.md`
+참고.
 
 ## 콘텐츠 모더레이션 / 회원 관리 — 조사 완료, 설계 전
 
