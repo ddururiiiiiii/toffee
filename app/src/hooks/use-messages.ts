@@ -6,7 +6,7 @@ export interface ChatMessage {
   actorId: string;
   senderType: 'ARTIST' | 'FAN';
   fanUserId: string | null;
-  mediaType: 'TEXT' | 'PHOTO' | 'AUDIO';
+  mediaType: 'TEXT' | 'PHOTO' | 'AUDIO' | 'VIDEO';
   body: string | null;
   mediaUrl: string | null;
   createdAt: string;

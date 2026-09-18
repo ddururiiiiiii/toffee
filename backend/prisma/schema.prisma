@@ -43,16 +43,25 @@ enum ReportStatus {
   DISMISSED
 }
 
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
 model User {
   // email은 로그인 제공자가 달라도 같은 사람이면 계정을 하나로 합치는 데 씀
   // (예: 구글로 먼저 가입 후 나중에 카카오로 로그인해도 AuthIdentity만 추가되고 User는 그대로)
-  id          String   @id @default(uuid())
-  role        Role     @default(USER)
-  displayName String
-  email       String?  @unique
-  fcmToken    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String     @id @default(uuid())
+  role           Role       @default(USER)
+  displayName    String
+  email          String?    @unique
+  fcmToken       String?
+  status         UserStatus @default(ACTIVE)
+  suspendedUntil DateTime?
+  bannedAt       DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
   authIdentities AuthIdentity[]
   subscriptions  Subscription[]
@@ -200,4 +209,14 @@ model Report {
 
   message    Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
   reportedBy User    @relation("ReportsFiled", fields: [reportedById], references: [id])
+}
+
+// 팬 답장 전송 전에 대조하는 금칙어 목록 — 한국어/태국어/영어 3개 언어로 관리
+model BannedWord {
+  id        String   @id @default(uuid())
+  term      String
+  language  String
+  createdAt DateTime @default(now())
+
+  @@unique([term, language])
 }

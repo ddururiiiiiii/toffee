@@ -12,6 +12,8 @@ import { MessagesModule } from './messages/messages.module.js';
 import { StoriesModule } from './stories/stories.module.js';
 import { ActorsModule } from './actors/actors.module.js';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
+import { ModerationModule } from './moderation/moderation.module.js';
+import { AdminModule } from './admin/admin.module.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
 
@@ -27,6 +29,8 @@ import { RolesGuard } from './common/guards/roles.guard.js';
     StoriesModule,
     ActorsModule,
     SubscriptionsModule,
+    ModerationModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

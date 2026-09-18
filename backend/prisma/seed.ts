@@ -14,11 +14,14 @@ async function main() {
   await prisma.report.deleteMany();
   await prisma.messageTranslation.deleteMany();
   await prisma.message.deleteMany();
+  await prisma.storyView.deleteMany();
+  await prisma.story.deleteMany();
   await prisma.subscription.deleteMany();
   await prisma.authIdentity.deleteMany();
   await prisma.glCp.deleteMany();
   await prisma.actor.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.bannedWord.deleteMany();
 
   // 가상의 배우 2명 — 이름/사진 전부 가상, Toffee 캔디 테마로 지음
   const caramel = await prisma.actor.create({
@@ -143,6 +146,15 @@ async function main() {
       reportedById: fan2.id,
       reason: '(데모) 스팸성 메시지로 신고',
     },
+  });
+
+  // 금칙어 데모(실제 욕설 대신 테스트용 문자열 — 관리자 화면에서 등록/삭제 확인용)
+  await prisma.bannedWord.createMany({
+    data: [
+      { term: '테스트금칙어', language: 'ko' },
+      { term: 'testbadword', language: 'en' },
+      { term: 'ทดสอบคำต้องห้าม', language: 'th' },
+    ],
   });
 
   console.log('시드 완료:', {

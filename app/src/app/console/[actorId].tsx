@@ -1,22 +1,42 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, TextInput } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useActor } from '@/hooks/use-actors';
-import { useActorStats, useActorReplies, useSendBroadcast, type FanReply } from '@/hooks/use-console';
+import {
+  useActorStats,
+  useActorReplies,
+  useActorBroadcasts,
+  useActorStories,
+  type FanReply,
+  type ActorStory,
+} from '@/hooks/use-console';
+import type { ChatMessage } from '@/hooks/use-messages';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
-type Section = 'broadcast' | 'replies' | 'stats';
-type MediaType = 'TEXT' | 'PHOTO' | 'AUDIO';
+type Section = 'monitor' | 'replies' | 'stats';
+
+function mediaLabel(mediaType: string) {
+  switch (mediaType) {
+    case 'PHOTO':
+      return '사진';
+    case 'AUDIO':
+      return '음성';
+    case 'VIDEO':
+      return '영상';
+    default:
+      return '텍스트';
+  }
+}
 
 function SegmentedControl({ value, onChange }: { value: Section; onChange: (section: Section) => void }) {
   const theme = useTheme();
   const options: { key: Section; label: string }[] = [
-    { key: 'broadcast', label: '발송' },
+    { key: 'monitor', label: '모니터링' },
     { key: 'replies', label: '답장' },
     { key: 'stats', label: '통계' },
   ];
@@ -36,84 +56,49 @@ function SegmentedControl({ value, onChange }: { value: Section; onChange: (sect
   );
 }
 
-function BroadcastSection({ actorId }: { actorId: string }) {
+type MonitorItem =
+  | { kind: 'message'; id: string; mediaType: string; body: string | null; createdAt: string }
+  | { kind: 'story'; id: string; mediaType: string; createdAt: string };
+
+// 소속사는 발송 권한이 없음 — 배우가 실제로 보낸 메시지/스토리를 읽기 전용으로만 확인
+function MonitorSection({ actorId }: { actorId: string }) {
   const theme = useTheme();
-  const [mediaType, setMediaType] = useState<MediaType>('TEXT');
-  const [body, setBody] = useState('');
-  const [mediaUrl, setMediaUrl] = useState('');
-  const sendBroadcast = useSendBroadcast(actorId);
+  const { data: broadcasts, isLoading: loadingBroadcasts } = useActorBroadcasts(actorId);
+  const { data: stories, isLoading: loadingStories } = useActorStories(actorId);
 
-  const canSend = mediaType === 'TEXT' ? body.trim().length > 0 : mediaUrl.trim().length > 0;
+  if (loadingBroadcasts || loadingStories) return <ActivityIndicator style={styles.loading} color={theme.tint} />;
 
-  const handleSend = () => {
-    sendBroadcast.mutate(
-      { mediaType, body: body.trim() || undefined, mediaUrl: mediaType === 'TEXT' ? undefined : mediaUrl.trim() },
-      { onSuccess: () => { setBody(''); setMediaUrl(''); } },
-    );
-  };
+  const items: MonitorItem[] = [
+    ...(broadcasts ?? []).map(
+      (m: ChatMessage): MonitorItem => ({ kind: 'message', id: m.id, mediaType: m.mediaType, body: m.body, createdAt: m.createdAt }),
+    ),
+    ...(stories ?? []).map(
+      (s: ActorStory): MonitorItem => ({ kind: 'story', id: s.id, mediaType: s.mediaType, createdAt: s.createdAt }),
+    ),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
-    <ThemedView style={styles.section}>
-      <ThemedText type="small" themeColor="textSecondary">
-        구독 중인 모든 팬에게 전송돼요. 본문에 <ThemedText type="code">{'{{name}}'}</ThemedText>를 넣으면 각 팬 본인의
-        닉네임으로 자동 치환돼요.
-      </ThemedText>
-
-      <ThemedView style={[styles.segments, styles.mediaTypeRow, { backgroundColor: theme.backgroundElement }]}>
-        {(['TEXT', 'PHOTO', 'AUDIO'] as MediaType[]).map((type) => (
-          <Pressable
-            key={type}
-            onPress={() => setMediaType(type)}
-            style={[styles.segment, mediaType === type && { backgroundColor: theme.tint }]}>
-            <ThemedText type="small" style={mediaType === type ? styles.segmentTextActive : undefined}>
-              {type === 'TEXT' ? '텍스트' : type === 'PHOTO' ? '사진' : '음성'}
-            </ThemedText>
-          </Pressable>
-        ))}
-      </ThemedView>
-
-      {mediaType !== 'TEXT' && (
-        <TextInput
-          value={mediaUrl}
-          onChangeText={setMediaUrl}
-          placeholder={mediaType === 'PHOTO' ? '이미지 URL' : '음성 파일 URL'}
-          placeholderTextColor={theme.textSecondary}
-          autoCapitalize="none"
-          style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
-        />
-      )}
-
-      <TextInput
-        value={body}
-        onChangeText={setBody}
-        placeholder={mediaType === 'TEXT' ? '메시지 내용' : '캡션 (선택)'}
-        placeholderTextColor={theme.textSecondary}
-        multiline
-        style={[styles.input, styles.textArea, { color: theme.text, backgroundColor: theme.backgroundElement }]}
-      />
-
-      <Pressable onPress={() => setBody((prev) => `${prev}{{name}}`)} style={styles.insertNameButton}>
-        <ThemedText type="small" themeColor="tint">
-          + 이름 변수 삽입
+    <FlatList
+      data={items}
+      keyExtractor={(item) => `${item.kind}-${item.id}`}
+      contentContainerStyle={styles.repliesList}
+      ListEmptyComponent={
+        <ThemedText type="small" themeColor="textSecondary" style={styles.emptyMessage}>
+          아직 배우가 보낸 메시지·스토리가 없어요.
         </ThemedText>
-      </Pressable>
-
-      <Pressable
-        onPress={handleSend}
-        disabled={!canSend || sendBroadcast.isPending}
-        style={[styles.sendButton, { backgroundColor: theme.tint, opacity: canSend ? 1 : 0.5 }]}>
-        {sendBroadcast.isPending ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <ThemedText style={styles.sendButtonText}>구독자 전체에게 보내기</ThemedText>
-        )}
-      </Pressable>
-      {sendBroadcast.isSuccess && (
-        <ThemedText type="small" themeColor="textSecondary">
-          발송했어요!
-        </ThemedText>
+      }
+      renderItem={({ item }) => (
+        <ThemedView style={[styles.replyRow, { backgroundColor: theme.backgroundElement }]}>
+          <ThemedText type="smallBold">
+            {item.kind === 'story' ? '스토리' : '메시지'} · {mediaLabel(item.mediaType)}
+          </ThemedText>
+          {item.kind === 'message' && item.body && <ThemedText type="small">{item.body}</ThemedText>}
+          <ThemedText type="small" themeColor="textSecondary">
+            {new Date(item.createdAt).toLocaleString('ko-KR')}
+          </ThemedText>
+        </ThemedView>
       )}
-    </ThemedView>
+    />
   );
 }
 
@@ -186,7 +171,7 @@ export default function ConsoleActorScreen() {
   const navigation = useNavigation();
   const { actorId } = useLocalSearchParams<{ actorId: string }>();
   const { data: actor } = useActor(actorId);
-  const [section, setSection] = useState<Section>('broadcast');
+  const [section, setSection] = useState<Section>('monitor');
 
   useEffect(() => {
     if (actor) navigation.setOptions({ title: actor.chatDisplayName });
@@ -202,11 +187,11 @@ export default function ConsoleActorScreen() {
             style={styles.actorPreviewAvatar}
           />
           <ThemedText type="small" themeColor="textSecondary">
-            {actor.legalName}로 발행 중
+            {actor.legalName} 모니터링 중
           </ThemedText>
         </ThemedView>
       )}
-      {section === 'broadcast' && <BroadcastSection actorId={actorId} />}
+      {section === 'monitor' && <MonitorSection actorId={actorId} />}
       {section === 'replies' && <RepliesSection actorId={actorId} />}
       {section === 'stats' && <StatsSection actorId={actorId} />}
     </SafeAreaView>
@@ -221,12 +206,6 @@ const styles = StyleSheet.create({
   actorPreview: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.four, marginBottom: Spacing.two },
   actorPreviewAvatar: { width: 24, height: 24, borderRadius: 12 },
   section: { paddingHorizontal: Spacing.four, gap: Spacing.three },
-  mediaTypeRow: { margin: 0 },
-  input: { borderRadius: 10, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, fontSize: 16 },
-  textArea: { minHeight: 100, textAlignVertical: 'top' },
-  insertNameButton: { alignSelf: 'flex-start' },
-  sendButton: { borderRadius: 10, paddingVertical: Spacing.three, alignItems: 'center' },
-  sendButtonText: { color: '#fff', fontWeight: '600' },
   repliesList: { padding: Spacing.four, gap: Spacing.three },
   replyRow: { borderRadius: 12, padding: Spacing.three, gap: 4 },
   emptyMessage: { textAlign: 'center', marginTop: Spacing.four },

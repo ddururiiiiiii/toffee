@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PushService } from '../notifications/push.service.js';
+import { ModerationService } from '../moderation/moderation.service.js';
 import { MessageSenderType } from '../generated/prisma/enums.js';
 import { ensureCanViewActor, ensureIsActorSelf } from '../common/authorization/actor-access.js';
 import { ensureActiveSubscription } from '../common/authorization/ensure-active-subscription.js';
@@ -14,6 +15,7 @@ export class MessagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pushService: PushService,
+    private readonly moderationService: ModerationService,
   ) {}
 
   // 팬 본인의 대화방: 구독 시작일 이후의 방송 메시지 + 본인이 보낸 답장만, 시간순
@@ -40,6 +42,7 @@ export class MessagesService {
 
   async sendReply(userId: string, actorId: string, dto: SendReplyDto) {
     await ensureActiveSubscription(this.prisma, userId, actorId);
+    await this.moderationService.assertNoBannedWords(dto.body);
     const [message] = await this.prisma.$transaction([
       this.prisma.message.create({
         data: { actorId, senderType: MessageSenderType.FAN, fanUserId: userId, body: dto.body },
