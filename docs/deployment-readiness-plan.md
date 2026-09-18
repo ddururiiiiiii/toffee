@@ -219,4 +219,77 @@ Bubble 구조 + Weverse 기능 벤치마킹, 전 세계 팬 대상 다국어 지
 - [ ] 매출/정산 통계 엔드포인트 설계 (소속사 콘솔용)
 - [ ] `console/*` 라우트에 데스크톱 반응형 레이아웃 추가
 - [x] 24시간 소멸 스토리 vs 라이브 방송 우선순위 → **스토리 먼저 구현, 라이브 방송 보류**로 결정(2026-09-18)
-- [ ] 24시간 소멸 스토리: `Story` 모델 세부 스펙 논의 후 설계 (아래 8절)
+- [ ] 24시간 소멸 스토리: 아래 8절 스펙대로 설계·구현
+
+### 8. 24시간 소멸 스토리 — 스펙 결정 (2026-09-18)
+
+사용자와 상의해서 아래 4가지를 확정함.
+
+| 결정 항목 | 결정 |
+|---|---|
+| 업로드 주체 | **배우 본인이 앱에서 직접** (소속사 콘솔이 아님) |
+| 노출 시간 | **고정 24시간** (소속사 설정 불가) |
+| 조회 확인 | **조회한 팬 목록까지** 배우/소속사 콘솔에서 확인 가능 |
+| 공개 범위 | **구독자 전용** (비구독자 미리보기 없음, 메시지와 동일 정책) |
+
+#### 중요한 파급 효과 — "배우 본인 계정" 자체가 새로 필요함
+
+지금 구조엔 **배우가 직접 로그인하는 개념이 없다.** `Role`은 `USER`/
+`AGENCY_STAFF`/`ADMIN` 세 가지뿐이고, 배우 대신 행동하는 주체는 항상
+`AGENCY_STAFF`(소속사 담당자)다(`ensureStaffOfActor`가 "이 계정이 이 배우의
+스태프인가"만 검사). "배우 본인이 직접 스토리를 올린다"를 구현하려면 아래 중
+하나를 새로 정해야 한다 — **이건 이번 세션에서 아직 결정 안 됨, 다음에 논의 필요**:
+
+1. `Role.ACTOR` 같은 새 역할을 추가하고 `Actor`에 `selfUserId`(1:1, 배우 본인
+   계정) 필드를 신설 — 소속사 스태프 계정(`AGENCY_STAFF`, 대신 발송용)과 배우
+   본인 계정(`ACTOR`, 스토리 업로드용)을 명확히 분리하는 방식. 권한 체크는
+   `ensureStaffOfActor`와 별개로 `ensureIsActorSelf(userId, actorId)`를 새로
+   만들어야 함.
+2. 아니면 배우 본인도 그냥 `AGENCY_STAFF` 계정 하나를 배우와 공유해서 로그인
+   (소속사 담당자와 같은 로그인 정보를 배우에게도 준다) — 계정 분리는 안 되지만
+   빠르게 구현 가능. 다만 "누가 실제로 올렸는지" 구분이 안 되고, 배우 개인정보
+   보안 관점에서도 계정을 나누는 게 안전함.
+3. 배우 전용 앱 화면(카메라 촬영 → 즉시 업로드)도 새로 필요 — 지금 `console/*`은
+   소속사 담당자가 텍스트 작성하는 데스크톱형 화면이라, 배우가 이동 중에 스마트폰
+   으로 찍어 바로 올리는 모바일 퍼스트 플로우와는 UX가 다름. 팬 앱과도 다른
+   "배우용 앱 진입점"을 어디에 둘지(같은 앱 안의 별도 탭 vs 완전히 분리된 진입) 결정 필요.
+
+#### `Story` 데이터 모델 설계안
+
+```
+model Story {
+  id         String   @id @default(uuid())
+  actorId    String
+  mediaType  MessageMediaType   // 기존 enum 재사용 (PHOTO/VIDEO/VOICE)
+  mediaUrl   String
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime           // createdAt + 24h, 생성 시 계산해서 저장
+  views      StoryView[]
+}
+
+model StoryView {
+  id        String   @id @default(uuid())
+  storyId   String
+  fanUserId String
+  viewedAt  DateTime @default(now())
+  @@unique([storyId, fanUserId])
+}
+```
+
+- 조회 API(`GET /actors/:id/stories`)는 `expiresAt > now()`인 것만 반환 — 기존
+  메시지의 "소급 열람 불가" 필터링 패턴과 동일하게 서비스 레이어에서 처리.
+  DB 레코드 자체는 즉시 안 지우고, 별도 cron(예: 매시간)으로 만료된 `Story`와
+  연결된 미디어 파일(Supabase Storage 등)을 정리 — 스토리지 비용이 계속 쌓이지
+  않게 하기 위함.
+- 구독자 전용이므로 조회 API는 메시지 조회와 동일하게 "활성 구독 여부" 체크를
+  먼저 거침.
+- 조회 목록(`StoryView`)은 배우/소속사 콘솔에서 `GET /actors/:id/stories/:storyId/views`
+  같은 엔드포인트로 노출 — `ensureStaffOfActor`(혹은 위 `ensureIsActorSelf`)로
+  권한 체크.
+
+#### 다음 액션(스토리 관련, 추가)
+
+- [ ] "배우 본인 계정" 구현 방식 결정 (위 1번 vs 2번 vs 3번) — 다음 세션 논의 필요
+- [ ] `Story`/`StoryView` Prisma 모델 추가, 마이그레이션 SQL 작성
+- [ ] 만료 스토리 정리 cron(레코드 삭제 + 스토리지 파일 삭제) 구현
+- [ ] 배우용 업로드 화면(카메라 촬영 → 즉시 업로드) UX 설계
