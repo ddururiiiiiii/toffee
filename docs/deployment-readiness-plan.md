@@ -449,3 +449,28 @@ model StoryView {
 세션부터**로 결정. `subscriptions.service.ts:20`에 원래부터 "결제는 계약 성사 후
 IAP로 붙일 예정"이라는 주석이 있어서 IAP 방향은 기존 계획과도 일치함을 확인.
 기술 작업 목록은 `docs/engineering/architecture-notes.md`에 정리.
+
+---
+
+## 2026-09-18 (계속) — `Role.ACTOR` 구현
+
+대기 목록 중 `Role.ACTOR`(배우 본인 계정)부터 구현하기로 정하고 착수. 구현 전에
+"배우가 로그인하면 자동으로 배우 계정이 되는지, 별도 방법이 필요한지" 질문이 나와서
+확인 — 계정 하나에 역할 하나만 붙는 지금 방식(소속사/운영자와 동일)을 그대로 따르기로
+결정(자세한 내용은 `docs/product/feature-decisions.md`).
+
+구현한 것:
+
+- 스키마: `Role`에 `ACTOR` 추가, `Actor.selfUserId`(1:1) 필드 신설 + 마이그레이션
+  (`20260918042701_add_actor_self_account`).
+- `backend/src/common/authorization/ensure-staff-of-actor.ts`를 삭제하고
+  `actor-access.ts`(`ensureIsActorSelf`, `ensureCanViewActor`)로 교체.
+- 메시지 발송(`POST .../broadcast`)은 이제 `ACTOR`(또는 `ADMIN`)만 가능 —
+  `AGENCY_STAFF`는 더 이상 발송 불가. 답장 열람/통계/`mine`은 스태프·배우 본인·ADMIN
+  모두 가능하도록 확장.
+- `prisma/seed.ts`에 데모 배우 본인 계정(`caramel-self@toffee.demo`) 추가.
+- `backend`/`app` 양쪽 `tsc`/lint/`nest build` 통과 확인.
+
+아직 안 한 것: 배우 본인이 실제로 쓸 화면(카메라 촬영 업로드, 메시지 작성)과 그
+진입점 — 지금 로그인해도 앱이 `ACTOR` role을 어디로도 보내주지 않음. 다음 세션에서
+화면 설계 필요. 상세는 `docs/engineering/architecture-notes.md` 참고.

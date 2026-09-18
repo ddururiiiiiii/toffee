@@ -15,18 +15,25 @@
 | `Actor` 다국어 필드, 앱 i18n 라이브러리 | 미착수 (메시지 번역 테이블은 이미 있음, 아래 참고) |
 | 브랜드 팔레트/폰트 적용 | **완료** — `app/src/constants/theme.ts`, Noto Sans Thai |
 
-## 배우 본인 계정 (`Role.ACTOR`) — 설계, 아직 미구현
+## 배우 본인 계정 (`Role.ACTOR`) — 구현 완료 (2026-09-18)
 
-메시지·스토리를 배우 본인만 보낼 수 있게 되면서, 지금 `Role`(`USER`/`AGENCY_STAFF`/`ADMIN`)에
-배우 본인 계정 개념이 없다는 게 드러남. 확정된 설계:
-
-- `Role.ACTOR` 추가, `Actor.selfUserId`(1:1, 배우 본인 계정) 필드 신설.
-- `ensureStaffOfActor()`(소속사 스태프 검증)와 별개로 `ensureIsActorSelf(userId, actorId)`
-  신규 구현.
-- `POST /actors/:id/messages/broadcast`의 `@Roles(AGENCY_STAFF, ADMIN)`을
-  `ensureIsActorSelf` 체크로 교체 (소속사 발송 권한 제거 반영).
-- 배우 전용 업로드/작성 화면(카메라 촬영 → 즉시 업로드, 메시지 작성)을 어디에 둘지는
-  미정 — 팬 앱과도 소속사 콘솔과도 다른 진입점이 필요.
+- `Role.ACTOR` 추가, `Actor.selfUserId`(1:1, 배우 본인 계정) 필드 신설
+  (마이그레이션 `20260918042701_add_actor_self_account`).
+- `backend/src/common/authorization/actor-access.ts`에 `ensureIsActorSelf`
+  (배우 본인 또는 ADMIN만 — 발송 전용)와 `ensureCanViewActor`(스태프 또는 배우 본인
+  또는 ADMIN — 읽기 전용 조회용) 두 헬퍼로 정리. 기존 `ensure-staff-of-actor.ts`는
+  삭제하고 이 파일로 통합함.
+- `POST /actors/:id/messages/broadcast`: `@Roles(AGENCY_STAFF, ADMIN)` →
+  `@Roles(ACTOR, ADMIN)` + `ensureIsActorSelf`로 교체 완료 — 소속사는 더 이상
+  발송 불가.
+- `GET /actors/:id/messages/replies`, `GET /actors/:id/stats`, `GET /actors/mine`:
+  `AGENCY_STAFF`에 `ACTOR`를 추가하고 `ensureCanViewActor`로 교체 — 배우 본인도
+  자기 답장/통계를 볼 수 있음.
+- `prisma/seed.ts`에 데모 배우 본인 계정(`caramel-self@toffee.demo`, role `ACTOR`,
+  `caramel.selfUserId`로 연결) 추가 — `dev-login`으로 로그인해서 실제 발송 테스트 가능.
+- **아직 안 한 것**: 배우 전용 업로드/작성 화면(카메라 촬영 → 즉시 업로드, 메시지
+  작성) 자체와 그 진입점(앱 `_layout.tsx`의 `AuthGate`가 지금 `ACTOR` role을 아무데도
+  리다이렉트하지 않음 — 로그인해도 팬 화면으로 빠짐). 다음 세션에서 화면 설계 필요.
 
 ## `Story`/`StoryView` 모델 — 설계, 아직 미구현
 
