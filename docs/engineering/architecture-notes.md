@@ -77,8 +77,44 @@ model StoryView {
 
 지금 "모더레이션 큐"라고 부를 만한 건 `reports` 모듈(팬이 신고 → ADMIN이 승인/기각)
 하나뿐이고, 신고 처리 시 메시지 삭제나 유저 제재 같은 부수 효과는 없음(상태값만 바뀜).
-세부 설계는 아직 미정 — `docs/deployment-readiness-plan.md`의 해당 날짜 항목에서 계속
-논의.
+
+### 결정된 스펙 (2026-09-18, 제품 결정은 `docs/product/feature-decisions.md` 참고)
+
+- 팬 답장에 금칙어가 있으면 **전송 자체를 차단**(마스킹 아님) — 서버에서 저장 전에 검사.
+- 금칙어 목록은 **ko/th/en** 3개 언어로 관리.
+- 팬 계정 제재는 **일시정지 / 영구차단** 2단계.
+
+### 스키마 설계안 (아직 미구현)
+
+```prisma
+model BannedWord {
+  id        String   @id @default(uuid())
+  term      String
+  language  String   // 'ko' | 'th' | 'en'
+  createdAt DateTime @default(now())
+  @@unique([term, language])
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+```
+
+`User`에 `status UserStatus @default(ACTIVE)`, `suspendedUntil DateTime?`,
+`bannedAt DateTime?` 추가.
+
+### 구현 지점
+
+- `messages.service.ts`의 `sendReply()` — 저장 전에 `dto.body`를 `BannedWord` 목록과
+  대조(대소문자 무시, 부분 문자열 매치)해서 걸리면 400으로 거부. 팬이 어떤 언어로
+  쓰든 3개 언어 목록 전체와 대조(언어 감지 없이 그냥 전체 매치).
+- 전역 인증 가드(`JwtAuthGuard`) 또는 별도 인터셉터에서 `User.status`가 `SUSPENDED`/
+  `BANNED`면 요청 자체를 거부하도록 추가.
+- 신규 `admin`(또는 `users`) 모듈 필요: 금칙어 CRUD(`GET/POST/DELETE /admin/banned-words`),
+  유저 목록 조회 및 정지/차단(`GET /admin/users`, `PATCH /admin/users/:id/suspend`,
+  `PATCH /admin/users/:id/ban`) — 전부 `@Roles(Role.ADMIN)`.
 
 ## 브랜드 팔레트/폰트 구현 메모
 

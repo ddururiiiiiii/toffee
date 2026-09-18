@@ -6,4 +6,6 @@
 
 - [`brand-guide.md`](./brand-guide.md) — 브랜드 아이덴티티(로고, 컬러, 톤)
 - [`feature-decisions.md`](./feature-decisions.md) — 지금까지 확정된 제품 기능 결정 사항
+- [`business-compliance-checklist.md`](./business-compliance-checklist.md) — 기능이 아닌,
+  상업 서비스 운영에 필요한 법률/결제/세무 체크리스트
 - [`brand/`](./brand/) — 원본 디자인 가이드·로고 파일·화면 목업 이미지(레퍼런스 자료)
