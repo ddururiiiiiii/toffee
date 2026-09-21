@@ -259,6 +259,35 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
 **아직 시작 안 함**: 위 스펙은 확정됐지만 마이그레이션/서비스/컨트롤러/앱 화면 전부
 미착수. 사용자 확인 후 다음 세션(또는 이어지는 작업)에서 구현.
 
+## 아티스트 게시글(영구 게시판) — 스펙 확정, 구현 전 (2026-09-21)
+
+제품 결정은 `docs/product/feature-decisions.md`의 "아티스트 게시글" 절 참고.
+
+- **스키마(안)**: `Story`와 비슷하지만 `expiresAt`이 없는 `ActorPost`(actorId,
+  mediaType, body, mediaUrl, createdAt) + `PostComment`(postId, fanUserId,
+  parentCommentId nullable, body, createdAt). `parentCommentId`가 가리키는 댓글이
+  또 `parentCommentId`를 갖지 않도록(대댓글 1단계 제한) **서비스 레이어에서 검증**
+  (부모 댓글의 `parentCommentId`가 이미 not-null이면 400) — DB 제약으로 강제하지
+  않음(Prisma self-relation depth 제약은 표현이 번거로움).
+- **신고 폴리모피즘 — CP방과 같은 미정 사항**: 지금 `Report.messageId`는 `Message`만
+  가리킨다. CP방 스펙(`CpMessage`)에 이어 이번 게시판(`PostComment`)까지 생기면서
+  "신고 가능한 대상"이 3종류(`Message`/`CpMessage`/`PostComment`)로 늘어난다. 구현
+  시점에 한 번에 정리할 것 — 유력한 방향은 `Report`를 `messageId`/`cpMessageId`/
+  `postCommentId` 전부 nullable로 두고 정확히 하나만 채우는 폴리모픽 구조. 확정
+  아님, CP방 절의 미정 사항과 같이 묶어서 다음 구현 세션에서 결정.
+- **댓글 필터**: 저장 전 `ModerationService.assertNoBannedWords()` 재사용(기존 로직
+  그대로).
+- **삭제 권한**: `PostComment` 삭제는 `ensureIsActorSelf(postId의 actorId)`를 통과한
+  배우 본인 또는 ADMIN만 가능 — 신고(`Report`) 큐를 거치지 않는 별도 엔드포인트로 둔다
+  (예: `DELETE actors/:actorId/posts/:postId/comments/:commentId`).
+- **소속사 모니터링**: 기존 `GET actors/:actorId/messages/broadcasts` +
+  `GET actors/:actorId/stories`를 합쳐 보여주는 앱의 "모니터링" 탭에 게시글도 같은
+  방식으로 추가(신규 권한 로직 불필요, `ensureCanViewActor` 재사용).
+- 프로필 화면(앱)에 구독자 전용 게시판 섹션 추가 필요 — `actor/[id].tsx`에 구독자
+  여부에 따라 조건부 렌더링.
+
+**아직 시작 안 함**: 마이그레이션/서비스/컨트롤러/앱 화면 전부 미착수.
+
 ## 알려진 인프라 이슈
 
 - `backend`의 `npm ci`가 `@nestjs/config@^4.0.4`(peer: `@nestjs/common@^10||^11`)와
