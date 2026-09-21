@@ -1,5 +1,6 @@
 import { ActivityIndicator, Alert, FlatList, Image, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -46,6 +47,7 @@ function SubscriptionRow({ subscription }: { subscription: Subscription }) {
 
 export default function MyPageScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const { logout } = useAuth();
   const { data: subscriptions, isLoading } = useMySubscriptions();
 
@@ -78,6 +80,19 @@ export default function MyPageScreen() {
         />
       )}
 
+      <ThemedView style={styles.legalLinks}>
+        <Pressable onPress={() => router.push('/terms')}>
+          <ThemedText type="small" themeColor="textSecondary">
+            이용약관
+          </ThemedText>
+        </Pressable>
+        <Pressable onPress={() => router.push('/privacy')}>
+          <ThemedText type="small" themeColor="textSecondary">
+            개인정보처리방침
+          </ThemedText>
+        </Pressable>
+      </ThemedView>
+
       <Pressable onPress={logout} style={[styles.logoutButton, { borderColor: theme.backgroundSelected }]}>
         <ThemedText type="smallBold" themeColor="danger">
           로그아웃
@@ -89,6 +104,7 @@ export default function MyPageScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  legalLinks: { flexDirection: 'row', gap: Spacing.four, paddingHorizontal: Spacing.four, marginTop: Spacing.two },
   title: { fontSize: 32, lineHeight: 40, paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
   sectionLabel: { paddingHorizontal: Spacing.four, marginTop: Spacing.four },
   sectionHint: { paddingHorizontal: Spacing.four, marginTop: 2 },

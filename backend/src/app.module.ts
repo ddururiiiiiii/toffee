@@ -15,6 +15,7 @@ import { ActorsModule } from './actors/actors.module.js';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
 import { ModerationModule } from './moderation/moderation.module.js';
 import { AdminModule } from './admin/admin.module.js';
+import { ParentalConsentModule } from './parental-consent/parental-consent.module.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
 
@@ -33,6 +34,7 @@ import { RolesGuard } from './common/guards/roles.guard.js';
     SubscriptionsModule,
     ModerationModule,
     AdminModule,
+    ParentalConsentModule,
   ],
   controllers: [AppController],
   providers: [

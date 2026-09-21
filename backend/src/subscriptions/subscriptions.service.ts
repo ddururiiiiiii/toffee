@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { IapVerificationService } from './iap-verification.service.js';
+import { ParentalConsentStatus } from '../generated/prisma/enums.js';
 import type { VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
 
 @Injectable()
@@ -24,6 +25,7 @@ export class SubscriptionsService {
 
   // 결제(IAP)는 계약 성사 후에 붙임 — 지금은 결제 없이 구독 레코드만 만드는 샌드박스 플로우
   async subscribe(userId: string, actorId: string) {
+    await this.ensureCanSubscribe(userId);
     const actor = await this.prisma.actor.findUnique({ where: { id: actorId } });
     if (!actor) throw new NotFoundException('배우를 찾을 수 없습니다.');
 
@@ -48,6 +50,7 @@ export class SubscriptionsService {
 
   // 실제 IAP 결제 검증 후 구독 활성화 — 스토어 계정/상품 등록이 끝나면 이걸로 subscribe()를 대체
   async verifyPurchase(userId: string, actorId: string, dto: VerifyPurchaseDto) {
+    await this.ensureCanSubscribe(userId);
     const actor = await this.prisma.actor.findUnique({ where: { id: actorId } });
     if (!actor) throw new NotFoundException('배우를 찾을 수 없습니다.');
 
@@ -85,6 +88,14 @@ export class SubscriptionsService {
       throw new NotFoundException('구독 중인 배우가 아니에요.');
     }
     return this.prisma.subscription.update({ where: { id: existing.id }, data: { cancelledAt: new Date() } });
+  }
+
+  // 만 14세 미만인데 법정대리인 동의를 아직 못 받은 계정은 구독(결제) 자체를 막음
+  private async ensureCanSubscribe(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    if (user.parentalConsentStatus === ParentalConsentStatus.PENDING) {
+      throw new ForbiddenException('법정대리인 동의가 완료된 후 구독할 수 있어요.');
+    }
   }
 
   // 이 배우와 짝지어진(GlCp) 다른 배우를 이미 구독 중이면 번들 할인가를 안내만 함(결제는 아직 없음)

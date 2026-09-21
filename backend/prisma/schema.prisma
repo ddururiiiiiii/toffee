@@ -54,27 +54,41 @@ enum UserStatus {
   BANNED
 }
 
+enum ParentalConsentStatus {
+  // 만 14세 이상이라 애초에 동의가 필요 없는 계정 (기본값)
+  NOT_REQUIRED
+  // 만 14세 미만인데 아직 법정대리인(부모) 동의를 못 받은 상태 — 구독/결제 불가
+  PENDING
+  // 법정대리인이 이메일 링크로 동의 완료
+  APPROVED
+}
+
 model User {
   // email은 로그인 제공자가 달라도 같은 사람이면 계정을 하나로 합치는 데 씀
   // (예: 구글로 먼저 가입 후 나중에 카카오로 로그인해도 AuthIdentity만 추가되고 User는 그대로)
-  id             String     @id @default(uuid())
-  role           Role       @default(USER)
-  displayName    String
-  email          String?    @unique
-  fcmToken       String?
-  status         UserStatus @default(ACTIVE)
-  suspendedUntil DateTime?
-  bannedAt       DateTime?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  id                    String                @id @default(uuid())
+  role                  Role                  @default(USER)
+  displayName           String
+  email                 String?               @unique
+  fcmToken              String?
+  status                UserStatus            @default(ACTIVE)
+  suspendedUntil        DateTime?
+  bannedAt              DateTime?
+  // 생년월일 미입력 상태(null)면 앱이 온보딩에서 먼저 물어봄 — 만 14세 미만 판정에만 씀
+  birthDate             DateTime?
+  parentalConsentStatus ParentalConsentStatus @default(NOT_REQUIRED)
+  parentEmail           String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
 
-  authIdentities AuthIdentity[]
-  subscriptions  Subscription[]
-  fanMessages    Message[]      @relation("FanMessages")
-  staffOfActors  Actor[]        @relation("ActorStaff")
-  reportsFiled   Report[]       @relation("ReportsFiled")
-  actorSelf      Actor?         @relation("ActorSelf")
-  storyViews     StoryView[]
+  authIdentities  AuthIdentity[]
+  subscriptions   Subscription[]
+  fanMessages     Message[]        @relation("FanMessages")
+  staffOfActors   Actor[]          @relation("ActorStaff")
+  reportsFiled    Report[]         @relation("ReportsFiled")
+  actorSelf       Actor?           @relation("ActorSelf")
+  storyViews      StoryView[]
+  parentalConsent ParentalConsent?
 }
 
 model AuthIdentity {
@@ -88,6 +102,19 @@ model AuthIdentity {
 
   @@unique([provider, providerId])
   @@index([userId])
+}
+
+// 만 14세 미만 회원의 법정대리인(부모) 동의 — 이메일로 보낸 링크를 부모가 클릭하면 확정.
+// userId가 unique라 재요청은 새로 만들지 않고 기존 레코드를 갱신(토큰 재발급)함.
+model ParentalConsent {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  token       String    @unique
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  confirmedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Actor {
