@@ -191,6 +191,36 @@ UI가 없어서 지금은 API를 직접 호출해야만 씀. 곧 만들 콘텐�
 전까지는 계속 `subscribe`(샌드박스) 플로우를 씀 — `actor/[id].tsx`의 구독 버튼도
 아직 `usePurchaseSubscription`으로 안 바꿨음(스토어 준비된 뒤에 교체).
 
+## 법정대리인(부모) 동의 + 약관/개인정보처리방침 화면 — 구현 완료 (2026-09-18)
+
+Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필요")을 참고해서 결정 —
+14세 미만을 막지 않고 부모 동의 플로우를 구축(마이그레이션
+`20260918072541_add_parental_consent`).
+
+- `User.birthDate`/`parentalConsentStatus`(`NOT_REQUIRED`/`PENDING`/`APPROVED`)/
+  `parentEmail` + `ParentalConsent`(token, expiresAt, confirmedAt) 모델.
+- `PATCH /me/birth-date` — 나이 계산 후 14세 미만이면 `PENDING`으로 전환.
+- `POST /me/parental-consent` — 부모 이메일로 확인 링크 발송(`ParentalConsent` upsert).
+- `GET /parental-consent/confirm`(`@Public()`) — 부모가 앱 로그인 없이 브라우저에서
+  여는 링크, 성공 시 `APPROVED`로 전환.
+- `SubscriptionsService.ensureCanSubscribe()` — `PENDING`이면 `subscribe`/
+  `verifyPurchase` 둘 다 차단.
+- 신규 `EmailService`(Resend REST API 직접 호출) — `RESEND_API_KEY`/
+  `EMAIL_FROM_ADDRESS`/`API_PUBLIC_URL` 필요, IAP처럼 미설정 시 조용히 무시하지 않고
+  에러(미성년자 보호 장치라 묵시적 우회 방지).
+- 앱: `app/src/app/onboarding/{birth-date,parental-consent}.tsx` + `hooks/use-onboarding.ts`.
+  `_layout.tsx`의 `AuthGate`가 로그인 직후 `GET /me/onboarding-status`를 확인해서
+  생년월일 미입력/`PENDING`이면 온보딩 화면으로 강제 이동.
+- 약관/개인정보처리방침: `app/src/app/{terms,privacy}.tsx` — 이번 세션 결정 사항
+  (구독 전용, 비대칭 메시징, 스토리 만료, 모더레이션, 미성년자 정책 등)을 반영한
+  초안. 화면 상단에 "초안, 출시 전 변호사 검토 필요" 배너 고정 표시. Profile 탭에서
+  링크 연결.
+
+**아직 안 한 것**: 실제 소셜 로그인 UI(`login.tsx`는 여전히 dev-login만) 자체가
+없어서, `agreedToTerms` 체크박스가 실제 화면에 붙어있지 않음 — 소셜 로그인 UI를
+만들 때 이 두 화면 링크를 체크박스와 함께 넣어야 함. 동의 시각/버전을 기록하는
+필드도 없음(지금은 API 파라미터로만 검증하고 저장은 안 함).
+
 ## 알려진 인프라 이슈
 
 - `backend`의 `npm ci`가 `@nestjs/config@^4.0.4`(peer: `@nestjs/common@^10||^11`)와
