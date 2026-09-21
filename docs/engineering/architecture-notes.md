@@ -318,6 +318,34 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
 **아직 시작 안 함**: 마이그레이션(불필요, 신규 컬럼 없음)은 없지만 서비스/cron
 자체가 미착수.
 
+## 메시지 번역 — Google Cloud Translation API 연동 — 스펙 확정, 구현 전 (2026-09-21)
+
+제품 결정은 `docs/product/feature-decisions.md`의 "출시 국가·다국어 범위" 절 참고.
+출시 언어는 태국어(`th`)/한국어(`ko`)/영어(`en`) 3개로 확정.
+
+- **연동 방식**: Google Cloud Translation API(Basic, v2 REST) — `EmailService`처럼
+  전용 SDK(`@google-cloud/translate`) 없이 `fetch`로 REST 엔드포인트를 직접 호출하는
+  방식을 우선 검토(이미 `google-auth-library`가 Google 로그인/Play Developer API용으로
+  의존성에 있으므로, API 키 대신 서비스 계정 인증으로 통일할지는 구현 시 결정).
+- **신규 서비스**: `backend/src/translation/translation.service.ts` (가칭) —
+  `translate(text, targetLanguageCode)` 하나만 노출. IAP/이메일과 마찬가지로 API
+  키/서비스 계정 미설정 시 **조용히 무시하지 않고 에러** — 번역은 안전 게이트는
+  아니지만, 미설정 상태로 조용히 원문만 내려주면 "번역 버튼을 눌렀는데 그대로"인
+  버그처럼 보이므로 명시적 에러가 더 안전.
+- **캐싱 흐름 변경 없음**: 기존 `MessageTranslation`(`messageId`+`languageCode` unique)
+  스키마 그대로 사용 — 팬이 번역을 요청하면 캐시 조회 → 없으면 `translate()` 호출 후
+  upsert. 자동 전체 번역은 하지 않음(비용 절감, 기존 설계 의도 유지).
+- **CP방/게시글에도 번역 필요**: `CpMessage`/`ActorPost`/`PostComment`에도 같은 번역
+  캐싱이 필요해짐 — `MessageTranslation`처럼 각각 전용 캐시 테이블을 또 만들지,
+  아니면 하나의 폴리모픽 번역 캐시 테이블로 통합할지는 미정(CP방/게시글 스펙에서
+  이미 남겨둔 `Report` 폴리모피즘 이슈와 같이, 구현 시점에 한 번에 정리할 것).
+- **환경변수**: `.env.example`에 `GOOGLE_TRANSLATE_API_KEY`(또는 서비스 계정 방식이면
+  기존 `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`과 별개로 번역 API 권한이 포함된 서비스
+  계정 JSON) 추가 필요 — 아직 미추가.
+
+**아직 시작 안 함**: 서비스/컨트롤러/환경변수 전부 미착수. 앱 쪽 "번역 보기" 버튼 UI도
+아직 없음(현재 채팅 화면에 번역 트리거 자체가 없음 — 확인 필요).
+
 ## 알려진 인프라 이슈
 
 - `backend`의 `npm ci`가 `@nestjs/config@^4.0.4`(peer: `@nestjs/common@^10||^11`)와
