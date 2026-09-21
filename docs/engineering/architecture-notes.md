@@ -298,8 +298,9 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
 - **삭제 조건**: 해당 팬의 `Subscription`(또는 `CpSubscription`)의
   `cancelledAt`이 `not null`이고 `now() - cancelledAt > 1년`인 경우. `Subscription`은
   `@@unique([userId, actorId])`라 재구독 시 기존 행의 `cancelledAt`을 다시 `null`로
-  되돌리는 구조이므로(기존 `subscribe()` 로직 확인 필요 — 재구독이 새 행을 만드는지
-  기존 행을 갱신하는지 구현 시 재확인), **재구독하면 조건에 안 걸려서 자동으로
+  되돌리는 구조 — `subscriptions.service.ts`의 `subscribe()` 로직으로 **확인 완료**
+  (재구독 시 새 행을 만들지 않고 기존 행을 `update`하면서 `cancelledAt: null`로
+  리셋함, 2026-09-21 코드 확인). 따라서 **재구독하면 조건에 안 걸려서 자동으로
   보존됨** — 별도 "복구" 로직 불필요.
 - **PostComment 기준**: 댓글 작성자(`fanUserId`)의 **해당 게시물 작성자(배우)에 대한
   구독**이 위 조건을 만족하면 삭제. CP방 댓글 개념은 없음(게시글은 배우 개인 프로필
@@ -318,20 +319,35 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
 **아직 시작 안 함**: 마이그레이션(불필요, 신규 컬럼 없음)은 없지만 서비스/cron
 자체가 미착수.
 
-## 메시지 번역 — Google Cloud Translation API 연동 — 스펙 확정, 구현 전 (2026-09-21)
+## 메시지 번역 — LLM 기반으로 방향 전환, 구체적 서비스는 미정 (2026-09-21)
 
 제품 결정은 `docs/product/feature-decisions.md`의 "출시 국가·다국어 범위" 절 참고.
-출시 언어는 태국어(`th`)/한국어(`ko`)/영어(`en`) 3개로 확정.
+출시 언어는 태국어(`th`)/한국어(`ko`)/영어(`en`)/일본어(`ja`)/중국어(`zh`, 해외
+화교권 대상 — 중국 본토 서비스는 범위 밖) 5개로 확정(2026-09-21, 3개 → 5개로 확장).
 
-- **연동 방식**: Google Cloud Translation API(Basic, v2 REST) — `EmailService`처럼
-  전용 SDK(`@google-cloud/translate`) 없이 `fetch`로 REST 엔드포인트를 직접 호출하는
-  방식을 우선 검토(이미 `google-auth-library`가 Google 로그인/Play Developer API용으로
-  의존성에 있으므로, API 키 대신 서비스 계정 인증으로 통일할지는 구현 시 결정).
+**번역 엔진 방향이 Google Cloud Translation(전통적 기계번역)에서 LLM 기반으로
+바뀜(2026-09-21, 같은 날)** — 이유는 제품 문서 참고(태국어 등 저자원 언어의
+대화체 번역 품질 문제, 캐싱 구조 덕분에 파일럿 규모에서 LLM 비용이 절대금액으로
+미미함). **어느 LLM(Claude/GPT/Gemini)을 쓸지는 아직 미정** — 실제 팬-배우 DM
+스타일 샘플 문장으로 비교 테스트한 뒤 결정하기로 함. 아래는 그 전에 정리해둔
+설계 방향(엔진이 확정되면 이 절을 갱신할 것):
+
+- **연동 방식**: 엔진이 무엇이든 백엔드에는 `translate(text, targetLanguageCode)`
+  하나만 노출하는 얇은 래퍼로 감쌀 것 — 나중에 엔진을 교체해도 호출부(메시지/
+  CP방/게시글 번역 요청 로직)를 안 건드리게. Claude API를 쓰게 되면 공식
+  Anthropic SDK(`@anthropic-ai/sdk`)를 쓸 것(REST 직접 호출 금지 — SDK가 있는데
+  fetch로 우회하지 않는다는 이 저장소 컨벤션과 별개로, Claude API 자체가 SDK 사용을
+  기본으로 요구함). Google Cloud Translation으로 갈 경우에만 기존 계획대로 REST
+  직접 호출(`EmailService`처럼) 검토.
 - **신규 서비스**: `backend/src/translation/translation.service.ts` (가칭) —
   `translate(text, targetLanguageCode)` 하나만 노출. IAP/이메일과 마찬가지로 API
   키/서비스 계정 미설정 시 **조용히 무시하지 않고 에러** — 번역은 안전 게이트는
   아니지만, 미설정 상태로 조용히 원문만 내려주면 "번역 버튼을 눌렀는데 그대로"인
   버그처럼 보이므로 명시적 에러가 더 안전.
+- **프롬프트(LLM으로 확정될 경우)**: 팬서비스 대화체 톤 유지 지시를 시스템
+  프롬프트에 넣을 것 — 딱딱한 직역이 아니라 원문의 다정한 어조를 살리는 게 이번
+  엔진 전환의 핵심 이유이므로, 프롬프트 설계 없이 그냥 "번역해줘"만 넣으면 전환한
+  의미가 없음.
 - **캐싱 흐름 변경 없음**: 기존 `MessageTranslation`(`messageId`+`languageCode` unique)
   스키마 그대로 사용 — 팬이 번역을 요청하면 캐시 조회 → 없으면 `translate()` 호출 후
   upsert. 자동 전체 번역은 하지 않음(비용 절감, 기존 설계 의도 유지).
@@ -339,12 +355,13 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   캐싱이 필요해짐 — `MessageTranslation`처럼 각각 전용 캐시 테이블을 또 만들지,
   아니면 하나의 폴리모픽 번역 캐시 테이블로 통합할지는 미정(CP방/게시글 스펙에서
   이미 남겨둔 `Report` 폴리모피즘 이슈와 같이, 구현 시점에 한 번에 정리할 것).
-- **환경변수**: `.env.example`에 `GOOGLE_TRANSLATE_API_KEY`(또는 서비스 계정 방식이면
-  기존 `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`과 별개로 번역 API 권한이 포함된 서비스
-  계정 JSON) 추가 필요 — 아직 미추가.
+- **환경변수**: 엔진 확정 후 정할 것 — Claude API면 `ANTHROPIC_API_KEY`, Google Cloud
+  Translation이면 `GOOGLE_TRANSLATE_API_KEY`(또는 서비스 계정 JSON) 식. 아직 미추가.
 
-**아직 시작 안 함**: 서비스/컨트롤러/환경변수 전부 미착수. 앱 쪽 "번역 보기" 버튼 UI도
-아직 없음(현재 채팅 화면에 번역 트리거 자체가 없음 — 확인 필요).
+**아직 시작 안 함**: 번역 엔진 자체가 미확정이라 서비스/컨트롤러/환경변수 전부
+착수 전. 엔진 비교 테스트(실제 팬-배우 DM 스타일 샘플 문장으로 Claude/GPT/Gemini
+번역 품질 비교)부터 먼저 해야 함. 앱 쪽 "번역 보기" 버튼 UI도 아직 없음(현재 채팅
+화면에 번역 트리거 자체가 없음 — 확인 필요).
 
 ## 데이터 백업/보안 정책 + 보안 하드닝 체크리스트 (2026-09-21, 구현 전)
 
