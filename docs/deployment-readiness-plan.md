@@ -11,6 +11,14 @@
 - **2026-09-18**: `MessageMediaType`에 `VIDEO`가 빠져 있었음(`TEXT`/`PHOTO`/`AUDIO`뿐).
   디자인 가이드·개발 로드맵 둘 다 "배우가 사진/음성/영상을 보낼 수 있다"고 돼 있는데
   실제로는 영상 전송이 불가능한 상태였음 — `Story` 모델 작업 중 발견해서 같이 고침.
+- **2026-09-21**: 지난 세션에 "애플 개발자 계정은 개인(Individual)에서 사업자
+  (Organization)로 공식 전환하는 절차가 없다"고 안내한 게 **틀린 정보였음**. 실제로는
+  Apple이 Individual → Organization **전환을 공식 지원**하며(Apple ID/Team ID/기존
+  앱/인증서/구독 상품 그대로 유지, 판매자 이름만 변경), 앱을 새로 만들거나 IAP 상품을
+  재등록할 필요가 없음. 다만 전환 요건으로 **법인격 있는 사업체(법인/유한회사 등)만
+  가능하고 개인사업자(sole proprietorship)는 Organization 자격이 안 됨**(Apple
+  공식 문서 명시) — 이 조건이 오히려 개인사업자 vs 법인 선택에 새로운 핵심 변수가
+  됨. 자세한 내용은 `docs/product/business-compliance-checklist.md` 5번 항목 참고.
 
 ---
 
