@@ -288,6 +288,36 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
 
 **아직 시작 안 함**: 마이그레이션/서비스/컨트롤러/앱 화면 전부 미착수.
 
+## 대화기록 보존 기간 — 스펙 확정, 구현 전 (2026-09-21)
+
+제품 결정은 `docs/product/feature-decisions.md`의 "대화기록 보존 기간" 절 참고.
+
+- **삭제 대상**: `senderType === FAN`인 `Message`/`CpMessage` 행, 그리고
+  `PostComment` 행. `senderType === ARTIST`인 브로드캐스트와 `ActorPost`는
+  삭제 대상에서 제외.
+- **삭제 조건**: 해당 팬의 `Subscription`(또는 `CpSubscription`)의
+  `cancelledAt`이 `not null`이고 `now() - cancelledAt > 1년`인 경우. `Subscription`은
+  `@@unique([userId, actorId])`라 재구독 시 기존 행의 `cancelledAt`을 다시 `null`로
+  되돌리는 구조이므로(기존 `subscribe()` 로직 확인 필요 — 재구독이 새 행을 만드는지
+  기존 행을 갱신하는지 구현 시 재확인), **재구독하면 조건에 안 걸려서 자동으로
+  보존됨** — 별도 "복구" 로직 불필요.
+- **PostComment 기준**: 댓글 작성자(`fanUserId`)의 **해당 게시물 작성자(배우)에 대한
+  구독**이 위 조건을 만족하면 삭제. CP방 댓글 개념은 없음(게시글은 배우 개인 프로필
+  기능이라 CP방과는 무관).
+- **cron**: `StoryCleanupService`(매시간 `EVERY_HOUR`)와 별개로 신규
+  `RetentionCleanupService`를 만들어 하루 1번(`CronExpression.EVERY_DAY_AT_MIDNIGHT`
+  등, 시간대는 태국/한국 새벽 트래픽이 적은 시간대로 결정 필요) 실행 — 삭제 대상이
+  많아질 수 있어 스토리 정리보다 빈도를 낮게 잡음.
+- **미디어 파일**: 텍스트 행과 동시에 삭제하되, 스토리 정리 때와 마찬가지로 **실제
+  파일 스토리지 연동 전까지는 DB 행만 지우고 `mediaUrl`이 가리키는 파일 자체는 못
+  지운다** — 스토리지 프로바이더 연동 후 같이 처리할 것(기존 스토리 정리 미해결
+  항목과 동일 선상).
+- **이용약관 반영 필요**: `app/src/app/terms.tsx` 초안에 이 보존 기간(1년) 조항이
+  아직 없음 — 다음에 법률 문구 다듬을 때 같이 추가.
+
+**아직 시작 안 함**: 마이그레이션(불필요, 신규 컬럼 없음)은 없지만 서비스/cron
+자체가 미착수.
+
 ## 알려진 인프라 이슈
 
 - `backend`의 `npm ci`가 `@nestjs/config@^4.0.4`(peer: `@nestjs/common@^10||^11`)와
