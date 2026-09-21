@@ -221,6 +221,44 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
 만들 때 이 두 화면 링크를 체크박스와 함께 넣어야 함. 동의 시각/버전을 기록하는
 필드도 없음(지금은 API 파라미터로만 검증하고 저장은 안 함).
 
+## CP(페어링) 채팅방 — 스펙 확정, 구현 전 (2026-09-21)
+
+제품 결정은 `docs/product/feature-decisions.md`의 "CP(페어링) 채팅방" 절 참고. 여기는
+그걸 구현할 때의 기술적 방향.
+
+- **스키마**: 기존 `Actor`/`Message`/`Subscription`/`Story` 테이블은 건드리지 않는다.
+  `GlCp`(지금은 할인 계산용 페어링 메타데이터일 뿐)를 실제 채팅방으로 확장 —
+  구체적으로는 `GlCp`에 딸린 신규 모델 두 개를 추가한다:
+  - `CpSubscription` — `Subscription`과 같은 패턴(`userId`, `glCpId`,
+    `startedAt`/`cancelledAt`, `iapPlatform`/`iapTransactionId`/`iapExpiresAt`).
+    `@@unique([userId, glCpId])`.
+  - `CpMessage` — `Message`와 같은 패턴이되 `actorId` 대신 `glCpId` +
+    `senderActorId`(`GlCp.actorOneId`/`actorTwoId` 중 하나, 어느 배우가 보냈는지
+    표시용) + `fanUserId`(nullable, 배우 발송이면 null, 팬 답장이면 그 팬).
+    `mediaType`/`body`/`mediaUrl`/`createdAt`은 `Message`와 동일.
+  - `{{name}}` 치환은 기존 브로드캐스트 조회 로직을 그대로 재사용(조회 시점에 요청한
+    팬의 `displayName`으로 치환).
+- **금칙어 필터**: `ModerationService.assertNoBannedWords()`를 CP방 답장 저장 전에도
+  그대로 호출(로직 재사용, 신규 언어/목록 불필요).
+- **IAP 상품**: 배우 개별 구독 SKU(`toffee_sub_{actorId}`) 패턴을 따라 CP방용
+  `toffee_cp_{glCpId}`, 번들용 `toffee_bundle_{glCpId}` 3~4개 SKU를 스토어에 별도
+  등록. 번들 구매 검증 시 서버가 `Subscription`(actorOne) + `Subscription`(actorTwo)
+  + `CpSubscription`(glCp) 세 레코드를 한 트랜잭션으로 생성.
+- **권한**: `ensureCanViewActor`처럼 CP방 전용 `ensureCanViewCpRoom(prisma, userId,
+  glCpId)` 헬퍼가 필요 — 스태프는 자기 배우가 `actorOneId`/`actorTwoId` 중 하나로
+  걸린 `GlCp`만 조회 가능(상대 배우 소속사에는 노출 안 함). 배우 본인은
+  `ensureIsActorSelf`를 `actorOneId`/`actorTwoId` 양쪽에 대해 OR로 체크하는 식으로
+  확장.
+- **미정 — 구현 시 정할 것**: 팬 신고(`Report`) 기능을 `CpMessage`에도 붙일지, 붙인다면
+  `Report.messageId`(현재 `Message`만 참조)를 어떻게 확장할지(nullable +
+  `cpMessageId` 컬럼 추가하는 폴리모픽 방식이 가장 단순해 보임 — 확정 아님). 이번
+  스펙 논의에는 포함 안 됨.
+- 이번 범위에서 CP방 전용 스토리(24시간 소멸 콘텐츠)는 만들지 않음 — 배우 개인
+  스토리 기능만 유지.
+
+**아직 시작 안 함**: 위 스펙은 확정됐지만 마이그레이션/서비스/컨트롤러/앱 화면 전부
+미착수. 사용자 확인 후 다음 세션(또는 이어지는 작업)에서 구현.
+
 ## 알려진 인프라 이슈
 
 - `backend`의 `npm ci`가 `@nestjs/config@^4.0.4`(peer: `@nestjs/common@^10||^11`)와
