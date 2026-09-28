@@ -145,6 +145,9 @@
     "saveFailed": "保存失败",
     "permissionDenied": "需要权限才能保存到相册，请在设置中允许。",
     "close": "关闭",
-    "open": "查看"
+    "open": "查看",
+    "saveNoticeTitle": "仅限个人收藏",
+    "saveNoticeBody": "演员发送的照片、视频和语音仅供订阅者本人观看。分享给他人或发布到社交媒体等，可能会根据服务条款被限制使用。",
+    "saveNoticeAgree": "同意并保存"
   }
 }

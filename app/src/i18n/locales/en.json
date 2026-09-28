@@ -145,6 +145,9 @@
     "saveFailed": "Couldn't save",
     "permissionDenied": "Permission is needed to save to your photos. Please allow it in Settings.",
     "close": "Close",
-    "open": "Open"
+    "open": "Open",
+    "saveNoticeTitle": "For personal use only",
+    "saveNoticeBody": "Photos, videos and voice messages from the actor are for subscribers only. Sharing them with others or posting them online may lead to restrictions under our Terms of Service.",
+    "saveNoticeAgree": "Agree and save"
   }
 }

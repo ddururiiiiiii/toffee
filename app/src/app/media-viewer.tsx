@@ -38,8 +38,8 @@ export default function MediaViewerScreen() {
     setSaving(true);
     setNotice(null);
     try {
-      await saveMedia({ id, url, mediaType: type });
-      setNotice(t('media.saved'));
+      const result = await saveMedia({ id, url, mediaType: type });
+      if (result !== 'cancelled') setNotice(t('media.saved'));
     } catch (error) {
       setNotice(error instanceof SavePermissionError ? t('media.permissionDenied') : t('media.saveFailed'));
     } finally {
