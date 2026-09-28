@@ -1,6 +1,13 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const UPLOAD_URL_TTL_SECONDS = 10 * 60;
@@ -94,5 +101,18 @@ export class StorageService {
   async delete(key: string): Promise<void> {
     const { client, bucket } = this.require();
     await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  }
+
+  /** prefix 아래 객체를 전부(1000개씩 이어서) — 고아 파일 정리용 */
+  async *listObjects(prefix: string): AsyncGenerator<{ key: string; lastModified: Date }> {
+    const { client, bucket } = this.require();
+    let token: string | undefined;
+    do {
+      const page = await client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: token }));
+      for (const object of page.Contents ?? []) {
+        if (object.Key && object.LastModified) yield { key: object.Key, lastModified: object.LastModified };
+      }
+      token = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (token);
   }
 }

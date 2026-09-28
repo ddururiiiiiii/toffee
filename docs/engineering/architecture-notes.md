@@ -82,6 +82,14 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
 
+## 붙이지 않은 업로드 파일 정리 (2026-09-28)
+
+- `UploadCleanupService.removeOrphanUploads` — `@Cron('30 4 * * *', { timeZone: 'Asia/Bangkok' })`. `actors/`·`agencies/`
+  아래 객체를 `StorageService.listObjects`(ListObjectsV2, 1000개씩)로 훑어서, 24시간 넘었고 DB(Message·Story
+  `mediaKey`, Actor 사진, Agency 로고)에서 안 쓰는 키면 삭제. 저장소 미설정이면 건너뜀. 참조 키는 한 번에 읽음(파일럿
+  규모) — 커지면 prefix(배우)별로 나눠 확인할 것. 새로 파일을 참조하는 컬럼을 만들면 `referencedKeys`에 꼭 추가.
+- 버킷 수명주기 규칙(ops-infra-backlog)은 이걸로 대체 가능하지만, 안전망으로 같이 두는 걸 권장.
+
 ## 대화기록 1년 보존 (2026-09-28)
 
 - `MessageRetentionService.removeExpiredFanReplies` — `@Cron('10 4 * * *', { timeZone: 'Asia/Bangkok' })`.
