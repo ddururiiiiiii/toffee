@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, ApiError } from '@/lib/api-client';
 
 export interface MessageQuote {
   id: string;
@@ -29,8 +29,10 @@ export function useActorMessages(actorId: string) {
     queryKey: ['messages', actorId],
     queryFn: () => apiClient.get<ChatMessage[]>(`/actors/${actorId}/messages`),
     enabled: !!actorId,
-    // 실시간 소켓은 나중에(10단계, 계약 성사 후) — 지금은 짧은 폴링으로 충분
-    refetchInterval: 5000,
+    // 실시간 소켓은 나중에(10단계, 계약 성사 후) — 지금은 짧은 폴링으로 충분. 권한 없음(403, 구독 끝남)은
+    // 재시도·폴링해도 안 바뀌어서 바로 멈춤
+    refetchInterval: (query) => (query.state.error instanceof ApiError && query.state.error.status === 403 ? false : 5000),
+    retry: (count, error) => !(error instanceof ApiError && error.status < 500) && count < 3,
   });
 }
 

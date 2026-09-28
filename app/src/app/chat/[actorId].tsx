@@ -84,9 +84,11 @@ export default function ChatRoomScreen() {
   const theme = useTheme();
   const { t } = useTranslation();
   const navigation = useNavigation();
+  const router = useRouter();
   const { actorId } = useLocalSearchParams<{ actorId: string }>();
   const { data: actor } = useActor(actorId);
-  const { data: messages, isLoading, isError } = useActorMessages(actorId);
+  const { data: messages, isLoading, isError, error } = useActorMessages(actorId);
+  const notSubscribed = error instanceof ApiError && error.status === 403;
   const sendReply = useSendReply(actorId);
   const [draft, setDraft] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
@@ -129,9 +131,23 @@ export default function ChatRoomScreen() {
         {isLoading ? (
           <ActivityIndicator style={styles.loading} color={theme.tint} />
         ) : isError ? (
-          <ThemedText style={styles.centerMessage} themeColor="danger">
-            {t('chat.loadFailed')}
-          </ThemedText>
+          // 403 = 구독이 없음(해지·만료) — 다시 구독하는 길을 보여줌
+          notSubscribed ? (
+            <ThemedView style={styles.endedBox}>
+              <ThemedText style={styles.endedText} themeColor="textSecondary">
+                {t('chat.notSubscribed', { name: actor?.chatDisplayName ?? '' })}
+              </ThemedText>
+              <Pressable
+                onPress={() => router.replace({ pathname: '/actor/[id]', params: { id: actorId } })}
+                style={[styles.sendButton, { backgroundColor: theme.tint }]}>
+                <ThemedText style={styles.sendButtonText}>{t('chat.resubscribe')}</ThemedText>
+              </Pressable>
+            </ThemedView>
+          ) : (
+            <ThemedText style={styles.centerMessage} themeColor="danger">
+              {t('chat.loadFailed')}
+            </ThemedText>
+          )
         ) : (
           <FlatList
             ref={listRef}
@@ -154,7 +170,7 @@ export default function ChatRoomScreen() {
           </ThemedText>
         )}
 
-        {!isLoading && !isError && !canReply ? (
+        {isLoading || isError ? null : !canReply ? (
           <ThemedText
             type="small"
             themeColor="textSecondary"
@@ -194,6 +210,8 @@ const styles = StyleSheet.create({
   bubbleRowRight: { justifyContent: 'flex-end' },
   bubble: { maxWidth: '78%', borderRadius: 16, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: 4 },
   notice: { textAlign: 'center', paddingVertical: Spacing.one },
+  endedBox: { alignItems: 'center', gap: Spacing.three, marginTop: Spacing.six, paddingHorizontal: Spacing.four, backgroundColor: 'transparent' },
+  endedText: { textAlign: 'center' },
   waitingBar: { textAlign: 'center', padding: Spacing.three, borderTopWidth: 1 },
   inputRow: {
     flexDirection: 'row',

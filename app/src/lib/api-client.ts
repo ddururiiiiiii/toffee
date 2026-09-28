@@ -34,8 +34,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     if (res.status === 401 && token) unauthorizedHandler?.(error.message);
     throw error;
   }
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  // 본문 없는 성공 응답(204, 또는 void를 돌려주는 POST의 201)은 undefined — 예전엔 201 빈 본문을 JSON으로 읽다가
+  // 실패해서, 부모 동의 메일이 실제로는 발송됐는데 화면엔 "보내지 못했어요"가 떴음
+  const bodyText = res.status === 204 ? '' : await res.text();
+  return (bodyText ? JSON.parse(bodyText) : undefined) as T;
 }
 
 export const apiClient = {

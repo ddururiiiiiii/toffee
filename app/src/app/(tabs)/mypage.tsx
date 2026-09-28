@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +13,7 @@ import { Spacing } from '@/constants/theme';
 import { LANGUAGE_NATIVE_NAMES, SUPPORTED_LANGUAGES, type SupportedLanguage } from '@/i18n/languages';
 import { useLocalePreference } from '@/i18n/locale-preference-context';
 import { NicknameForm } from '@/components/nickname-form';
+import { confirm } from '@/lib/confirm';
 import { useMe } from '@/hooks/use-onboarding';
 
 function SubscriptionRow({ subscription }: { subscription: Subscription }) {
@@ -20,11 +21,15 @@ function SubscriptionRow({ subscription }: { subscription: Subscription }) {
   const { t, i18n } = useTranslation();
   const unsubscribe = useUnsubscribe(subscription.actorId);
 
-  const confirmUnsubscribe = () => {
-    Alert.alert(t('mypage.unsubscribeTitle'), t('mypage.unsubscribeConfirm', { name: subscription.actor.chatDisplayName }), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('mypage.unsubscribe'), style: 'destructive', onPress: () => unsubscribe.mutate() },
-    ]);
+  // lib/confirm — 웹에선 Alert 버튼이 동작하지 않아 예전엔 웹에서 해지 버튼이 아무 반응이 없었음
+  const confirmUnsubscribe = async () => {
+    const ok = await confirm(
+      t('mypage.unsubscribeTitle'),
+      t('mypage.unsubscribeConfirm', { name: subscription.actor.chatDisplayName }),
+      t('mypage.unsubscribe'),
+      t('common.cancel'),
+    );
+    if (ok) unsubscribe.mutate();
   };
 
   return (

@@ -7,6 +7,7 @@ import type { TFunction } from 'i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ChatPhotoEditor } from '@/components/chat-photo-editor';
+import { showNameToken } from '@/utils/name-token';
 import { ThemedView } from '@/components/themed-view';
 import { FanReplyActions } from '@/components/fan-reply-actions';
 import { useActor } from '@/hooks/use-actors';
@@ -91,7 +92,7 @@ function MonitorSection({ actorId }: { actorId: string }) {
           <ThemedText type="smallBold">
             {t(`console.kind.${item.kind}`)} · {mediaLabel(t, item.mediaType)}
           </ThemedText>
-          {item.kind === 'message' && item.body && <ThemedText type="small">{item.body}</ThemedText>}
+          {item.kind === 'message' && item.body && <ThemedText type="small">{showNameToken(item.body, t('studio.fanNickname'))}</ThemedText>}
           <ThemedText type="small" themeColor="textSecondary">
             {new Date(item.createdAt).toLocaleString(i18n.language)}
           </ThemedText>

@@ -31,6 +31,7 @@ import { useStudioMessages, useStudioSend, type Attachment, type StudioMessage }
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 import { dbToLevel, resample } from '@/lib/waveform';
+import { NAME_TOKEN, showNameToken } from '@/utils/name-token';
 
 // 음량 측정(metering)을 켜서 녹음 중 음파 모양을 모음 — 보낼 때 48칸으로 줄여서 같이 보냄
 const RECORDING_OPTIONS = { ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true };
@@ -73,7 +74,7 @@ function MyMessage({ message, onOpenReplies }: { message: StudioMessage; onOpenR
             tone="light"
           />
         ) : null}
-        {message.body && <ThemedText style={styles.bubbleText}>{message.body}</ThemedText>}
+        {message.body && <ThemedText style={styles.bubbleText}>{showNameToken(message.body, t('studio.fanNickname'))}</ThemedText>}
       </ThemedView>
       <ThemedView style={styles.messageMeta}>
         <ThemedText type="small" themeColor="textSecondary">
@@ -285,7 +286,19 @@ export default function StudioChannelScreen() {
               {recorderState.isRecording ? `⏹ ${t('studio.stopRecording')}` : `🎙️ ${t('studio.record')}`}
             </ThemedText>
           </Pressable>
+          {/* 받는 팬마다 그 팬의 닉네임으로 바뀌는 자리 — 버블처럼 "OO야" 하고 부를 때 */}
+          <Pressable
+            onPress={() => setDraft((current) => `${current}${NAME_TOKEN}`)}
+            accessibilityHint={t('studio.insertNameHint')}
+            style={styles.tool}>
+            <ThemedText type="small">🏷️ {t('studio.insertName')}</ThemedText>
+          </Pressable>
         </ThemedView>
+        {draft.includes(NAME_TOKEN) && (
+          <ThemedText type="small" themeColor="textSecondary" style={styles.nameHint}>
+            {t('studio.insertNameHint')}
+          </ThemedText>
+        )}
 
         <ThemedView style={styles.inputRow}>
           <TextInput
@@ -314,6 +327,7 @@ export default function StudioChannelScreen() {
 }
 
 const styles = StyleSheet.create({
+  nameHint: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.one },
   headerButton: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
   container: { flex: 1 },
   loading: { marginTop: Spacing.six },

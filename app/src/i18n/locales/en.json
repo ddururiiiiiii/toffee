@@ -52,7 +52,9 @@
     "send": "Send",
     "waitingFirst": "You're subscribed! Messages from {{name}} will arrive here.",
     "replyAfterFirst": "You can reply once the star sends their first message.",
-    "sendFailed": "Couldn't send. Please try again."
+    "sendFailed": "Couldn't send. Please try again.",
+    "notSubscribed": "Your subscription has ended, so you can't view the chat with {{name}}.",
+    "resubscribe": "Subscribe again"
   },
   "mypage": {
     "title": "My page",
@@ -144,7 +146,10 @@
       "PHOTO": "📷 Photo",
       "AUDIO": "🎧 Voice message",
       "VIDEO": "🎬 Video"
-    }
+    },
+    "insertName": "Insert fan name",
+    "insertNameHint": "〈fan nickname〉 is replaced with each fan's own nickname when sent.",
+    "fanNickname": "fan nickname"
   },
   "media": {
     "save": "Save",

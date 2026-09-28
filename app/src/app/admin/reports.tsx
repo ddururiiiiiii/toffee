@@ -6,6 +6,7 @@ import { ThemedView } from '@/components/themed-view';
 import { usePendingReports, useResolveReport, useDismissReport, type PendingReport } from '@/hooks/use-admin';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
+import { showNameToken } from '@/utils/name-token';
 
 // 운영자 화면은 한국어 전용(운영자 본인용)
 const CATEGORY_LABELS: Record<string, string> = {
@@ -34,7 +35,7 @@ function ReportRow({ report }: { report: PendingReport }) {
           ? '배우 메시지'
           : `팬 답장 (${report.message.fanUser?.nickname ?? '-'} / ${report.message.fanUser?.displayName ?? '-'})`}
       </ThemedText>
-      {report.message.body && <ThemedText type="small">신고된 메시지: {report.message.body}</ThemedText>}
+      {report.message.body && <ThemedText type="small">신고된 메시지: {showNameToken(report.message.body, '팬 닉네임')}</ThemedText>}
       <ThemedText type="small" themeColor="textSecondary">
         첫 신고: {report.reportedBy.nickname ?? report.reportedBy.displayName} ({report.reportedBy.role})
         {report.reason ? ` — ${report.reason}` : ''}

@@ -65,7 +65,17 @@ function AuthGate({ children }: { children: ReactNode }) {
     // 떨어진 경우에도 제 화면으로 보냄(예전엔 로그인 직후에만 분기해서 재실행 시 팬 탭에 머물렀음)
     const home = role === 'ADMIN' ? '/admin' : role === 'AGENCY_STAFF' ? '/console' : role === 'ACTOR' ? '/studio' : '/';
     const onFanTabs = segments[0] === '(tabs)';
-    if (onLoginScreen || onOnboardingScreen || (onFanTabs && home !== '/')) {
+    // 역할별 영역 — 주소를 직접 쳐서 다른 역할 화면에 들어오면 제 화면으로(데이터는 서버가 막지만 화면 틀도 안 보이게).
+    // 운영자는 확인용으로 콘솔·스튜디오도 열 수 있음.
+    const areaRoles: Record<string, string[]> = {
+      admin: ['ADMIN'],
+      console: ['AGENCY_STAFF', 'ADMIN'],
+      studio: ['ACTOR', 'ADMIN'],
+      blocks: ['ACTOR', 'AGENCY_STAFF', 'ADMIN'],
+    };
+    const allowed = areaRoles[segments[0] ?? ''];
+    const wrongArea = !!allowed && !allowed.includes(role ?? '');
+    if (onLoginScreen || onOnboardingScreen || (onFanTabs && home !== '/') || wrongArea) {
       router.replace(home);
     }
   }, [token, role, isLoading, onboarding, onboardingLoading, segments, router]);

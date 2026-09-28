@@ -52,7 +52,9 @@
     "send": "傳送",
     "waitingFirst": "已開始訂閱！{{name}} 傳送的訊息會出現在這裡。",
     "replyAfterFirst": "明星傳送第一則訊息後即可回覆。",
-    "sendFailed": "傳送失敗，請重試。"
+    "sendFailed": "傳送失敗，請重試。",
+    "notSubscribed": "訂閱已結束，無法查看與 {{name}} 的聊天。",
+    "resubscribe": "重新訂閱"
   },
   "mypage": {
     "title": "我的",
@@ -144,7 +146,10 @@
       "PHOTO": "📷 照片",
       "AUDIO": "🎧 語音訊息",
       "VIDEO": "🎬 影片"
-    }
+    },
+    "insertName": "插入粉絲名字",
+    "insertNameHint": "傳送時〈粉絲暱稱〉會替換成每位粉絲自己的暱稱。",
+    "fanNickname": "粉絲暱稱"
   },
   "media": {
     "save": "儲存",
