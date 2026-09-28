@@ -64,7 +64,7 @@
     "since": "Since {{date}}",
     "unsubscribe": "Cancel",
     "unsubscribeTitle": "Cancel subscription",
-    "unsubscribeConfirm": "Cancel your subscription to {{name}}?",
+    "unsubscribeConfirm": "Cancel your subscription to {{name}}?\n\nOnce your subscription ends you can no longer see this chat, and even if you subscribe again, your previous chat (messages you received and replies you sent) won't come back. Save any photos, voice or videos you want to keep beforehand.",
     "language": "Language",
     "languageSystem": "Use device language"
   },

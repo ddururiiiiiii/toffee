@@ -64,7 +64,7 @@
     "since": "{{date}}から",
     "unsubscribe": "解約",
     "unsubscribeTitle": "購読の解約",
-    "unsubscribeConfirm": "{{name}}の購読を解約しますか？",
+    "unsubscribeConfirm": "{{name}}の購読を解約しますか？\n\n購読が終了するとこれまでのトークは見られなくなり、再度購読しても以前のトーク（受け取ったメッセージ・送った返信）は表示されません。残しておきたい写真・音声・動画は事前に保存してください。",
     "language": "言語",
     "languageSystem": "端末の言語に合わせる"
   },

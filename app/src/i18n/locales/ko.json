@@ -64,7 +64,7 @@
     "since": "{{date}}부터",
     "unsubscribe": "해지",
     "unsubscribeTitle": "구독 해지",
-    "unsubscribeConfirm": "{{name}} 구독을 해지할까요?",
+    "unsubscribeConfirm": "{{name}} 구독을 해지할까요?\n\n구독이 끝나면 지금까지의 대화를 볼 수 없고, 나중에 다시 구독해도 이전 대화(받은 메시지·보낸 답장)는 다시 볼 수 없어요. 간직하고 싶은 사진·음성·영상은 미리 저장해 두세요.",
     "language": "언어",
     "languageSystem": "기기 언어 따르기"
   },

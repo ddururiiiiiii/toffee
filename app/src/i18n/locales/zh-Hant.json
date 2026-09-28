@@ -64,7 +64,7 @@
     "since": "自 {{date}} 起",
     "unsubscribe": "取消訂閱",
     "unsubscribeTitle": "取消訂閱",
-    "unsubscribeConfirm": "要取消訂閱 {{name}} 嗎？",
+    "unsubscribeConfirm": "要取消訂閱 {{name}} 嗎？\n\n訂閱結束後將無法再查看先前的聊天，即使日後重新訂閱，之前的聊天（收到的訊息和傳送的回覆）也不會恢復。想保留的照片、語音、影片請提前儲存。",
     "language": "語言",
     "languageSystem": "跟隨裝置語言"
   },

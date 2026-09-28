@@ -64,7 +64,7 @@
     "since": "自 {{date}} 起",
     "unsubscribe": "取消订阅",
     "unsubscribeTitle": "取消订阅",
-    "unsubscribeConfirm": "要取消订阅 {{name}} 吗？",
+    "unsubscribeConfirm": "要取消订阅 {{name}} 吗？\n\n订阅结束后将无法再查看此前的聊天，即使日后重新订阅，之前的聊天（收到的消息和发送的回复）也不会恢复。想保留的照片、语音、视频请提前保存。",
     "language": "语言",
     "languageSystem": "跟随设备语言"
   },
