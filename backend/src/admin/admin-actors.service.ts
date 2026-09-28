@@ -8,6 +8,7 @@ import { Role } from '../generated/prisma/enums.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import type { CreateActorDto, UpdateActorDto, UpdateActorImagesDto } from './dto/upsert-actor.dto.js';
 import { appError } from '../common/i18n/app-error.js';
+import { AuditService } from '../audit/audit.service.js';
 
 const ADMIN_ACTOR_SELECT = {
   id: true,
@@ -17,6 +18,7 @@ const ADMIN_ACTOR_SELECT = {
   chatProfileImageUrl: true,
   monthlyPriceCents: true,
   verified: true,
+  retiredAt: true,
   createdAt: true,
   agency: { select: { id: true, name: true, logoUrl: true } },
   selfUser: { select: { id: true, displayName: true, email: true } },
@@ -36,7 +38,19 @@ export class AdminActorsService {
     private readonly media: MediaService,
     private readonly actors: ActorsService,
     private readonly agencies: AdminAgenciesService,
+    private readonly audit: AuditService,
   ) {}
+
+  /**
+   * 배우 활동 종료/재개(잠정 정책, STATUS 정책 표): 종료하면 둘러보기·검색에서 숨기고 신규 구독을 막음. 이미 구독 중인 팬은
+   * 대화를 계속 볼 수 있음. 스토어 결제가 붙으면 스토어 상품 판매도 같이 멈춰야 갱신이 안 됨(운영 절차).
+   */
+  async setRetired(adminId: string, id: string, retired: boolean) {
+    await this.ensureActor(id);
+    await this.prisma.actor.update({ where: { id }, data: { retiredAt: retired ? new Date() : null } });
+    await this.audit.record(adminId, retired ? 'ACTOR_RETIRE' : 'ACTOR_RESTORE', 'ACTOR', id);
+    return this.findOne(id);
+  }
 
   async findAll(query?: string) {
     const rows = await this.prisma.actor.findMany({

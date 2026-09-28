@@ -336,7 +336,8 @@
     "noFreeTier": "무료 이용은 없어요. 메시지는 유료 구독으로 이용할 수 있어요.",
     "subscribed": "구독 중",
     "openChat": "메시지 보기",
-    "notFound": "배우를 찾을 수 없어요"
+    "notFound": "배우를 찾을 수 없어요",
+    "retired": "활동을 종료한 배우예요"
   },
   "subscribeFlow": {
     "subscribeTo": "구독할 배우",

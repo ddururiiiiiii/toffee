@@ -19,6 +19,8 @@ export interface Actor {
   chatProfileImageUrl: string | null;
   monthlyPriceCents: number;
   createdAt?: string;
+  /** 활동 종료한 배우(목록엔 안 나오고, 프로필 링크로 들어오면 신규 구독 대신 안내) */
+  retiredAt?: string | null;
   // 무소속이면 null
   agency: AgencySummary | null;
 }

@@ -336,7 +336,8 @@
     "noFreeTier": "無料プランはありません。メッセージは有料購読で利用できます。",
     "subscribed": "購読中",
     "openChat": "メッセージを開く",
-    "notFound": "俳優が見つかりません"
+    "notFound": "俳優が見つかりません",
+    "retired": "活動を終了した俳優です"
   },
   "subscribeFlow": {
     "subscribeTo": "購読する俳優",

@@ -79,6 +79,8 @@ export type AdminUserStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED';
 
 export type AssignableRole = 'USER' | 'ACTOR' | 'AGENCY_STAFF';
 
+export type SanctionCategory = 'SPAM' | 'ABUSE' | 'SEXUAL' | 'PRIVACY' | 'OTHER';
+
 export interface AdminUser {
   id: string;
   displayName: string;
@@ -88,6 +90,9 @@ export interface AdminUser {
   status: AdminUserStatus;
   suspendedUntil: string | null;
   bannedAt: string | null;
+  /** 제재 사유 분류(당사자에게 번역해서 안내)·내부 메모 */
+  sanctionCategory: SanctionCategory | null;
+  sanctionNote: string | null;
   createdAt: string;
   deletedAt: string | null;
   agency: { id: string; name: string } | null;
@@ -180,6 +185,8 @@ export interface AdminActor {
   chatProfileImageUrl: string | null;
   monthlyPriceCents: number;
   verified: boolean;
+  /** 활동 종료 시각(종료 안 했으면 null) */
+  retiredAt: string | null;
   createdAt: string;
   agency: { id: string; name: string; logoUrl: string | null } | null;
   selfUser: { id: string; displayName: string; email: string | null } | null;
@@ -255,11 +262,34 @@ export function useLinkActorUser(id: string) {
   return useActorMutation((userId: string | null) => apiClient.patch<AdminActor>(`/admin/actors/${id}/self-user`, { userId }));
 }
 
+export function useSetActorRetired(id: string) {
+  return useActorMutation((retired: boolean) => apiClient.patch<AdminActor>(`/admin/actors/${id}/retire`, { retired }));
+}
+
+export interface AdminActionEntry {
+  id: string;
+  action: string;
+  targetType: 'USER' | 'REPORT' | 'ACTOR';
+  targetId: string;
+  targetName: string | null;
+  adminName: string;
+  detail: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+/** 운영자 작업 기록(최근 100건) */
+export function useAdminActions() {
+  return useQuery({
+    queryKey: ['admin', 'actions'],
+    queryFn: () => apiClient.get<AdminActionEntry[]>('/admin/actions'),
+  });
+}
+
 export function useSuspendUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, until }: { id: string; until: string }) =>
-      apiClient.patch<AdminUser>(`/admin/users/${id}/suspend`, { until }),
+    mutationFn: ({ id, until, category, note }: { id: string; until: string; category: SanctionCategory; note?: string }) =>
+      apiClient.patch<AdminUser>(`/admin/users/${id}/suspend`, { until, category, note: note || undefined }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }),
   });
 }
@@ -267,7 +297,8 @@ export function useSuspendUser() {
 export function useBanUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.patch<AdminUser>(`/admin/users/${id}/ban`),
+    mutationFn: ({ id, category, note }: { id: string; category: SanctionCategory; note?: string }) =>
+      apiClient.patch<AdminUser>(`/admin/users/${id}/ban`, { category, note: note || undefined }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }),
   });
 }

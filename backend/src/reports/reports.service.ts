@@ -5,9 +5,14 @@ import { ensureCanViewActor } from '../common/authorization/actor-access.js';
 import { ensureActiveSubscription } from '../common/authorization/ensure-active-subscription.js';
 import { appError } from '../common/i18n/app-error.js';
 
+import { AuditService } from '../audit/audit.service.js';
+
 @Injectable()
 export class ReportsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   /**
    * 신고는 운영자 대기열로만 감(신고한 쪽이 직접 제재하지 않음). 신고자가 그 메시지를 실제로 볼 수 있는
@@ -94,7 +99,7 @@ export class ReportsService {
   // 같은 메시지에 걸린 대기 중 신고를 한 번에 처리(목록이 메시지 단위로 묶여 있으므로).
   // 승인하면 메시지를 가림 — 팬 답장은 스타·소속사 답장 목록에서 빠지고 인용 부분은 "가려진 메시지"로(toQuote), 스타 메시지는 팬 화면에서 사라지고
   // 스타·소속사 화면엔 "운영 정책으로 가려진 메시지"로 남음(예전엔 스타 메시지 신고는 승인해도 아무 일 없었음).
-  async resolve(id: string) {
+  async resolve(id: string, adminId: string) {
     const report = await this.ensurePending(id);
     const now = new Date();
     const message = await this.prisma.message.findUniqueOrThrow({
@@ -110,15 +115,17 @@ export class ReportsService {
         ? [this.prisma.message.update({ where: { id: report.messageId }, data: { deletedAt: now, deletedByAdmin: true } })]
         : []),
     ]);
+    await this.audit.record(adminId, 'REPORT_RESOLVE', 'REPORT', id, { messageId: report.messageId, senderType: message.senderType });
     return this.prisma.report.findUniqueOrThrow({ where: { id } });
   }
 
-  async dismiss(id: string) {
+  async dismiss(id: string, adminId: string) {
     const report = await this.ensurePending(id);
     await this.prisma.report.updateMany({
       where: { messageId: report.messageId, status: ReportStatus.PENDING },
       data: { status: ReportStatus.DISMISSED, resolvedAt: new Date() },
     });
+    await this.audit.record(adminId, 'REPORT_DISMISS', 'REPORT', id, { messageId: report.messageId });
     return this.prisma.report.findUniqueOrThrow({ where: { id } });
   }
 

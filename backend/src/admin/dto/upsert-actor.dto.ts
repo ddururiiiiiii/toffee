@@ -69,3 +69,9 @@ export class LinkActorUserDto {
   @IsString()
   userId!: string | null;
 }
+
+// 배우 활동 종료(true)/재개(false)
+export class SetRetiredDto {
+  @IsBoolean()
+  retired!: boolean;
+}

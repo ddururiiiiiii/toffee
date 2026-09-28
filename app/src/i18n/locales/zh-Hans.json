@@ -336,7 +336,8 @@
     "noFreeTier": "没有免费方案，私信需付费订阅。",
     "subscribed": "已订阅",
     "openChat": "查看消息",
-    "notFound": "找不到该演员"
+    "notFound": "找不到该演员",
+    "retired": "该演员已停止活动"
   },
   "subscribeFlow": {
     "subscribeTo": "订阅",

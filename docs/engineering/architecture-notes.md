@@ -946,3 +946,30 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
 - `PushService.sendToUsers`: 탈퇴·영구차단·정지(기간 중) 계정 기기 제외.
 - 신고 승인(RESOLVED)된 팬 답장은 `listReplies`·`replyCount`에서 제외(스타·소속사 화면에서 가림).
 - 네이버·카카오 토큰 오류도 `SOCIAL_TOKEN_INVALID`(번역)로.
+
+## 디자인 시스템 (2026-09-28)
+
+- 토큰(`constants/theme.ts`): 공식 5색 + `textTertiary`·`border`(중립)·`primary`/`onPrimary`(Charcoal CTA), `Radius`.
+  글꼴은 Noto Sans Thai 400/500/600/700을 굵기별 파일로(`fontFor(weight, language)`) — 안드로이드는 커스텀 글꼴에 fontWeight가
+  안 먹어서. ko/ja/zh는 네이티브에서 시스템 글꼴 + fontWeight, 웹은 글꼴 목록으로 섞음. `ThemedText` 타입: display 28 · title 22 ·
+  subtitle 19 · headline 17 · default 15 · small 13 · caption 12(+Medium/SemiBold 변형).
+- 공통 부품 `components/ui/`: Icon(Lucide), Button(primary/accent/secondary/ghost/danger), IconButton, Avatar(ring/dot),
+  SearchField, Chip, CountBadge, SectionHeader, ListRow, BrandHeader(워드마크), EmptyState, TextField, Checkbox. 가입 절차 틀
+  `OnboardingLayout`, 앱 사용 중 알림 `InAppBanner`(푸시 훅 → `showInAppBanner`). 로고 이미지는 `assets/brand/`.
+- 스택 헤더 공통 스타일은 `_layout.tsx` screenOptions. 네이티브는 AppState → react-query `focusManager`(백그라운드 폴링 중지,
+  복귀 시 새로고침).
+- 서버: `GET /actors?sort=trending|new`(구독 수·등록순, 활동 종료 배우 제외), `GET /me/subscriptions`에 `unreadCount`·`lastMessage`
+  + 최근 대화 순(`Subscription.lastReadAt` — 팬 채팅방 조회 때 갱신), `GET /actors/:id/messages?limit&before`(나눠 받기).
+- 업로드: `uploadMedia(..., { onProgress, signal })` — 저장소 PUT을 XMLHttpRequest로(진행률), AbortSignal로 취소.
+
+## 제재 사유·작업 기록·배우 활동 종료 (2026-09-28)
+
+- 스키마: `User.sanctionCategory`(ReportCategory)·`sanctionNote`, `Actor.retiredAt`, `AdminAction`(adminId·action·targetType·
+  targetId·detail Json). 마이그레이션 `20260928180000_add_sanction_reason_actor_retire_admin_actions`(로컬 DB에서 생성·적용,
+  드리프트 0).
+- `AuditService`(@Global `AuditModule`): `record()`는 AdminUsersService(정지·차단·해제·역할), ReportsService(승인·기각),
+  AdminActorsService(활동 종료·재개)에서. `GET /admin/actions` 최근 100건(대상 이름 포함).
+- 정지·차단 API는 `category` 필수(`SanctionReasonDto`/`SuspendUserDto`). JwtStrategy가 `ACCOUNT_SUSPENDED`/`ACCOUNT_BANNED`에
+  `reason` 파라미터 → 번역 문구에 사유 분류.
+- `PATCH /admin/actors/:id/retire { retired }`. 활동 종료 배우: `/actors` 목록 제외, 구독·결제 검증은 `ACTOR_RETIRED`, 프로필은
+  `retiredAt`을 내려줘 앱이 안내.

@@ -23,6 +23,7 @@ import { ParentalConsentModule } from './parental-consent/parental-consent.modul
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
 import { LocalizedExceptionFilter } from './common/filters/localized-exception.filter.js';
+import { AuditModule } from './audit/audit.module.js';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { LocalizedExceptionFilter } from './common/filters/localized-exception.f
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     ScheduleModule.forRoot(),
     PrismaModule,
+    AuditModule,
     StorageModule,
     AuthModule,
     NotificationsModule,

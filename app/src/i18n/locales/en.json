@@ -336,7 +336,8 @@
     "noFreeTier": "No free tier. DM access requires a paid subscription.",
     "subscribed": "Subscribed",
     "openChat": "Open messages",
-    "notFound": "Actor not found"
+    "notFound": "Actor not found",
+    "retired": "This actor is no longer active"
   },
   "subscribeFlow": {
     "subscribeTo": "Subscribe to",

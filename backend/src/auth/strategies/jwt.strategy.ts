@@ -32,14 +32,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user) throw new UnauthorizedException();
     if (user.status === UserStatus.BANNED) {
-      throw new UnauthorizedException(appError('ACCOUNT_BANNED'));
+      throw new UnauthorizedException(appError('ACCOUNT_BANNED', user.sanctionCategory ? { reason: user.sanctionCategory } : undefined));
     }
     if (user.deletedAt) throw new UnauthorizedException(appError('ACCOUNT_DELETED'));
     // 정지 기간이 지났으면 상태값은 그대로여도(별도 재활성화 없이) 다시 이용 가능하게 취급
     if (user.status === UserStatus.SUSPENDED && user.suspendedUntil && user.suspendedUntil > new Date()) {
-      // 언제 풀리는지 같이 알려줌(태국 시간 기준 날짜·시각 — 서버 오류 문구 다국어화는 2차)
       // 날짜는 받는 사람 언어로 표기(태국 시간) — 오류 문구 번역 때 포맷
-      throw new UnauthorizedException(appError('ACCOUNT_SUSPENDED', { until: user.suspendedUntil.toISOString() }));
+      throw new UnauthorizedException(
+        appError('ACCOUNT_SUSPENDED', { until: user.suspendedUntil.toISOString(), ...(user.sanctionCategory ? { reason: user.sanctionCategory } : {}) }),
+      );
     }
     // 마지막 접속 기록(통계용) — 매 요청마다 쓰지 않게 한 시간 지났을 때만, 응답은 기다리지 않음
     if (!user.lastActiveAt || Date.now() - user.lastActiveAt.getTime() > ACTIVE_TOUCH_INTERVAL_MS) {

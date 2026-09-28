@@ -29,3 +29,12 @@ describe('구독 전 가입 절차 강제(서버)', () => {
     await expect(setup(done).subscribe('u', 'a1')).resolves.toMatchObject({ subscription: { id: 's1' } });
   });
 });
+
+describe('활동 종료한 배우', () => {
+  it('신규 구독 불가', async () => {
+    const service = setup({ termsVersion: CURRENT_TERMS_VERSION, birthDate: new Date('2000-01-01'), parentalConsentStatus: 'NOT_REQUIRED' });
+    const prisma = (service as unknown as { prisma: { actor: { findUnique: ReturnType<typeof vi.fn> } } }).prisma;
+    prisma.actor.findUnique.mockResolvedValue({ id: 'a1', monthlyPriceCents: 9900, retiredAt: new Date() });
+    await expect(service.subscribe('u', 'a1')).rejects.toThrow('활동을 종료한');
+  });
+});

@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { AdminUsersService } from './admin-users.service.js';
 import { ListUsersQueryDto } from './dto/list-users-query.dto.js';
-import { SuspendUserDto } from './dto/suspend-user.dto.js';
+import { SanctionReasonDto, SuspendUserDto } from './dto/suspend-user.dto.js';
+import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
 import { ChangeRoleDto } from './dto/change-role.dto.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { Role } from '../generated/prisma/enums.js';
@@ -17,22 +19,22 @@ export class AdminUsersController {
   }
 
   @Patch(':id/role')
-  changeRole(@Param('id') id: string, @Body() dto: ChangeRoleDto) {
-    return this.adminUsersService.changeRole(id, dto.role);
+  changeRole(@CurrentUser() admin: AuthenticatedUser, @Param('id') id: string, @Body() dto: ChangeRoleDto) {
+    return this.adminUsersService.changeRole(admin.id, id, dto.role);
   }
 
   @Patch(':id/suspend')
-  suspend(@Param('id') id: string, @Body() dto: SuspendUserDto) {
-    return this.adminUsersService.suspend(id, new Date(dto.until));
+  suspend(@CurrentUser() admin: AuthenticatedUser, @Param('id') id: string, @Body() dto: SuspendUserDto) {
+    return this.adminUsersService.suspend(admin.id, id, new Date(dto.until), { category: dto.category, note: dto.note });
   }
 
   @Patch(':id/ban')
-  ban(@Param('id') id: string) {
-    return this.adminUsersService.ban(id);
+  ban(@CurrentUser() admin: AuthenticatedUser, @Param('id') id: string, @Body() dto: SanctionReasonDto) {
+    return this.adminUsersService.ban(admin.id, id, { category: dto.category, note: dto.note });
   }
 
   @Patch(':id/reactivate')
-  reactivate(@Param('id') id: string) {
-    return this.adminUsersService.reactivate(id);
+  reactivate(@CurrentUser() admin: AuthenticatedUser, @Param('id') id: string) {
+    return this.adminUsersService.reactivate(admin.id, id);
   }
 }

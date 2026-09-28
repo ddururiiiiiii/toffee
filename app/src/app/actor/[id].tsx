@@ -89,6 +89,8 @@ export default function ActorProfileScreen() {
             <MembershipBenefits name={actor.chatDisplayName} />
             {isSubscribed ? (
               <Button title={t('actorProfile.openChat')} iconRight={ArrowRight} onPress={() => router.push(`/chat/${id}`)} />
+            ) : actor.retiredAt ? (
+              <Button title={t('actorProfile.retired')} variant="secondary" disabled />
             ) : (
               <Button
                 title={t('actorProfile.subscribeCta')}

@@ -75,6 +75,7 @@ export class SubscriptionsService {
     await this.ensureCanSubscribe(userId);
     const actor = await this.prisma.actor.findUnique({ where: { id: actorId } });
     if (!actor) throw new NotFoundException(appError('ACTOR_NOT_FOUND'));
+    if (actor.retiredAt) throw new BadRequestException(appError('ACTOR_RETIRED'));
 
     const existing = await this.prisma.subscription.findUnique({
       where: { userId_actorId: { userId, actorId } },
@@ -101,6 +102,7 @@ export class SubscriptionsService {
     await this.ensureCanSubscribe(userId);
     const actor = await this.prisma.actor.findUnique({ where: { id: actorId } });
     if (!actor) throw new NotFoundException(appError('ACTOR_NOT_FOUND'));
+    if (actor.retiredAt) throw new BadRequestException(appError('ACTOR_RETIRED'));
 
     const verified =
       dto.platform === 'IOS'

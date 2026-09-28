@@ -20,6 +20,7 @@ const LIST_SELECT = {
   monthlyPriceCents: true,
   // Discover의 "NEW" 표시용
   createdAt: true,
+  retiredAt: true,
   // 소속사는 팬에게도 공개(소속사별 목록/검색) — 무소속이면 null
   agency: { select: { id: true, name: true, logoUrl: true } },
 } as const;
@@ -34,7 +35,8 @@ export class ActorsService {
 
   // q는 배우 이름뿐 아니라 소속사 이름에도 매칭 — "GMMTV"로 검색하면 소속 배우가 다 나오게
   async findAll(query?: string, agencyId?: string, sort?: 'trending' | 'new') {
-    const where: Prisma.ActorWhereInput = {};
+    // 활동 종료한 배우는 둘러보기·검색에서 숨김(프로필 링크로 들어오면 "활동 종료" 안내)
+    const where: Prisma.ActorWhereInput = { retiredAt: null };
     if (agencyId) where.agencyId = agencyId;
     if (query) {
       where.OR = [

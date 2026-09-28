@@ -14,6 +14,7 @@ import {
   useReactivateUser,
   type AdminUser,
   type AssignableRole,
+  type SanctionCategory,
 } from '@/hooks/use-admin';
 import { AdminChip, AdminMessage } from '@/components/admin-ui';
 import { ApiError } from '@/lib/api-client';
@@ -101,15 +102,27 @@ function RoleControls({ user }: { user: AdminUser }) {
   );
 }
 
+// 제재 사유 분류 — 신고 사유와 같은 5가지. 당사자에게는 분류만 번역해서 안내되고, 메모는 운영자만 봄
+const SANCTION_LABELS: Record<SanctionCategory, string> = {
+  SPAM: '스팸·광고',
+  ABUSE: '욕설·괴롭힘',
+  SEXUAL: '음란·성적',
+  PRIVACY: '개인정보 노출',
+  OTHER: '기타',
+};
+
 function UserRow({ user }: { user: AdminUser }) {
   const theme = useTheme();
   const suspend = useSuspendUser();
   const ban = useBanUser();
   const reactivate = useReactivateUser();
   const isPending = suspend.isPending || ban.isPending || reactivate.isPending;
+  const [category, setCategory] = useState<SanctionCategory | null>(null);
+  const [note, setNote] = useState('');
 
   const handleSuspend = (days: number) => {
-    suspend.mutate({ id: user.id, until: suspendUntilIso(days) });
+    if (!category) return;
+    suspend.mutate({ id: user.id, until: suspendUntilIso(days), category, note });
   };
 
   return (
@@ -134,20 +147,47 @@ function UserRow({ user }: { user: AdminUser }) {
           해제: {new Date(user.suspendedUntil).toLocaleString('ko-KR')}
         </ThemedText>
       )}
+      {user.status !== 'ACTIVE' && user.sanctionCategory && (
+        <ThemedText type="small" themeColor="textSecondary">
+          사유: {SANCTION_LABELS[user.sanctionCategory]}
+          {user.sanctionNote ? ` — ${user.sanctionNote}` : ''}
+        </ThemedText>
+      )}
 
+      {/* 정지·영구차단은 사유 분류를 먼저 골라야 함(작업 기록·당사자 안내용) */}
+      <ThemedView style={styles.actions}>
+        {(Object.keys(SANCTION_LABELS) as SanctionCategory[]).map((key) => (
+          <Pressable
+            key={key}
+            onPress={() => setCategory(category === key ? null : key)}
+            style={[styles.actionChip, { borderColor: category === key ? theme.tint : theme.backgroundSelected, backgroundColor: category === key ? theme.tintSoft : 'transparent' }]}>
+            <ThemedText type="small">{SANCTION_LABELS[key]}</ThemedText>
+          </Pressable>
+        ))}
+      </ThemedView>
+      {category && (
+        <TextInput
+          value={note}
+          onChangeText={setNote}
+          placeholder="내부 메모(선택, 당사자에게 안 보임)"
+          placeholderTextColor={theme.textSecondary}
+          maxLength={500}
+          style={[styles.noteInput, { color: theme.text, borderColor: theme.backgroundSelected }]}
+        />
+      )}
       <ThemedView style={styles.actions}>
         {SUSPEND_DURATIONS_DAYS.map((days) => (
           <Pressable
             key={days}
-            disabled={isPending}
+            disabled={isPending || !category}
             onPress={() => handleSuspend(days)}
             style={[styles.actionChip, { borderColor: theme.backgroundSelected }]}>
             <ThemedText type="small">{days}일 정지</ThemedText>
           </Pressable>
         ))}
         <Pressable
-          disabled={isPending}
-          onPress={() => ban.mutate(user.id)}
+          disabled={isPending || !category}
+          onPress={() => category && ban.mutate({ id: user.id, category, note })}
           style={[styles.actionChip, { borderColor: theme.danger }]}>
           <ThemedText type="small" themeColor="danger">
             영구차단
@@ -215,6 +255,7 @@ const styles = StyleSheet.create({
   roleBox: { backgroundColor: 'transparent' },
   actionChip: { borderWidth: 1, borderRadius: 8, paddingHorizontal: Spacing.two, paddingVertical: 6 },
   reactivateChipText: { color: '#fff' },
+  noteInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, fontSize: 14 },
   emptyMessage: { textAlign: 'center', marginTop: Spacing.six },
   loading: { marginTop: Spacing.six },
 });

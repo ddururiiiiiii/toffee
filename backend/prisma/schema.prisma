@@ -90,6 +90,9 @@ model User {
   status                UserStatus            @default(ACTIVE)
   suspendedUntil        DateTime?
   bannedAt              DateTime?
+  // 제재(정지·영구차단) 사유 — 분류는 당사자에게 안내(번역), 메모는 운영자 내부용(2026-09-28)
+  sanctionCategory      ReportCategory?
+  sanctionNote          String?
   // 생년월일 미입력 상태(null)면 앱이 온보딩에서 먼저 물어봄 — 만 14세 미만 판정에만 씀
   birthDate             DateTime?
   parentalConsentStatus ParentalConsentStatus @default(NOT_REQUIRED)
@@ -125,6 +128,7 @@ model User {
   actorSelf          Actor?              @relation("ActorSelf")
   storyViews         StoryView[]
   parentalConsent    ParentalConsent?
+  adminActions       AdminAction[]       @relation("AdminActions")
 }
 
 // 푸시 받을 기기 — 한 사람이 폰·태블릿 등 여러 기기로 받을 수 있게 기기(토큰)마다 한 줄(유료 서비스라
@@ -173,19 +177,21 @@ model Actor {
   // 공식 프로필(실명+공식 사진)과 대화방 프로필(닉네임+사진)을 분리 — 대화방 쪽은
   // 소속사가 메신저 프로필 바꾸듯 자유롭게 변경 가능 (Bubble/Weverse 벤치마킹).
   // 이모지는 쓰지 않고 이름+이미지만 사용.
-  id                      String   @id @default(uuid())
+  id                      String    @id @default(uuid())
   legalName               String
   officialProfileImageUrl String?
   chatDisplayName         String
   chatProfileImageUrl     String?
   monthlyPriceCents       Int
-  verified                Boolean  @default(false)
-  selfUserId              String?  @unique
+  verified                Boolean   @default(false)
+  selfUserId              String?   @unique
   // 현재 소속사(무소속이면 null) — 바꿀 때는 반드시 ActorAgencyHistory도 같이 갱신할 것
   // (AdminAgenciesService.assignActor 참고)
   agencyId                String?
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  // 활동 종료(계약 종료 등) — 둘러보기·검색에서 숨기고 신규 구독을 막음. 기존 구독 팬은 대화 유지(잠정, STATUS 정책 표)
+  retiredAt               DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
   selfUser           User?                @relation("ActorSelf", fields: [selfUserId], references: [id])
   agency             Agency?              @relation(fields: [agencyId], references: [id])
@@ -422,4 +428,22 @@ model ActorFanBlock {
 
   @@unique([actorId, fanUserId])
   @@index([fanUserId])
+}
+
+// 운영자 작업 기록 — 누가 언제 누구를 정지·차단·해제했는지, 역할을 바꿨는지, 신고를 처리했는지, 배우 활동을 종료했는지.
+// 유료 서비스라 분쟁·문의 대응용 증빙(2026-09-28 점검). 지우지 않음.
+model AdminAction {
+  id         String   @id @default(uuid())
+  adminId    String
+  // USER_SUSPEND / USER_BAN / USER_REACTIVATE / USER_ROLE / REPORT_RESOLVE / REPORT_DISMISS / ACTOR_RETIRE / ACTOR_RESTORE
+  action     String
+  targetType String
+  targetId   String
+  detail     Json?
+  createdAt  DateTime @default(now())
+
+  admin User @relation("AdminActions", fields: [adminId], references: [id])
+
+  @@index([createdAt])
+  @@index([targetType, targetId])
 }

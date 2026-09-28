@@ -23,6 +23,7 @@ import {
   useAdminUsers,
   useAssignActorAgency,
   useLinkActorUser,
+  useSetActorRetired,
   useUpdateActor,
   useUpdateActorImages,
   type AdminActor,
@@ -225,6 +226,41 @@ function SelfAccountSection({ actor }: { actor: AdminActor }) {
   );
 }
 
+// 활동 종료(계약 종료 등) — 둘러보기·검색에서 숨기고 신규 구독을 막음. 기존 구독 팬은 대화 유지(잠정 정책). 작업 기록에 남음
+function RetireSection({ actor }: { actor: AdminActor }) {
+  const setRetired = useSetActorRetired(actor.id);
+  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
+  const toggle = async () => {
+    const retiring = !actor.retiredAt;
+    const ok = await confirm(
+      retiring ? '활동 종료' : '활동 재개',
+      retiring
+        ? `${actor.legalName} 배우를 둘러보기·검색에서 숨기고 신규 구독을 막을까요?\n\n지금 구독 중인 팬(${actor.activeSubscriberCount}명)은 대화를 계속 볼 수 있어요. 스토어 결제가 붙으면 스토어 상품 판매도 같이 멈춰야 갱신이 안 돼요.`
+        : `${actor.legalName} 배우를 다시 둘러보기에 보이고 구독을 받을까요?`,
+      retiring ? '활동 종료' : '활동 재개',
+      '취소',
+    );
+    if (!ok) return;
+    setRetired.mutate(retiring, {
+      onSuccess: () => setMessage({ text: retiring ? '활동을 종료했어요.' : '활동을 재개했어요.' }),
+      onError: (e) => setMessage({ text: errorText(e, '바꾸지 못했어요.'), error: true }),
+    });
+  };
+  return (
+    <AdminSection title="활동 상태" hint="계약이 끝나거나 활동을 멈출 때. 기존 구독 팬의 대화는 그대로 남아요.">
+      <ThemedText type="small" themeColor={actor.retiredAt ? 'danger' : 'textSecondary'}>
+        {actor.retiredAt ? `활동 종료됨 (${formatDate(actor.retiredAt)})` : '활동 중'}
+      </ThemedText>
+      <AdminMessage text={message?.text ?? null} error={message?.error} />
+      <AdminButton
+        label={setRetired.isPending ? '바꾸는 중…' : actor.retiredAt ? '활동 재개' : '활동 종료'}
+        disabled={setRetired.isPending}
+        onPress={() => void toggle()}
+      />
+    </AdminSection>
+  );
+}
+
 export default function AdminActorDetailScreen() {
   const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -249,6 +285,7 @@ export default function AdminActorDetailScreen() {
           <BasicInfo key={`${actor.id}-info`} actor={actor} />
           <AgencySection actor={actor} />
           <SelfAccountSection actor={actor} />
+          <RetireSection actor={actor} />
         </ScrollView>
       )}
     </SafeAreaView>

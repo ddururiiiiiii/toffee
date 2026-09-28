@@ -24,13 +24,13 @@ export class ReportsController {
 
   @Roles(Role.ADMIN)
   @Patch(':id/resolve')
-  resolve(@Param('id') id: string) {
-    return this.reportsService.resolve(id);
+  resolve(@CurrentUser() admin: AuthenticatedUser, @Param('id') id: string) {
+    return this.reportsService.resolve(id, admin.id);
   }
 
   @Roles(Role.ADMIN)
   @Patch(':id/dismiss')
-  dismiss(@Param('id') id: string) {
-    return this.reportsService.dismiss(id);
+  dismiss(@CurrentUser() admin: AuthenticatedUser, @Param('id') id: string) {
+    return this.reportsService.dismiss(id, admin.id);
   }
 }

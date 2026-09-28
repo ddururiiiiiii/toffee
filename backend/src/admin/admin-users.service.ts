@@ -1,8 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { Role, UserStatus } from '../generated/prisma/enums.js';
+import { Role, UserStatus, type ReportCategory } from '../generated/prisma/enums.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { appError } from '../common/i18n/app-error.js';
+import { AuditService } from '../audit/audit.service.js';
+
+interface SanctionReason {
+  category: ReportCategory;
+  note?: string;
+}
 
 const LIST_SELECT = {
   id: true,
@@ -13,6 +19,8 @@ const LIST_SELECT = {
   status: true,
   suspendedUntil: true,
   bannedAt: true,
+  sanctionCategory: true,
+  sanctionNote: true,
   createdAt: true,
   deletedAt: true,
   agency: { select: { id: true, name: true } },
@@ -21,7 +29,10 @@ const LIST_SELECT = {
 
 @Injectable()
 export class AdminUsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   findAll(query?: string, role?: Role) {
     const where: Prisma.UserWhereInput = {};
@@ -40,28 +51,35 @@ export class AdminUsersService {
     });
   }
 
-  suspend(userId: string, until: Date) {
-    return this.prisma.user.update({
+  // 정지·영구차단은 사유(분류 + 내부 메모)를 같이 남기고 작업 기록에도 — 당사자에겐 로그인 때 분류가 번역돼서 안내됨
+  async suspend(adminId: string, userId: string, until: Date, reason: SanctionReason) {
+    const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { status: UserStatus.SUSPENDED, suspendedUntil: until, bannedAt: null },
+      data: { status: UserStatus.SUSPENDED, suspendedUntil: until, bannedAt: null, sanctionCategory: reason.category, sanctionNote: reason.note?.trim() || null },
       select: LIST_SELECT,
     });
+    await this.audit.record(adminId, 'USER_SUSPEND', 'USER', userId, { until: until.toISOString(), ...reason });
+    return user;
   }
 
-  ban(userId: string) {
-    return this.prisma.user.update({
+  async ban(adminId: string, userId: string, reason: SanctionReason) {
+    const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { status: UserStatus.BANNED, bannedAt: new Date(), suspendedUntil: null },
+      data: { status: UserStatus.BANNED, bannedAt: new Date(), suspendedUntil: null, sanctionCategory: reason.category, sanctionNote: reason.note?.trim() || null },
       select: LIST_SELECT,
     });
+    await this.audit.record(adminId, 'USER_BAN', 'USER', userId, { ...reason });
+    return user;
   }
 
-  reactivate(userId: string) {
-    return this.prisma.user.update({
+  async reactivate(adminId: string, userId: string) {
+    const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { status: UserStatus.ACTIVE, suspendedUntil: null, bannedAt: null },
+      data: { status: UserStatus.ACTIVE, suspendedUntil: null, bannedAt: null, sanctionCategory: null, sanctionNote: null },
       select: LIST_SELECT,
     });
+    await this.audit.record(adminId, 'USER_REACTIVATE', 'USER', userId);
+    return user;
   }
 
   /**
@@ -70,7 +88,7 @@ export class AdminUsersService {
    * - 구독 중인 팬 계정은 배우/직원으로 못 바꿈(결제 중인 팬 계정이 관리 권한을 갖는 걸 막음)
    * - 역할이 바뀌면 이전 역할에 딸린 연결(소속사 배정, 배우 본인 연결)은 끊음
    */
-  async changeRole(userId: string, role: Role) {
+  async changeRole(adminId: string, userId: string, role: Role) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { role: true, deletedAt: true, _count: { select: { subscriptions: { where: { cancelledAt: null } } } } },
@@ -82,7 +100,7 @@ export class AdminUsersService {
     if (role !== Role.USER && user._count.subscriptions > 0) {
       throw new BadRequestException(appError('SUBSCRIBED_FAN_ROLE_CHANGE'));
     }
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       if (user.role === Role.ACTOR) await tx.actor.updateMany({ where: { selfUserId: userId }, data: { selfUserId: null } });
       return tx.user.update({
         where: { id: userId },
@@ -90,5 +108,7 @@ export class AdminUsersService {
         select: LIST_SELECT,
       });
     });
+    await this.audit.record(adminId, 'USER_ROLE', 'USER', userId, { from: user.role, to: role });
+    return updated;
   }
 }

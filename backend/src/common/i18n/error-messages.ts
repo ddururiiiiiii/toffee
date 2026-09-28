@@ -26,6 +26,19 @@ function formatDate(value: string | number | undefined, locale: SupportedLocale,
   });
 }
 
+// 제재 사유 분류(신고 사유와 같은 5가지) — 정지·영구차단 안내에 붙임
+const SANCTION_LABEL: Record<SupportedLocale, Record<string, string>> = {
+  ko: { SPAM: '스팸·광고', ABUSE: '욕설·괴롭힘', SEXUAL: '음란·성적인 내용', PRIVACY: '개인정보 노출', OTHER: '운영 정책 위반' },
+  en: { SPAM: 'spam or advertising', ABUSE: 'abuse or harassment', SEXUAL: 'sexual content', PRIVACY: 'sharing personal information', OTHER: 'violating our policies' },
+  th: { SPAM: 'สแปมหรือโฆษณา', ABUSE: 'คำหยาบหรือการคุกคาม', SEXUAL: 'เนื้อหาทางเพศ', PRIVACY: 'การเปิดเผยข้อมูลส่วนบุคคล', OTHER: 'การละเมิดนโยบาย' },
+  ja: { SPAM: 'スパム・広告', ABUSE: '暴言・嫌がらせ', SEXUAL: '性的な内容', PRIVACY: '個人情報の公開', OTHER: '運営ポリシー違反' },
+  'zh-Hans': { SPAM: '垃圾信息或广告', ABUSE: '辱骂或骚扰', SEXUAL: '色情内容', PRIVACY: '泄露个人信息', OTHER: '违反运营政策' },
+  'zh-Hant': { SPAM: '垃圾訊息或廣告', ABUSE: '辱罵或騷擾', SEXUAL: '色情內容', PRIVACY: '洩露個人資訊', OTHER: '違反營運政策' },
+};
+const REASON_PREFIX: Record<SupportedLocale, string> = { ko: ' 사유: ', en: ' Reason: ', th: ' เหตุผล: ', ja: ' 理由：', 'zh-Hans': ' 原因：', 'zh-Hant': ' 原因：' };
+const reason = (p: ErrorParams, l: SupportedLocale) =>
+  p.reason && SANCTION_LABEL[l][String(p.reason)] ? `${REASON_PREFIX[l]}${SANCTION_LABEL[l][String(p.reason)]}` : '';
+
 const date = (key: string, withTime = false) => (p: ErrorParams, locale: SupportedLocale) => formatDate(p[key], locale, withTime);
 
 export const ERROR_MESSAGES = {
@@ -129,20 +142,20 @@ export const ERROR_MESSAGES = {
     'zh-Hant': '此帳號已註銷。',
   },
   ACCOUNT_BANNED: {
-    ko: '이용이 제한된 계정이에요.',
-    en: 'This account has been restricted.',
-    th: 'บัญชีนี้ถูกจำกัดการใช้งาน',
-    ja: '利用が制限されたアカウントです。',
-    'zh-Hans': '该账号已被限制使用。',
-    'zh-Hant': '此帳號已被限制使用。',
+    ko: (p, l) => `이용이 제한된 계정이에요.${reason(p, l)}`,
+    en: (p, l) => `This account has been restricted.${reason(p, l)}`,
+    th: (p, l) => `บัญชีนี้ถูกจำกัดการใช้งาน${reason(p, l)}`,
+    ja: (p, l) => `利用が制限されたアカウントです。${reason(p, l)}`,
+    'zh-Hans': (p, l) => `该账号已被限制使用。${reason(p, l)}`,
+    'zh-Hant': (p, l) => `此帳號已被限制使用。${reason(p, l)}`,
   },
   ACCOUNT_SUSPENDED: {
-    ko: (p, l) => `일시정지된 계정이에요. ${date('until', true)(p, l)}(태국 시간)부터 다시 이용할 수 있어요.`,
-    en: (p, l) => `This account is suspended. You can use it again from ${date('until', true)(p, l)} (Thailand time).`,
-    th: (p, l) => `บัญชีนี้ถูกระงับชั่วคราว จะใช้งานได้อีกครั้งตั้งแต่ ${date('until', true)(p, l)} (เวลาประเทศไทย)`,
-    ja: (p, l) => `一時停止中のアカウントです。${date('until', true)(p, l)}（タイ時間）から再びご利用いただけます。`,
-    'zh-Hans': (p, l) => `该账号已被暂停使用，可于 ${date('until', true)(p, l)}（泰国时间）起重新使用。`,
-    'zh-Hant': (p, l) => `此帳號已被暫停使用，可於 ${date('until', true)(p, l)}（泰國時間）起重新使用。`,
+    ko: (p, l) => `일시정지된 계정이에요. ${date('until', true)(p, l)}(태국 시간)부터 다시 이용할 수 있어요.${reason(p, l)}`,
+    en: (p, l) => `This account is suspended. You can use it again from ${date('until', true)(p, l)} (Thailand time).${reason(p, l)}`,
+    th: (p, l) => `บัญชีนี้ถูกระงับชั่วคราว จะใช้งานได้อีกครั้งตั้งแต่ ${date('until', true)(p, l)} (เวลาประเทศไทย)${reason(p, l)}`,
+    ja: (p, l) => `一時停止中のアカウントです。${date('until', true)(p, l)}（タイ時間）から再びご利用いただけます。${reason(p, l)}`,
+    'zh-Hans': (p, l) => `该账号已被暂停使用，可于 ${date('until', true)(p, l)}（泰国时间）起重新使用。${reason(p, l)}`,
+    'zh-Hant': (p, l) => `此帳號已被暫停使用，可於 ${date('until', true)(p, l)}（泰國時間）起重新使用。${reason(p, l)}`,
   },
   STAFF_CANNOT_SELF_DELETE: {
     ko: '배우·소속사 계정은 앱에서 탈퇴할 수 없어요. 운영자에게 요청해 주세요.',
@@ -251,6 +264,14 @@ export const ERROR_MESSAGES = {
     ja: 'このアーティストを購読するとコンテンツを見られます。',
     'zh-Hans': '订阅该艺人后才能查看内容。',
     'zh-Hant': '訂閱該藝人後才能查看內容。',
+  },
+  ACTOR_RETIRED: {
+    ko: '활동을 종료한 배우라 새로 구독할 수 없어요.',
+    en: "This actor is no longer active, so new subscriptions aren't available.",
+    th: 'นักแสดงคนนี้ยุติกิจกรรมแล้ว จึงสมัครสมาชิกใหม่ไม่ได้',
+    ja: '活動を終了した俳優のため、新たに購読できません。',
+    'zh-Hans': '该演员已停止活动，无法新订阅。',
+    'zh-Hant': '該演員已停止活動，無法新訂閱。',
   },
   ALREADY_SUBSCRIBED: {
     ko: '이미 구독 중인 배우예요.',
