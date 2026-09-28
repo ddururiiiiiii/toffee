@@ -82,6 +82,13 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
 
+## 배우별 알림 끄기 (2026-09-28)
+
+- `Subscription.notificationsMuted`(마이그레이션 `20260928150000_add_subscription_notifications_muted`),
+  `PATCH /actors/:actorId/subscribe/notifications { muted }`. `sendBroadcast`의 팬 푸시 대상 조회에
+  `notificationsMuted: false`(단위 테스트). 소속사 스태프 알림(`notifyActorStaff`)은 영향 없음.
+- 앱: 채팅방 헤더 🔔/🔕(`useSetNotificationsMuted`, 낙관적 갱신), 대화 목록에 🔕.
+
 ## 운영자 통계 (2026-09-28)
 
 - `GET /admin/stats/summary`(앱 홈 숫자), `GET /admin/stats/daily?days=7..90`(일별 추이), `GET /admin/stats/breakdown`

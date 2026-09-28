@@ -9,6 +9,8 @@ export interface Subscription {
   lastArtistMessageAt: string | null;
   lastFanReplyAt: string | null;
   cancelledAt: string | null;
+  // 이 배우 알림 끄기(채팅방 🔔)
+  notificationsMuted: boolean;
   actor: { id: string; chatDisplayName: string; chatProfileImageUrl: string | null; monthlyPriceCents: number };
 }
 
@@ -47,3 +49,18 @@ export function useUnsubscribe(actorId: string) {
     },
   });
 }
+
+// 배우별 알림 끄기/켜기 — 화면이 바로 바뀌게 목록 캐시를 먼저 고침
+export function useSetNotificationsMuted(actorId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (muted: boolean) => apiClient.patch(`/actors/${actorId}/subscribe/notifications`, { muted }),
+    onMutate: (muted) => {
+      queryClient.setQueryData<Subscription[]>(['my-subscriptions'], (list) =>
+        list?.map((s) => (s.actorId === actorId ? { ...s, notificationsMuted: muted } : s)),
+      );
+    },
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: ['my-subscriptions'] }),
+  });
+}
+

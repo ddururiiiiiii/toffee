@@ -38,7 +38,7 @@ function setup() {
     withReadUrl: vi.fn((item: object) => Promise.resolve(item)),
   } as unknown as MediaService;
   const service = new MessagesService(prisma, push, {} as ModerationService, media, config());
-  return { service, fanPushes, staffPushes };
+  return { service, fanPushes, staffPushes, prisma };
 }
 
 describe('MessagesService.sendBroadcast 푸시 문구', () => {
@@ -52,6 +52,14 @@ describe('MessagesService.sendBroadcast 푸시 문구', () => {
       title: '캐러멜 sent a new message',
       body: '{{name}}야 안녕!',
     });
+  });
+
+  it('알림을 끈 팬(notificationsMuted)은 푸시 대상에서 빠짐', async () => {
+    const { service, prisma } = setup();
+    await service.sendBroadcast('admin', 'actor-1', { mediaType: MessageMediaType.TEXT, body: '안녕' });
+    expect(prisma.subscription.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ notificationsMuted: false, cancelledAt: null }) }),
+    );
   });
 
   it('본문 없는 미디어는 받는 사람 언어의 안내 문구로', async () => {

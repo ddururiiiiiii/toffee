@@ -215,8 +215,9 @@ export class MessagesService {
     });
     const message = await this.mediaService.withReadUrl(withQuote(created));
 
+    // 알림을 끈 팬은 푸시만 빼고 나머지(메시지 도착·lastArtistMessageAt)는 똑같이
     const activeSubscriptions = await this.prisma.subscription.findMany({
-      where: { actorId, cancelledAt: null },
+      where: { actorId, cancelledAt: null, notificationsMuted: false },
       select: { userId: true },
     });
     await this.prisma.subscription.updateMany({

@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ApiError } from '@/lib/api-client';
+import { useMySubscriptions, useSetNotificationsMuted } from '@/hooks/use-subscriptions';
 import { ThemedView } from '@/components/themed-view';
 import { MediaTile } from '@/components/media-tile';
 import { QuoteBlock } from '@/components/quote-block';
@@ -87,6 +88,9 @@ export default function ChatRoomScreen() {
   const router = useRouter();
   const { actorId } = useLocalSearchParams<{ actorId: string }>();
   const { data: actor } = useActor(actorId);
+  const { data: subscriptions } = useMySubscriptions();
+  const subscription = subscriptions?.find((s) => s.actorId === actorId);
+  const setMuted = useSetNotificationsMuted(actorId);
   const { data: messages, isLoading, isError, error } = useActorMessages(actorId);
   const notSubscribed = error instanceof ApiError && error.status === 403;
   const sendReply = useSendReply(actorId);
@@ -95,8 +99,28 @@ export default function ChatRoomScreen() {
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
   useEffect(() => {
-    if (actor) navigation.setOptions({ title: actor.chatDisplayName });
-  }, [actor, navigation]);
+    if (!actor) return;
+    navigation.setOptions({
+      title: actor.chatDisplayName,
+      // 카톡처럼 채팅방별 알림 끄기 — 구독 중일 때만
+      headerRight: subscription
+        ? () => (
+            <Pressable
+              accessibilityRole="switch"
+              accessibilityState={{ checked: !subscription.notificationsMuted }}
+              accessibilityLabel={t(subscription.notificationsMuted ? 'chat.notificationsOff' : 'chat.notificationsOn')}
+              onPress={() => {
+                setNotice(t(subscription.notificationsMuted ? 'chat.unmuted' : 'chat.muted'));
+                setMuted.mutate(!subscription.notificationsMuted);
+              }}
+              hitSlop={8}
+              style={styles.headerButton}>
+              <ThemedText>{subscription.notificationsMuted ? '🔕' : '🔔'}</ThemedText>
+            </Pressable>
+          )
+        : undefined,
+    });
+  }, [actor, navigation, subscription, setMuted, t]);
 
   const saveVoice = (message: ChatMessage) => {
     if (!message.mediaUrl) return;
@@ -211,6 +235,7 @@ export default function ChatRoomScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerButton: { paddingHorizontal: Spacing.three },
   container: { flex: 1 },
   list: { padding: Spacing.three, gap: Spacing.two },
   // 행 컨테이너는 배경 없이(ThemedView 기본 흰 배경이 회색 화면 위에 띠처럼 보였음)

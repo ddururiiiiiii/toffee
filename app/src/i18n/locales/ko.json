@@ -56,7 +56,11 @@
     "notSubscribed": "구독이 끝나서 {{name}}님과의 대화를 볼 수 없어요.",
     "resubscribe": "다시 구독하기",
     "repliesLeft": "이 메시지에 남은 답장 {{count}}개",
-    "noRepliesLeft": "이 메시지에는 답장을 {{limit}}개까지 보낼 수 있어요. 스타의 다음 메시지를 기다려 주세요."
+    "noRepliesLeft": "이 메시지에는 답장을 {{limit}}개까지 보낼 수 있어요. 스타의 다음 메시지를 기다려 주세요.",
+    "notificationsOn": "알림 켜짐",
+    "notificationsOff": "알림 꺼짐",
+    "muted": "이 채팅방 알림을 껐어요. 메시지는 그대로 받아요.",
+    "unmuted": "이 채팅방 알림을 켰어요."
   },
   "mypage": {
     "title": "마이페이지",

@@ -56,7 +56,11 @@
     "notSubscribed": "Your subscription has ended, so you can't view the chat with {{name}}.",
     "resubscribe": "Subscribe again",
     "repliesLeft": "{{count}} replies left for this message",
-    "noRepliesLeft": "You can send up to {{limit}} replies per message. Please wait for the star's next message."
+    "noRepliesLeft": "You can send up to {{limit}} replies per message. Please wait for the star's next message.",
+    "notificationsOn": "Notifications on",
+    "notificationsOff": "Notifications off",
+    "muted": "Notifications for this chat are off. You'll still receive messages.",
+    "unmuted": "Notifications for this chat are on."
   },
   "mypage": {
     "title": "My page",

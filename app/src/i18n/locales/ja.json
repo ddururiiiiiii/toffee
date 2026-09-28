@@ -56,7 +56,11 @@
     "notSubscribed": "購読が終了したため、{{name}}さんとのトークを見られません。",
     "resubscribe": "もう一度購読する",
     "repliesLeft": "このメッセージへの返信はあと{{count}}件",
-    "noRepliesLeft": "1つのメッセージにつき返信は{{limit}}件までです。スターの次のメッセージをお待ちください。"
+    "noRepliesLeft": "1つのメッセージにつき返信は{{limit}}件までです。スターの次のメッセージをお待ちください。",
+    "notificationsOn": "通知オン",
+    "notificationsOff": "通知オフ",
+    "muted": "このトークの通知をオフにしました。メッセージは引き続き届きます。",
+    "unmuted": "このトークの通知をオンにしました。"
   },
   "mypage": {
     "title": "マイページ",

@@ -26,7 +26,10 @@ function ChatRow({ subscription, onPress }: { subscription: Subscription; onPres
         style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]}
       />
       <ThemedView style={styles.rowBody}>
-        <ThemedText type="smallBold">{subscription.actor.chatDisplayName}</ThemedText>
+        <ThemedText type="smallBold">
+          {subscription.actor.chatDisplayName}
+          {subscription.notificationsMuted ? ' 🔕' : ''}
+        </ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
           {formatLastActive(subscription, t, i18n.language)}
         </ThemedText>

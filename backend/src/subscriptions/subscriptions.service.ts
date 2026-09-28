@@ -107,6 +107,17 @@ export class SubscriptionsService {
     return subscription;
   }
 
+  // 배우별 알림 끄기/켜기
+  async setNotificationsMuted(userId: string, actorId: string, muted: boolean) {
+    const existing = await this.prisma.subscription.findUnique({ where: { userId_actorId: { userId, actorId } } });
+    if (!existing || existing.cancelledAt) throw new NotFoundException('구독 중인 배우가 아니에요.');
+    return this.prisma.subscription.update({
+      where: { id: existing.id },
+      data: { notificationsMuted: muted },
+      select: { actorId: true, notificationsMuted: true },
+    });
+  }
+
   // 통계용 이력(SubscriptionEvent) — 구독률·해지율·재구독·매출 추이
   private recordEvent(userId: string, actorId: string, type: SubscriptionEventType, priceCents?: number) {
     return this.prisma.subscriptionEvent.create({ data: { userId, actorId, type, priceCents } });

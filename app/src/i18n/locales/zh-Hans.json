@@ -56,7 +56,11 @@
     "notSubscribed": "订阅已结束，无法查看与 {{name}} 的聊天。",
     "resubscribe": "重新订阅",
     "repliesLeft": "这条消息还可回复 {{count}} 条",
-    "noRepliesLeft": "每条消息最多可回复 {{limit}} 条，请等待明星的下一条消息。"
+    "noRepliesLeft": "每条消息最多可回复 {{limit}} 条，请等待明星的下一条消息。",
+    "notificationsOn": "通知已开启",
+    "notificationsOff": "通知已关闭",
+    "muted": "已关闭此聊天的通知，仍会照常收到消息。",
+    "unmuted": "已开启此聊天的通知。"
   },
   "mypage": {
     "title": "我的",
