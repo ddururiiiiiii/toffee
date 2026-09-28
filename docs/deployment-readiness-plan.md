@@ -45,8 +45,8 @@
 
 로컬 Postgres로 CI의 마이그레이션 단계를 그대로 재현(드리프트 0, 일부러 어긋나게 하면 exit
 2), 업그레이드한 패키지로 실서버 로그인·401·429 확인, 가짜 Sentry 서버로 5xx만 전송되고
-민감정보가 가려지는 것 확인, 앱 웹 번들 생성 확인. 실제 GitHub Actions 실행 결과는 이
-브랜치 push 후 확인 필요.
+민감정보가 가려지는 것 확인, 앱 웹 번들 생성 확인. 이 브랜치 push 후 GitHub Actions 첫 실행
+(run #1)에서 backend/migrations/app 3개 잡 전부 통과(약 1분).
 
 ### 정정
 
@@ -59,6 +59,13 @@
   백엔드 `SENTRY_DSN`, 앱 `EXPO_PUBLIC_SENTRY_DSN`에. 앱 소스맵 업로드용 `SENTRY_AUTH_TOKEN`은
   EAS Secret으로.
 - GitHub 저장소 설정에서 Dependabot alerts/security updates 켜져 있는지 확인.
+
+### 남은 일 (코드)
+
+- `npm audit --omit=dev` 기준 기존 취약점: backend 12건(high 6 — `multer`, `deepmerge-ts`,
+  `mysql2` 등 간접 의존성), app moderate 15건. 이번 작업 범위 밖이라 손대지 않음 —
+  Dependabot PR로 들어오면 하나씩 확인해서 반영. `multer`는 파일 업로드 작업 때 직접 쓰게
+  될 가능성이 높으니 그때 같이 정리.
 
 ### 다음
 
