@@ -180,7 +180,7 @@
     "saveFailed": "Couldn't save.",
     "change": "Change",
     "nextChange": "You can change it after {{date}}",
-    "rule": "It's fine if someone else has the same one. After changing it, you can change it again in 7 days."
+    "rule": "It's fine if someone else has the same nickname. You can change it freely for 24 hours after signing up; after that, once you change it you can change it again 7 days later."
   },
   "quote": {
     "replyTo": "Replying to {{nickname}}",

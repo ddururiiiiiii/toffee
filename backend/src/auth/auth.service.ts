@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { AuthProvider, Role, SubscriptionEventType, UserStatus } from '../generated/prisma/enums.js';
 import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
 import { ModerationService } from '../moderation/moderation.service.js';
-import { NICKNAME_CHANGE_COOLDOWN_MS, normalizeNickname } from '../common/nickname/nickname.js';
+import { nextNicknameChangeAt, normalizeNickname } from '../common/nickname/nickname.js';
 
 interface ExternalIdentity {
   providerId: string;
@@ -231,26 +231,26 @@ export class AuthService {
   async getMe(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { id: true, role: true, locale: true, nickname: true, nicknameChangedAt: true },
+      select: { id: true, role: true, locale: true, nickname: true, nicknameChangedAt: true, createdAt: true },
     });
-    const { nicknameChangedAt, ...rest } = user;
-    return { ...rest, nicknameChangeAvailableAt: nextNicknameChangeAt(user.nickname, nicknameChangedAt) };
+    const { nicknameChangedAt: _changedAt, createdAt: _createdAt, ...rest } = user;
+    return { ...rest, nicknameChangeAvailableAt: nextNicknameChangeAt(user) };
   }
 
   /**
    * 닉네임 정하기/바꾸기 — 중복은 허용(버블 방식)하되 공식·운영자·배우 이름 흉내, 금칙어, 보이지 않는 문자는
-   * 막고, 한 번 정한 뒤엔 7일에 한 번만 바꿀 수 있음(처음 정할 때는 제한 없음).
+   * 막고, 한 번 정한 뒤엔 7일에 한 번만 바꿀 수 있음(처음 정할 때와 가입 후 24시간 안에는 제한 없음).
    */
   async updateNickname(userId: string, raw: string) {
     const nickname = normalizeNickname(raw);
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { nickname: true, nicknameChangedAt: true },
+      select: { nickname: true, nicknameChangedAt: true, createdAt: true },
     });
     if (user.nickname === nickname) return this.getMe(userId);
 
-    const availableAt = nextNicknameChangeAt(user.nickname, user.nicknameChangedAt);
-    if (availableAt && availableAt > new Date()) {
+    const availableAt = nextNicknameChangeAt(user);
+    if (availableAt) {
       throw new BadRequestException(`닉네임은 ${availableAt.toISOString().slice(0, 10)} 이후에 바꿀 수 있어요.`);
     }
     await this.moderationService.assertNoBannedWords(nickname).catch(() => {
@@ -289,10 +289,4 @@ export class AuthService {
   async unregisterPushDevice(userId: string, token: string): Promise<void> {
     await this.prisma.pushDevice.deleteMany({ where: { userId, token } });
   }
-}
-
-// 처음 정한 닉네임(이전 값 없음)은 바로 바꿀 수 있고, 그 뒤엔 마지막 변경 + 7일
-function nextNicknameChangeAt(nickname: string | null, changedAt: Date | null): Date | null {
-  if (!nickname || !changedAt) return null;
-  return new Date(changedAt.getTime() + NICKNAME_CHANGE_COOLDOWN_MS);
 }
