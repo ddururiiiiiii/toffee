@@ -1,6 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 
+export interface AgencySummary {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+}
+
+export interface Agency extends AgencySummary {
+  actorCount: number;
+}
+
 export interface Actor {
   id: string;
   legalName: string;
@@ -8,12 +18,28 @@ export interface Actor {
   chatDisplayName: string;
   chatProfileImageUrl: string | null;
   monthlyPriceCents: number;
+  // 무소속이면 null
+  agency: AgencySummary | null;
 }
 
-export function useActors(query: string) {
+// q는 서버에서 배우 이름 + 소속사 이름 둘 다에 매칭됨
+export function useActors(query: string, agencyId?: string | null) {
   return useQuery({
-    queryKey: ['actors', query],
-    queryFn: () => apiClient.get<Actor[]>(`/actors${query ? `?q=${encodeURIComponent(query)}` : ''}`),
+    queryKey: ['actors', { query, agencyId: agencyId ?? null }],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (query) params.set('q', query);
+      if (agencyId) params.set('agencyId', agencyId);
+      const search = params.toString();
+      return apiClient.get<Actor[]>(`/actors${search ? `?${search}` : ''}`);
+    },
+  });
+}
+
+export function useAgencies() {
+  return useQuery({
+    queryKey: ['agencies'],
+    queryFn: () => apiClient.get<Agency[]>('/agencies'),
   });
 }
 

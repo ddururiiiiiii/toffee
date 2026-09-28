@@ -78,13 +78,16 @@ model User {
   birthDate             DateTime?
   parentalConsentStatus ParentalConsentStatus @default(NOT_REQUIRED)
   parentEmail           String?
+  // AGENCY_STAFF 계정이 속한 소속사 — 같은 소속사 배우 전원을 모니터링할 수 있음
+  // (소속사 안에서 직원별로 담당 배우를 나누지 않기로 확정, 2026-09-28)
+  agencyId              String?
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
 
   authIdentities  AuthIdentity[]
   subscriptions   Subscription[]
   fanMessages     Message[]        @relation("FanMessages")
-  staffOfActors   Actor[]          @relation("ActorStaff")
+  agency          Agency?          @relation(fields: [agencyId], references: [id])
   reportsFiled    Report[]         @relation("ReportsFiled")
   actorSelf       Actor?           @relation("ActorSelf")
   storyViews      StoryView[]
@@ -129,16 +132,54 @@ model Actor {
   monthlyPriceCents       Int
   verified                Boolean  @default(false)
   selfUserId              String?  @unique
+  // 현재 소속사(무소속이면 null) — 바꿀 때는 반드시 ActorAgencyHistory도 같이 갱신할 것
+  // (AdminAgenciesService.assignActor 참고)
+  agencyId                String?
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
-  selfUser         User?          @relation("ActorSelf", fields: [selfUserId], references: [id])
-  staff            User[]         @relation("ActorStaff")
+  selfUser         User?                @relation("ActorSelf", fields: [selfUserId], references: [id])
+  agency           Agency?              @relation(fields: [agencyId], references: [id])
+  agencyHistory    ActorAgencyHistory[]
   subscriptions    Subscription[]
   messages         Message[]
-  pairingsAsFirst  GlCp[]         @relation("PairingActorOne")
-  pairingsAsSecond GlCp[]         @relation("PairingActorTwo")
+  pairingsAsFirst  GlCp[]               @relation("PairingActorOne")
+  pairingsAsSecond GlCp[]               @relation("PairingActorTwo")
   stories          Story[]
+
+  @@index([agencyId])
+}
+
+// 소속사(방송사가 매니지먼트를 겸하는 경우 포함) — 팬에게도 공개되는 정보
+// (소속사별 배우 목록/검색). 계약·정산 조건 필드는 정산 기능 작업 때 추가.
+model Agency {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  actors       Actor[]
+  staff        User[]
+  actorHistory ActorAgencyHistory[]
+}
+
+// 배우의 소속사 이력 — 이적 시점 기준으로 정산을 나누거나 계약 분쟁에 대응하기 위한
+// 기록용. 모니터링 권한은 이 테이블이 아니라 현재 소속사(Actor.agencyId)로만 판단함
+// (이전 소속사는 이적 후 과거 메시지를 볼 수 없음). endedAt이 null인 행이 현재 소속.
+model ActorAgencyHistory {
+  id        String    @id @default(uuid())
+  actorId   String
+  agencyId  String
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+  createdAt DateTime  @default(now())
+
+  actor  Actor  @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  agency Agency @relation(fields: [agencyId], references: [id])
+
+  @@index([actorId])
+  @@index([agencyId])
 }
 
 // 팬에게 노출되는 탐색/발견 화면 없음 — 동시구독 할인 계산에만 쓰는 내부 페어링

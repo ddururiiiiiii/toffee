@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { cert, getApps, initializeApp, type App, type ServiceAccount } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { Role } from '../generated/prisma/enums.js';
 
 /** FCM이 "이 토큰은 더 이상 유효하지 않다"고 알려줄 때의 에러 코드 — 재시도해도 계속 실패하므로 저장된 토큰을 지워야 함 */
 const INVALID_TOKEN_ERROR_CODES = new Set([
@@ -41,11 +42,15 @@ export class PushService implements OnModuleInit {
     }
   }
 
-  // 배우가 새 메시지/스토리를 보낼 때 담당 소속사 스태프 전원에게 알림(모니터링용) — best-effort
+  // 배우가 새 메시지/스토리를 보낼 때 현재 소속사 스태프 전원에게 알림(모니터링용) — best-effort
   async notifyActorStaff(actorId: string, title: string, body: string, data?: Record<string, string>): Promise<void> {
-    const actor = await this.prisma.actor.findUnique({ where: { id: actorId }, select: { staff: { select: { id: true } } } });
-    if (!actor) return;
-    await Promise.all(actor.staff.map((staffUser) => this.sendToUser(staffUser.id, title, body, data).catch(() => {})));
+    const actor = await this.prisma.actor.findUnique({ where: { id: actorId }, select: { agencyId: true } });
+    if (!actor?.agencyId) return;
+    const staff = await this.prisma.user.findMany({
+      where: { agencyId: actor.agencyId, role: Role.AGENCY_STAFF },
+      select: { id: true },
+    });
+    await Promise.all(staff.map((staffUser) => this.sendToUser(staffUser.id, title, body, data).catch(() => {})));
   }
 
   private async send(

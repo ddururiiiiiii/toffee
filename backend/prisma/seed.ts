@@ -19,9 +19,19 @@ async function main() {
   await prisma.subscription.deleteMany();
   await prisma.authIdentity.deleteMany();
   await prisma.glCp.deleteMany();
+  await prisma.actorAgencyHistory.deleteMany();
   await prisma.actor.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.agency.deleteMany();
   await prisma.bannedWord.deleteMany();
+
+  // 가상의 소속사 2곳 — 현 소속사 + 이적 이력 데모용 이전 소속사
+  const demoAgency = await prisma.agency.create({
+    data: { name: '(가상) 데모 엔터테인먼트', logoUrl: 'https://placehold.co/200x200?text=Demo+Ent' },
+  });
+  const formerAgency = await prisma.agency.create({
+    data: { name: '(가상) 이전 소속사', logoUrl: 'https://placehold.co/200x200?text=Former' },
+  });
 
   // 가상의 배우 2명 — 이름/사진 전부 가상, Toffee 캔디 테마로 지음
   const caramel = await prisma.actor.create({
@@ -31,6 +41,7 @@ async function main() {
       chatDisplayName: '캐러멜',
       chatProfileImageUrl: 'https://placehold.co/400x400?text=%EC%BA%90%EB%9F%AC%EB%A9%9C',
       monthlyPriceCents: 9900, // 데모 가격 — 실제 태국 시장 가격은 별도 검증 필요
+      agencyId: demoAgency.id,
     },
   });
 
@@ -41,7 +52,18 @@ async function main() {
       chatDisplayName: '누가',
       chatProfileImageUrl: 'https://placehold.co/400x400?text=%EB%88%84%EA%B0%80',
       monthlyPriceCents: 9900,
+      agencyId: demoAgency.id,
     },
+  });
+
+  // 소속사 이력 — 캐러멜은 처음부터 데모 엔터, 누가는 30일 전 이전 소속사에서 이적
+  // (이적 전 기록은 이전 소속사가 볼 수 없어야 하고, 정산 이력으로만 남는지 확인용)
+  await prisma.actorAgencyHistory.createMany({
+    data: [
+      { actorId: caramel.id, agencyId: demoAgency.id, startedAt: daysAgo(120) },
+      { actorId: nougat.id, agencyId: formerAgency.id, startedAt: daysAgo(120), endedAt: daysAgo(30) },
+      { actorId: nougat.id, agencyId: demoAgency.id, startedAt: daysAgo(30) },
+    ],
   });
 
   // 팬에게 노출 안 되는 내부 CP 페어링 — 둘 다 구독하면 15% 할인
@@ -49,13 +71,22 @@ async function main() {
     data: { actorOneId: caramel.id, actorTwoId: nougat.id, discountPercent: 15 },
   });
 
-  // 소속사 스태프 1명이 두 배우를 같이 관리 (파일럿 규모 가정)
+  // 데모 엔터 스태프 1명 — 같은 소속사라 두 배우 모두 모니터링 가능
   const staff = await prisma.user.create({
     data: {
       role: Role.AGENCY_STAFF,
       displayName: '데모 소속사 스태프',
       email: 'staff@toffee.demo',
-      staffOfActors: { connect: [{ id: caramel.id }, { id: nougat.id }] },
+      agencyId: demoAgency.id,
+    },
+  });
+  // 이전 소속사 스태프 — 누가가 이적했으므로 누가의 콘솔/메시지에 접근하면 403이어야 함
+  await prisma.user.create({
+    data: {
+      role: Role.AGENCY_STAFF,
+      displayName: '이전 소속사 스태프',
+      email: 'former-staff@toffee.demo',
+      agencyId: formerAgency.id,
     },
   });
 
@@ -159,6 +190,7 @@ async function main() {
 
   console.log('시드 완료:', {
     actors: [caramel.chatDisplayName, nougat.chatDisplayName],
+    agencies: [demoAgency.name, formerAgency.name],
     staff: staff.displayName,
     admin: admin.displayName,
     fans: [fan1.displayName, fan2.displayName],

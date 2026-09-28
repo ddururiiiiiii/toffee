@@ -70,7 +70,8 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
 
 ## 소속사 모니터링 기능 — 백엔드 구현 완료 (2026-09-18)
 
-- `PushService.notifyActorStaff(actorId, title, body)` 신규 — `Actor.staff` 전원에게
+- `PushService.notifyActorStaff(actorId, title, body)` 신규 — ~~`Actor.staff` 전원에게~~
+  (2026-09-28부터) 배우의 현재 소속사(`Actor.agencyId`)에 속한 `AGENCY_STAFF` 전원에게
   best-effort로 푸시. `sendBroadcast`, 스토리 `create` 양쪽에서 팬 알림과 별개로 호출.
 - `GET actors/:actorId/messages/broadcasts`(신규, `AGENCY_STAFF/ACTOR/ADMIN`) — 배우가
   보낸 메시지를 `{{name}}` 치환 없이 원문 그대로 반환(`ensureCanViewActor`).
@@ -80,6 +81,49 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
 - **아직 안 한 것**: 앱/웹 쪽에 이 엔드포인트들을 실제로 보여주는 화면 자체가 없음
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
+
+## 소속사(`Agency`) + 소속 이력(`ActorAgencyHistory`) — 구현 완료 (2026-09-28)
+
+마이그레이션 `20260928003000_add_agency_and_actor_agency_history`.
+
+- **스키마**: `Agency { name @unique, logoUrl? }`, `Actor.agencyId?`, `User.agencyId?`
+  (AGENCY_STAFF용), `ActorAgencyHistory { actorId, agencyId, startedAt, endedAt? }`
+  (`endedAt IS NULL`인 행이 현재 소속). 배우↔스태프 다대다(`_ActorStaff`,
+  `Actor.staff`/`User.staffOfActors`)는 **삭제** — 출시 전이라 데이터 이관 없이 드롭.
+  FK: `Actor/User.agencyId`는 `SET NULL`, 이력의 `agencyId`는 `RESTRICT`(이력이 있는
+  소속사는 못 지움 — 정산 근거 보존), 이력의 `actorId`는 `CASCADE`.
+- **권한**: `common/authorization/actor-access.ts`의 `viewableActorsWhere(requester)`
+  하나로 통일 — `selfUserId = 본인` OR (`role = AGENCY_STAFF` && `agencyId = 요청자
+  agencyId`). `ensureCanViewActor`, `ActorsService.findMine` 둘 다 이걸 씀. 이력 테이블은
+  권한 판단에 **쓰지 않음**(이적 후 이전 소속사 접근 차단이 의도된 동작).
+  `AuthenticatedUser`에 `agencyId`를 넣지 않고 매번 DB에서 읽음 — 역할과 마찬가지로
+  소속 변경이 재로그인 없이 바로 반영되게.
+- **팬 공개 API**: `GET /agencies?q=`(이름, 로고, `actorCount`), `GET /agencies/:id`.
+  `GET /actors`에 `agencyId` 필터 추가, `q`는 배우 `legalName` + 소속사 `name` 둘 다
+  매칭. 배우 목록/상세 응답에 `agency { id, name, logoUrl } | null` 포함.
+- **운영자 API** (`admin/admin-agencies.*`, `@Roles(ADMIN)`):
+  `POST /admin/agencies`, `PATCH /admin/agencies/:id`(이름 중복은 409),
+  `PATCH /admin/actors/:id/agency { agencyId | null }` — `Actor.agencyId` 변경 + 열린
+  이력 행 `endedAt` 닫기 + 새 이력 행 생성을 **한 트랜잭션**으로(같은 소속사로 재지정은
+  no-op), `GET /admin/actors/:id/agency-history`,
+  `PATCH /admin/users/:id/agency { agencyId | null }` — `AGENCY_STAFF`가 아니면 400.
+  `agencyId` 필드는 필수(`null`은 무소속으로 되돌리기, 필드 누락은 400).
+  **`Actor.agencyId`를 직접 update하지 말 것** — 이력이 어긋남. 반드시
+  `AdminAgenciesService.assignActor` 경유.
+- **앱**: 배우 찾기 화면에 소속사 필터 칩(가로 스크롤) + 검색 placeholder를 "배우 또는
+  소속사 이름"으로, 카드/상세에 소속사명 표시.
+- **시드**: `(가상) 데모 엔터테인먼트`(두 배우 소속, `staff@toffee.demo`),
+  `(가상) 이전 소속사`(`former-staff@toffee.demo`, 누가가 30일 전 이적해 나간 곳 —
+  이 계정으로 누가 콘솔 접근 시 403 확인용).
+- **검증**: 로컬 Postgres에 전체 마이그레이션 적용 → DB와 스키마 diff 없음 확인 → 시드 →
+  실서버에 curl로 소속사 목록/필터/검색, 스태프·이전 소속사 스태프의 `/actors/mine`과
+  `/actors/:id/stats` 403/200, 이적 후 권한이 새 소속사로 넘어가는지, 이력 행이 정확히
+  닫히고 열리는지, null 해제/필드 누락/없는 소속사/이름 중복/비스태프 배정 에러를
+  전부 확인. 앱은 Expo web + Playwright로 필터 칩·검색·상세 표시 확인.
+- **남은 것**: 운영자 앱 화면(소속사 등록/배우 이적/직원 배정) 미구현. 정산용
+  결제 원장(`Payment`: 결제 1건 = 1행, 결제 시점의 `agencyId` 스냅샷) 미구현 —
+  지금 `Subscription`은 (팬, 배우)당 1행이고 갱신 시 `iapExpiresAt`만 덮어써서 결제
+  건별 기록이 없음. 소속사명 다국어는 i18n 설계 때 같이.
 
 ## 관리자(ADMIN) 전용 UI — 아직 전혀 없음 (2026-09-18 확인)
 

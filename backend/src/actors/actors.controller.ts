@@ -14,14 +14,14 @@ export class ActorsController {
   @Public()
   @Get()
   findAll(@Query() query: ListActorsQueryDto) {
-    return this.actorsService.findAll(query.q);
+    return this.actorsService.findAll(query.q, query.agencyId);
   }
 
   // 'mine'은 ':id'보다 먼저 등록해야 함 — 안 그러면 "mine"이 id로 잡혀버림
   @Roles(Role.AGENCY_STAFF, Role.ACTOR, Role.ADMIN)
   @Get('mine')
   findMine(@CurrentUser() user: AuthenticatedUser) {
-    return this.actorsService.findMine(user.id, user.role);
+    return this.actorsService.findMine(user.id);
   }
 
   @Public()

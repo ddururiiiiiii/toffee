@@ -40,7 +40,10 @@
   것. 파일명은 `YYYYMMDDHHmmss_설명` 형식.
 - 커밋 전엔 최소 `backend`: `npx tsc --noEmit`, `npm run lint`(oxlint), `npx nest build`
   / `app`: `npx tsc --noEmit`, `npx eslint src` 통과를 확인할 것(자동화 테스트는 아직
-  없음).
+  없음). 백엔드는 ESLint가 아니라 oxlint라 `npx eslint src`를 치면 설정 파일이 없다고
+  실패함(정상). 앱 `tsc`가 `*.module.css`/`global.css` 타입을 못 찾는다고 실패하면
+  gitignore된 `app/expo-env.d.ts`가 없는 것 — `/// <reference types="expo/types" />`
+  한 줄로 만들어 주거나 `npx expo start`를 한 번 띄우면 자동 생성됨.
 
 ## 코드 컨벤션
 

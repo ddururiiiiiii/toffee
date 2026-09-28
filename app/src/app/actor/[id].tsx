@@ -58,6 +58,7 @@ export default function ActorDetailScreen() {
         <ThemedText type="title" style={styles.name}>
           {actor.legalName}
         </ThemedText>
+        {actor.agency && <ThemedText themeColor="textSecondary">{actor.agency.name}</ThemedText>}
         <ThemedText themeColor="textSecondary">월 {formatPrice(actor.monthlyPriceCents)} (샌드박스 결제 — 실제 청구 없음)</ThemedText>
 
         {discountNote && (

@@ -11,6 +11,7 @@ const LIST_SELECT = {
   suspendedUntil: true,
   bannedAt: true,
   createdAt: true,
+  agency: { select: { id: true, name: true } },
 } as const;
 
 @Injectable()
