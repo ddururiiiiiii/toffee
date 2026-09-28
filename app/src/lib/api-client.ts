@@ -1,5 +1,5 @@
 import { API_URL } from './env';
-import { getCachedToken } from './token-storage';
+import { loadToken } from './token-storage';
 import i18n from '@/i18n';
 
 export class ApiError extends Error {
@@ -11,8 +11,14 @@ export class ApiError extends Error {
   }
 }
 
+// 로그인이 끊겼을 때(정지·영구차단·토큰 만료) 알림 받을 곳 — AuthProvider가 등록해서 로그아웃 처리
+let unauthorizedHandler: ((message: string) => void) | null = null;
+export function onUnauthorized(handler: ((message: string) => void) | null) {
+  unauthorizedHandler = handler;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getCachedToken();
+  const token = await loadToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string> | undefined),
@@ -24,7 +30,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { message?: string | string[] };
     const message = Array.isArray(body.message) ? body.message.join(', ') : body.message;
-    throw new ApiError(res.status, message ?? i18n.t('common.requestFailed', { status: res.status }));
+    const error = new ApiError(res.status, message ?? i18n.t('common.requestFailed', { status: res.status }));
+    if (res.status === 401 && token) unauthorizedHandler?.(error.message);
+    throw error;
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;

@@ -49,7 +49,10 @@
   "chat": {
     "loadFailed": "대화를 불러오지 못했어요. 구독 중인 배우인지 확인해주세요.",
     "replyPlaceholder": "답장 보내기 (텍스트만 가능)",
-    "send": "전송"
+    "send": "전송",
+    "waitingFirst": "구독을 시작했어요! {{name}}님이 보내는 메시지가 여기에 도착해요.",
+    "replyAfterFirst": "스타의 첫 메시지가 오면 답장할 수 있어요.",
+    "sendFailed": "보내지 못했어요. 다시 시도해 주세요."
   },
   "mypage": {
     "title": "마이페이지",
@@ -104,7 +107,8 @@
     "consentSend": "동의 메일 보내기",
     "consentSendFailed": "메일을 보내지 못했어요.",
     "nicknameTitle": "닉네임을 정해주세요",
-    "nicknameHint": "배우 메시지에서 이 닉네임으로 불려요. 배우가 내 답장을 인용하면 다른 구독자에게도 보이니 실명은 피해주세요."
+    "nicknameHint": "배우 메시지에서 이 닉네임으로 불려요. 배우가 내 답장을 인용하면 다른 구독자에게도 보이니 실명은 피해주세요.",
+    "birthDateInvalid": "생년월일을 다시 확인해 주세요."
   },
   "legal": {
     "draftTitle": "이 문서는 초안입니다",

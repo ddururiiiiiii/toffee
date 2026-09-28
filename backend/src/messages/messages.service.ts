@@ -130,6 +130,8 @@ export class MessagesService {
       orderBy: { createdAt: 'desc' },
       select: { id: true },
     });
+    // 스타 메시지가 오기 전엔 답장할 곳이 없음 — 예전엔 대상 없이 저장돼서 스타의 "메시지별 답장" 어디에도 안 보였음
+    if (!latestArtistMessage) throw new BadRequestException('스타의 첫 메시지가 오면 답장할 수 있어요.');
     const [message] = await this.prisma.$transaction([
       this.prisma.message.create({
         data: {
@@ -137,7 +139,7 @@ export class MessagesService {
           senderType: MessageSenderType.FAN,
           fanUserId: userId,
           body: dto.body,
-          replyToMessageId: latestArtistMessage?.id ?? null,
+          replyToMessageId: latestArtistMessage.id,
         },
       }),
       this.prisma.subscription.update({

@@ -13,6 +13,7 @@ import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
+import { ApiError } from '@/lib/api-client';
 import { ThemedView } from '@/components/themed-view';
 import { MediaTile } from '@/components/media-tile';
 import { QuoteBlock } from '@/components/quote-block';
@@ -103,12 +104,21 @@ export default function ChatRoomScreen() {
       .catch(() => setNotice(t('media.saveFailed')));
   };
 
+  // 실패하면 쓴 글을 되돌려 놓고 이유를 보여줌(예전엔 금칙어·차단 등으로 실패해도 글이 조용히 사라졌음)
   const handleSend = () => {
     const body = draft.trim();
     if (!body) return;
     setDraft('');
-    sendReply.mutate(body);
+    setNotice(null);
+    sendReply.mutate(body, {
+      onError: (error) => {
+        setDraft((current) => current || body);
+        setNotice(error instanceof ApiError ? error.message : t('chat.sendFailed'));
+      },
+    });
   };
+  // 버블 방식: 팬 답장은 가장 최근 스타 메시지에 붙음 — 구독 후 스타 메시지가 아직 없으면 답장할 곳이 없어서 입력창 대신 안내
+  const canReply = !!messages?.some((message) => message.senderType === 'ARTIST');
 
   return (
     <KeyboardAvoidingView
@@ -130,6 +140,11 @@ export default function ChatRoomScreen() {
             contentContainerStyle={styles.list}
             onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
             renderItem={({ item }) => <MessageBubble message={item} onSaveVoice={() => saveVoice(item)} />}
+            ListEmptyComponent={
+              <ThemedText type="small" themeColor="textSecondary" style={styles.centerMessage}>
+                {t('chat.waitingFirst', { name: actor?.chatDisplayName ?? '' })}
+              </ThemedText>
+            }
           />
         )}
 
@@ -139,22 +154,31 @@ export default function ChatRoomScreen() {
           </ThemedText>
         )}
 
-        <ThemedView style={[styles.inputRow, { borderTopColor: theme.backgroundElement }]}>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={t('chat.replyPlaceholder')}
-            placeholderTextColor={theme.textSecondary}
-            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
-            multiline
-          />
-          <Pressable
-            onPress={handleSend}
-            disabled={sendReply.isPending || !draft.trim()}
-            style={[styles.sendButton, { backgroundColor: theme.tint, opacity: draft.trim() ? 1 : 0.5 }]}>
-            <ThemedText style={styles.sendButtonText}>{t('chat.send')}</ThemedText>
-          </Pressable>
-        </ThemedView>
+        {!isLoading && !isError && !canReply ? (
+          <ThemedText
+            type="small"
+            themeColor="textSecondary"
+            style={[styles.waitingBar, { borderTopColor: theme.backgroundElement }]}>
+            {t('chat.replyAfterFirst')}
+          </ThemedText>
+        ) : (
+          <ThemedView style={[styles.inputRow, { borderTopColor: theme.backgroundElement }]}>
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              placeholder={t('chat.replyPlaceholder')}
+              placeholderTextColor={theme.textSecondary}
+              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+              multiline
+            />
+            <Pressable
+              onPress={handleSend}
+              disabled={sendReply.isPending || !draft.trim()}
+              style={[styles.sendButton, { backgroundColor: theme.tint, opacity: draft.trim() ? 1 : 0.5 }]}>
+              <ThemedText style={styles.sendButtonText}>{t('chat.send')}</ThemedText>
+            </Pressable>
+          </ThemedView>
+        )}
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
@@ -170,6 +194,7 @@ const styles = StyleSheet.create({
   bubbleRowRight: { justifyContent: 'flex-end' },
   bubble: { maxWidth: '78%', borderRadius: 16, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: 4 },
   notice: { textAlign: 'center', paddingVertical: Spacing.one },
+  waitingBar: { textAlign: 'center', padding: Spacing.three, borderTopWidth: 1 },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',

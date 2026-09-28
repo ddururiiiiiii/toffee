@@ -46,17 +46,18 @@ function AuthGate({ children }: { children: ReactNode }) {
     }
     if (onboardingLoading) return;
 
+    // 온보딩은 단계별로 정확한 화면에 있어야 함 — 예전엔 "온보딩 화면 중 아무 데나"면 그대로 둬서, 생년월일을
+    // 저장해도 부모 동의·닉네임 단계로 안 넘어가고 생년월일 화면에 멈춰 있었음(새 팬 가입이 막히던 버그)
     const onOnboardingScreen = segments[0] === 'onboarding';
-    if (onboarding?.needsBirthDate) {
-      if (!onOnboardingScreen) router.replace('/onboarding/birth-date');
-      return;
-    }
-    if (onboarding?.parentalConsentStatus === 'PENDING') {
-      if (!onOnboardingScreen) router.replace('/onboarding/parental-consent');
-      return;
-    }
-    if (onboarding?.needsNickname) {
-      if (!onOnboardingScreen) router.replace('/onboarding/nickname');
+    const onboardingStep = onboarding?.needsBirthDate
+      ? 'birth-date'
+      : onboarding?.parentalConsentStatus === 'PENDING'
+        ? 'parental-consent'
+        : onboarding?.needsNickname
+          ? 'nickname'
+          : null;
+    if (onboardingStep) {
+      if (!onOnboardingScreen || segments[1] !== onboardingStep) router.replace(`/onboarding/${onboardingStep}`);
       return;
     }
 

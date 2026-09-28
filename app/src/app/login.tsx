@@ -14,7 +14,7 @@ import { Spacing } from '@/constants/theme';
 export default function LoginScreen() {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { login } = useAuth();
+  const { login, signedOutReason } = useAuth();
   const [email, setEmail] = useState('fan1@toffee.demo');
   const [name, setName] = useState('');
 
@@ -65,6 +65,11 @@ export default function LoginScreen() {
               <ThemedText style={styles.buttonText}>{t('login.submit')}</ThemedText>
             )}
           </Pressable>
+          {signedOutReason && !devLogin.isError && (
+            <ThemedText themeColor="danger" type="small">
+              {signedOutReason}
+            </ThemedText>
+          )}
           {devLogin.isError && (
             <ThemedText themeColor="danger" type="small">
               {devLogin.error instanceof ApiError ? devLogin.error.message : t('login.failed')}

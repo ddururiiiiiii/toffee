@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { ConflictException, BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'node:crypto';
+import { calculateAge, parseBirthDate } from './birth-date.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailService } from '../notifications/email.service.js';
 import { ParentalConsentStatus, Role } from '../generated/prisma/enums.js';
@@ -9,14 +10,6 @@ import { ParentalConsentStatus, Role } from '../generated/prisma/enums.js';
 const MINIMUM_AGE_WITHOUT_CONSENT = 14;
 const CONSENT_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-function calculateAge(birthDate: Date, now: Date): number {
-  let age = now.getFullYear() - birthDate.getFullYear();
-  const hasHadBirthdayThisYear =
-    now.getMonth() > birthDate.getMonth() ||
-    (now.getMonth() === birthDate.getMonth() && now.getDate() >= birthDate.getDate());
-  if (!hasHadBirthdayThisYear) age -= 1;
-  return age;
-}
 
 @Injectable()
 export class ParentalConsentService {
@@ -43,8 +36,15 @@ export class ParentalConsentService {
     };
   }
 
-  // 온보딩에서 생년월일을 받으면 여기서 만 14세 미만인지 판정 — 미만이면 부모 동의 대기 상태로 전환
-  async setBirthDate(userId: string, birthDate: Date) {
+  // 온보딩에서 생년월일을 받으면 여기서 만 14세 미만인지 판정 — 미만이면 부모 동의 대기 상태로 전환.
+  // 한 번 입력하면 다시 못 바꿈 — 바꿀 수 있으면 14세 미만이 나이를 고쳐 부모 동의를 건너뛸 수 있음
+  // (잘못 입력한 경우는 운영자가 확인 후 DB에서 정정, STATUS "출시 전 확정할 정책").
+  async setBirthDate(userId: string, raw: string) {
+    const birthDate = parseBirthDate(raw);
+    const existing = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { birthDate: true } });
+    if (existing.birthDate) {
+      throw new ConflictException('생년월일은 한 번만 입력할 수 있어요. 잘못 입력했다면 고객센터로 문의해 주세요.');
+    }
     const requiresConsent = calculateAge(birthDate, new Date()) < MINIMUM_AGE_WITHOUT_CONSENT;
     const user = await this.prisma.user.update({
       where: { id: userId },

@@ -74,7 +74,7 @@ export default function ParentalConsentOnboardingScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { flex: 1, justifyContent: 'center', paddingHorizontal: Spacing.four, gap: Spacing.four },
-  title: { textAlign: 'center' },
+  title: { textAlign: 'center', fontSize: 28, lineHeight: 36 },
   subtitle: { textAlign: 'center', marginTop: -Spacing.three },
   input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, fontSize: 16 },
   button: { borderRadius: 10, paddingVertical: Spacing.three, alignItems: 'center' },

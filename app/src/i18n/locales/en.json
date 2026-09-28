@@ -49,7 +49,10 @@
   "chat": {
     "loadFailed": "Couldn't load this chat. Please check that you're subscribed to this actor.",
     "replyPlaceholder": "Send a reply (text only)",
-    "send": "Send"
+    "send": "Send",
+    "waitingFirst": "You're subscribed! Messages from {{name}} will arrive here.",
+    "replyAfterFirst": "You can reply once the star sends their first message.",
+    "sendFailed": "Couldn't send. Please try again."
   },
   "mypage": {
     "title": "My page",
@@ -104,7 +107,8 @@
     "consentSend": "Send consent email",
     "consentSendFailed": "Couldn't send the email.",
     "nicknameTitle": "Choose a nickname",
-    "nicknameHint": "The actor's messages will call you by this nickname. If the actor quotes your reply, other subscribers can see it too, so please avoid using your real name."
+    "nicknameHint": "The actor's messages will call you by this nickname. If the actor quotes your reply, other subscribers can see it too, so please avoid using your real name.",
+    "birthDateInvalid": "Please check your date of birth."
   },
   "legal": {
     "draftTitle": "This document is a draft",

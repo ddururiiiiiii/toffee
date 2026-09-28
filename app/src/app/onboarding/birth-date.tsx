@@ -19,11 +19,20 @@ export default function BirthDateOnboardingScreen() {
   const [day, setDay] = useState('');
   const setBirthDate = useSetBirthDate();
 
+  const [invalid, setInvalid] = useState(false);
   const isValid = year.length === 4 && month.length >= 1 && day.length >= 1;
 
+  // 달력에 없는 날짜·미래 날짜는 보내기 전에 걸러서 바로 알려줌(서버도 한 번 더 검사)
   const handleSubmit = () => {
-    const iso = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    setBirthDate.mutate(iso);
+    const [y, m, d] = [Number(year), Number(month), Number(day)];
+    const date = new Date(Date.UTC(y, m - 1, d));
+    const real = date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+    if (!real || y < 1900 || date.getTime() > Date.now()) {
+      setInvalid(true);
+      return;
+    }
+    setInvalid(false);
+    setBirthDate.mutate(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
   };
 
   return (
@@ -76,6 +85,11 @@ export default function BirthDateOnboardingScreen() {
             <ThemedText style={styles.buttonText}>{t('onboarding.next')}</ThemedText>
           )}
         </Pressable>
+        {invalid && (
+          <ThemedText themeColor="danger" type="small">
+            {t('onboarding.birthDateInvalid')}
+          </ThemedText>
+        )}
         {setBirthDate.isError && (
           <ThemedText themeColor="danger" type="small">
             {setBirthDate.error instanceof ApiError ? setBirthDate.error.message : t('onboarding.saveFailed')}
@@ -89,7 +103,7 @@ export default function BirthDateOnboardingScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { flex: 1, justifyContent: 'center', paddingHorizontal: Spacing.four, gap: Spacing.four },
-  title: { textAlign: 'center' },
+  title: { textAlign: 'center', fontSize: 28, lineHeight: 36 },
   subtitle: { textAlign: 'center', marginTop: -Spacing.three },
   row: { flexDirection: 'row', gap: Spacing.two, justifyContent: 'center' },
   input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, fontSize: 16, width: 64, textAlign: 'center' },

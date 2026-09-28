@@ -33,7 +33,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
     // 정지 기간이 지났으면 상태값은 그대로여도(별도 재활성화 없이) 다시 이용 가능하게 취급
     if (user.status === UserStatus.SUSPENDED && user.suspendedUntil && user.suspendedUntil > new Date()) {
-      throw new UnauthorizedException('일시정지된 계정이에요.');
+      // 언제 풀리는지 같이 알려줌(태국 시간 기준 날짜·시각 — 서버 오류 문구 다국어화는 2차)
+      const until = user.suspendedUntil.toLocaleString('ko-KR', { timeZone: 'Asia/Bangkok', dateStyle: 'medium', timeStyle: 'short' });
+      throw new UnauthorizedException(`일시정지된 계정이에요. ${until}(태국 시간)부터 다시 이용할 수 있어요.`);
     }
     return { id: user.id, role: user.role };
   }

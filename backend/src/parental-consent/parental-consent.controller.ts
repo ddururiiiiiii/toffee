@@ -18,7 +18,7 @@ export class ParentalConsentController {
 
   @Patch('me/birth-date')
   setBirthDate(@CurrentUser() user: AuthenticatedUser, @Body() dto: SetBirthDateDto) {
-    return this.parentalConsentService.setBirthDate(user.id, new Date(dto.birthDate));
+    return this.parentalConsentService.setBirthDate(user.id, dto.birthDate);
   }
 
   @Post('me/parental-consent')

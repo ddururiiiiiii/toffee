@@ -49,7 +49,10 @@
   "chat": {
     "loadFailed": "无法加载聊天。请确认你是否已订阅该演员。",
     "replyPlaceholder": "发送回复（仅限文字）",
-    "send": "发送"
+    "send": "发送",
+    "waitingFirst": "已开始订阅！{{name}} 发送的消息会出现在这里。",
+    "replyAfterFirst": "明星发送第一条消息后即可回复。",
+    "sendFailed": "发送失败，请重试。"
   },
   "mypage": {
     "title": "我的",
@@ -104,7 +107,8 @@
     "consentSend": "发送同意邮件",
     "consentSendFailed": "邮件发送失败。",
     "nicknameTitle": "请设置昵称",
-    "nicknameHint": "演员的消息会用这个昵称称呼你。演员引用你的回复时，其他订阅者也能看到，所以请避免使用真实姓名。"
+    "nicknameHint": "演员的消息会用这个昵称称呼你。演员引用你的回复时，其他订阅者也能看到，所以请避免使用真实姓名。",
+    "birthDateInvalid": "请再次确认出生日期。"
   },
   "legal": {
     "draftTitle": "本文件为草案",
