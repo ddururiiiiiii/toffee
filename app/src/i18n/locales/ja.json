@@ -133,9 +133,6 @@
     "replies": "ファンからの返信 {{count}}件",
     "noReplies": "まだ返信はありません",
     "repliesEmpty": "このメッセージへのファンからの返信はまだありません。",
-    "postStory": "ストーリーを投稿",
-    "storyPosted": "ストーリーを投稿しました。24時間表示されます。",
-    "storyFailed": "ストーリーを投稿できませんでした。",
     "permissionDenied": "許可が必要です。設定から許可してください。",
     "media": {
       "PHOTO": "📷 写真",

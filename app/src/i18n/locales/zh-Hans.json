@@ -133,9 +133,6 @@
     "replies": "粉丝回复 {{count}} 条",
     "noReplies": "暂无回复",
     "repliesEmpty": "这条消息还没有粉丝回复。",
-    "postStory": "发布限时动态",
-    "storyPosted": "限时动态已发布，将显示 24 小时。",
-    "storyFailed": "限时动态发布失败。",
     "permissionDenied": "需要权限，请在设置中允许。",
     "media": {
       "PHOTO": "📷 照片",

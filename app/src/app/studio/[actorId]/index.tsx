@@ -24,7 +24,7 @@ import {
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useActor } from '@/hooks/use-actors';
-import { useCreateStory, useStudioMessages, useStudioSend, type Attachment, type StudioMessage } from '@/hooks/use-studio';
+import { useStudioMessages, useStudioSend, type Attachment, type StudioMessage } from '@/hooks/use-studio';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
@@ -80,40 +80,16 @@ export default function StudioChannelScreen() {
   const { data: actor } = useActor(actorId);
   const { data: messages, isLoading } = useStudioMessages(actorId);
   const send = useStudioSend(actorId);
-  const createStory = useCreateStory(actorId);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(recorder);
   const [draft, setDraft] = useState('');
   const [attachment, setAttachment] = useState<Attachment | null>(null);
   const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null);
 
-  const pickStory = async () => {
-    const picked = toAttachment(await ImagePicker.launchImageLibraryAsync(PICKER_OPTIONS));
-    if (!picked) return;
-    createStory.mutate(picked, {
-      onSuccess: () => setNotice({ text: t('studio.storyPosted'), error: false }),
-      onError: () => setNotice({ text: t('studio.storyFailed'), error: true }),
-    });
-  };
-
+  // 스토리 올리기는 후순위(3차)로 미뤄서 이 화면엔 없음 — 서버 API는 남아 있음(STATUS.md)
   useEffect(() => {
-    navigation.setOptions({
-      title: actor?.chatDisplayName ?? '',
-      headerRight: () => (
-        <Pressable onPress={pickStory} disabled={createStory.isPending} hitSlop={8}>
-          {createStory.isPending ? (
-            <ActivityIndicator color={theme.tint} />
-          ) : (
-            <ThemedText type="smallBold" style={{ color: theme.tint }}>
-              {t('studio.postStory')}
-            </ThemedText>
-          )}
-        </Pressable>
-      ),
-    });
-    // pickStory는 렌더마다 새로 만들어지지만 필요한 값(actorId/t)이 바뀔 때만 다시 등록하면 충분
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [actor, navigation, createStory.isPending, t, theme.tint]);
+    navigation.setOptions({ title: actor?.chatDisplayName ?? '' });
+  }, [actor, navigation]);
 
   const pickFromLibrary = async () => {
     const picked = toAttachment(await ImagePicker.launchImageLibraryAsync(PICKER_OPTIONS));

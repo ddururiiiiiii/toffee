@@ -5,7 +5,7 @@ import { uploadMedia, type UploadMediaType } from '@/lib/upload-media';
 import type { FanReply } from './use-console';
 import type { ChatMessage } from './use-messages';
 
-// 배우 본인 화면("스튜디오") — 내가 보낸 메시지(+메시지별 팬 답장 수), 발송, 스토리 올리기
+// 배우 본인 화면("스튜디오") — 내가 보낸 메시지(+메시지별 팬 답장 수), 발송
 
 export interface StudioMessage extends ChatMessage {
   replyCount: number;
@@ -54,19 +54,6 @@ export function useStudioSend(actorId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['actor-broadcasts', actorId] });
       void queryClient.invalidateQueries({ queryKey: ['actor-stats', actorId] });
-    },
-  });
-}
-
-export function useCreateStory(actorId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (attachment: Attachment) => {
-      const mediaKey = await uploadMedia(actorId, { purpose: 'story', ...attachment });
-      return apiClient.post(`/actors/${actorId}/stories`, { mediaType: attachment.mediaType, mediaKey });
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['actor-stories', actorId] });
     },
   });
 }

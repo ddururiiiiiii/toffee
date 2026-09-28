@@ -133,9 +133,6 @@
     "replies": "粉絲回覆 {{count}} 則",
     "noReplies": "尚無回覆",
     "repliesEmpty": "這則訊息還沒有粉絲回覆。",
-    "postStory": "發布限時動態",
-    "storyPosted": "已發布限時動態，將顯示 24 小時。",
-    "storyFailed": "限時動態發布失敗。",
     "permissionDenied": "需要權限，請在設定中允許。",
     "media": {
       "PHOTO": "📷 照片",

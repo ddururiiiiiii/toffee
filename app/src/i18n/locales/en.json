@@ -133,9 +133,6 @@
     "replies": "{{count}} fan replies",
     "noReplies": "No replies yet",
     "repliesEmpty": "No fan replies to this message yet.",
-    "postStory": "Post a story",
-    "storyPosted": "Story posted. It will be visible for 24 hours.",
-    "storyFailed": "Couldn't post the story.",
     "permissionDenied": "Permission is required. Please allow it in Settings.",
     "media": {
       "PHOTO": "📷 Photo",

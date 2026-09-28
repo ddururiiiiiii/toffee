@@ -133,9 +133,6 @@
     "replies": "팬 답장 {{count}}개",
     "noReplies": "아직 답장 없음",
     "repliesEmpty": "이 메시지에 달린 팬 답장이 없어요.",
-    "postStory": "스토리 올리기",
-    "storyPosted": "스토리를 올렸어요. 24시간 동안 보여요.",
-    "storyFailed": "스토리를 올리지 못했어요.",
     "permissionDenied": "권한이 필요해요. 설정에서 허용해주세요.",
     "media": {
       "PHOTO": "📷 사진",
