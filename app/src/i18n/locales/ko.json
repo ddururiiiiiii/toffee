@@ -1,0 +1,89 @@
+{
+  "common": {
+    "cancel": "취소",
+    "logout": "로그아웃",
+    "requestFailed": "요청에 실패했어요 ({{status}})"
+  },
+  "tabs": { "actors": "배우", "chats": "대화", "my": "마이" },
+  "screens": { "console": "콘솔", "terms": "이용약관", "privacy": "개인정보처리방침" },
+  "price": { "perMonth": "฿{{price}}/월", "amount": "฿{{price}}" },
+  "login": {
+    "tagline": "좋아하는 배우와 1:1로 대화해보세요",
+    "demoTitle": "이메일로 데모 로그인",
+    "demoHint": "소셜 로그인은 실제 앱 크리덴셜이 생기면 여기 자리에 붙어요. 지금은 이메일만으로 전체 플로우를 테스트할 수 있어요.",
+    "namePlaceholder": "닉네임 (선택)",
+    "submit": "로그인",
+    "failed": "로그인에 실패했어요."
+  },
+  "actors": {
+    "title": "배우 찾기",
+    "searchPlaceholder": "배우 또는 소속사 이름으로 검색",
+    "all": "전체",
+    "loadFailed": "배우 목록을 불러오지 못했어요.",
+    "empty": "검색 결과가 없어요."
+  },
+  "actorDetail": {
+    "monthlyPrice": "월 {{price}} (샌드박스 결제 — 실제 청구 없음)",
+    "discountApplied": "함께 구독 중인 배우가 있어서 {{base}} → {{effective}}로 할인 적용됐어요.",
+    "subscribeFailed": "구독에 실패했어요.",
+    "chat": "대화하기",
+    "subscribe": "구독하기"
+  },
+  "chats": {
+    "title": "대화",
+    "loadFailed": "대화 목록을 불러오지 못했어요.",
+    "empty": "아직 구독한 배우가 없어요. 배우 탭에서 구독을 시작해보세요.",
+    "noConversation": "아직 대화가 없어요"
+  },
+  "chat": {
+    "voiceMessage": "🎧 음성 메시지",
+    "loadFailed": "대화를 불러오지 못했어요. 구독 중인 배우인지 확인해주세요.",
+    "replyPlaceholder": "답장 보내기 (텍스트만 가능)",
+    "send": "전송"
+  },
+  "mypage": {
+    "title": "마이페이지",
+    "subscriptions": "구독 관리",
+    "subscriptionsHint": "결제 없이 구독 상태만 관리하는 데모 화면이에요. 실제 환불 규정은 정식 출시 때 앱스토어 정책을 따라요.",
+    "empty": "구독 중인 배우가 없어요.",
+    "since": "{{date}}부터",
+    "unsubscribe": "해지",
+    "unsubscribeTitle": "구독 해지",
+    "unsubscribeConfirm": "{{name}} 구독을 해지할까요?",
+    "language": "언어",
+    "languageSystem": "기기 언어 따르기"
+  },
+  "console": {
+    "title": "내가 관리하는 배우",
+    "empty": "담당 중인 배우가 없어요.",
+    "monitoring": "{{name}} 모니터링 중",
+    "tabs": { "monitor": "모니터링", "replies": "답장", "stats": "통계" },
+    "media": { "PHOTO": "사진", "AUDIO": "음성", "VIDEO": "영상", "TEXT": "텍스트" },
+    "kind": { "story": "스토리", "message": "메시지" },
+    "monitorEmpty": "아직 배우가 보낸 메시지·스토리가 없어요.",
+    "repliesEmpty": "아직 팬 답장이 없어요.",
+    "deletedFan": "탈퇴한 팬",
+    "activeSubscribers": "활성 구독자 수",
+    "lastBroadcast": "마지막 발송일",
+    "noBroadcast": "발송 이력 없음"
+  },
+  "onboarding": {
+    "birthDateTitle": "생년월일을 알려주세요",
+    "birthDateHint": "만 14세 미만이면 법정대리인(부모님) 동의를 먼저 받아야 서비스를 이용할 수 있어요.",
+    "next": "다음",
+    "saveFailed": "저장하지 못했어요.",
+    "consentTitle": "법정대리인 동의가 필요해요",
+    "consentHint": "부모님(법정대리인) 이메일을 입력하면 동의 확인 메일을 보내드려요. 동의가 끝나야 구독하고 대화를 나눌 수 있어요.",
+    "consentSentTitle": "메일을 보냈어요",
+    "consentSentHint": "부모님이 메일함에서 링크를 눌러 동의를 완료하면 자동으로 이용할 수 있게 돼요.",
+    "consentResend": "메일 다시 보내기",
+    "parentEmailPlaceholder": "부모님 이메일",
+    "consentSend": "동의 메일 보내기",
+    "consentSendFailed": "메일을 보내지 못했어요."
+  },
+  "legal": {
+    "draftTitle": "이 문서는 초안입니다",
+    "draftBody": "정식 출시 전 반드시 변호사 검토를 거쳐야 하며, 지금은 법적 효력이 없습니다.",
+    "koreanOnly": ""
+  }
+}

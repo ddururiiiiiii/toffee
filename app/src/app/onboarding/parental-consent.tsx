@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -11,6 +12,7 @@ import { Spacing } from '@/constants/theme';
 
 export default function ParentalConsentOnboardingScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const [parentEmail, setParentEmail] = useState('');
   const requestConsent = useRequestParentalConsent();
 
@@ -18,22 +20,21 @@ export default function ParentalConsentOnboardingScreen() {
     <SafeAreaView style={styles.container}>
       <ThemedView style={styles.content}>
         <ThemedText type="title" style={styles.title}>
-          법정대리인 동의가 필요해요
+          {t('onboarding.consentTitle')}
         </ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-          부모님(법정대리인) 이메일을 입력하면 동의 확인 메일을 보내드려요. 동의가 끝나야
-          구독하고 대화를 나눌 수 있어요.
+          {t('onboarding.consentHint')}
         </ThemedText>
 
         {requestConsent.isSuccess ? (
           <ThemedView type="backgroundElement" style={styles.pendingCard}>
-            <ThemedText type="smallBold">메일을 보냈어요</ThemedText>
+            <ThemedText type="smallBold">{t('onboarding.consentSentTitle')}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              부모님이 메일함에서 링크를 눌러 동의를 완료하면 자동으로 이용할 수 있게 돼요.
+              {t('onboarding.consentSentHint')}
             </ThemedText>
             <Pressable onPress={() => requestConsent.mutate(parentEmail)} disabled={requestConsent.isPending}>
               <ThemedText type="small" themeColor="tint">
-                메일 다시 보내기
+                {t('onboarding.consentResend')}
               </ThemedText>
             </Pressable>
           </ThemedView>
@@ -42,7 +43,7 @@ export default function ParentalConsentOnboardingScreen() {
             <TextInput
               value={parentEmail}
               onChangeText={setParentEmail}
-              placeholder="부모님 이메일"
+              placeholder={t('onboarding.parentEmailPlaceholder')}
               autoCapitalize="none"
               keyboardType="email-address"
               placeholderTextColor={theme.textSecondary}
@@ -55,12 +56,12 @@ export default function ParentalConsentOnboardingScreen() {
               {requestConsent.isPending ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <ThemedText style={styles.buttonText}>동의 메일 보내기</ThemedText>
+                <ThemedText style={styles.buttonText}>{t('onboarding.consentSend')}</ThemedText>
               )}
             </Pressable>
             {requestConsent.isError && (
               <ThemedText themeColor="danger" type="small">
-                {requestConsent.error instanceof ApiError ? requestConsent.error.message : '메일을 보내지 못했어요.'}
+                {requestConsent.error instanceof ApiError ? requestConsent.error.message : t('onboarding.consentSendFailed')}
               </ThemedText>
             )}
           </>

@@ -1,0 +1,89 @@
+{
+  "common": {
+    "cancel": "取消",
+    "logout": "退出登录",
+    "requestFailed": "请求失败（{{status}}）"
+  },
+  "tabs": { "actors": "演员", "chats": "聊天", "my": "我的" },
+  "screens": { "console": "控制台", "terms": "服务条款", "privacy": "隐私政策" },
+  "price": { "perMonth": "฿{{price}}/月", "amount": "฿{{price}}" },
+  "login": {
+    "tagline": "和你喜欢的演员一对一聊天",
+    "demoTitle": "使用邮箱进行演示登录",
+    "demoHint": "正式的社交账号登录准备好后会显示在这里。现在只用邮箱就可以体验完整流程。",
+    "namePlaceholder": "昵称（选填）",
+    "submit": "登录",
+    "failed": "登录失败。"
+  },
+  "actors": {
+    "title": "寻找演员",
+    "searchPlaceholder": "按演员或经纪公司名称搜索",
+    "all": "全部",
+    "loadFailed": "无法加载演员列表。",
+    "empty": "没有搜索结果。"
+  },
+  "actorDetail": {
+    "monthlyPrice": "每月 {{price}}（沙盒支付 — 不会实际扣款）",
+    "discountApplied": "你同时订阅了搭档演员，已享受折扣：{{base}} → {{effective}}。",
+    "subscribeFailed": "订阅失败。",
+    "chat": "去聊天",
+    "subscribe": "订阅"
+  },
+  "chats": {
+    "title": "聊天",
+    "loadFailed": "无法加载聊天列表。",
+    "empty": "你还没有订阅任何演员，去“演员”标签页开始订阅吧。",
+    "noConversation": "还没有消息"
+  },
+  "chat": {
+    "voiceMessage": "🎧 语音消息",
+    "loadFailed": "无法加载聊天。请确认你是否已订阅该演员。",
+    "replyPlaceholder": "发送回复（仅限文字）",
+    "send": "发送"
+  },
+  "mypage": {
+    "title": "我的",
+    "subscriptions": "订阅管理",
+    "subscriptionsHint": "这是不涉及付款、只管理订阅状态的演示页面。正式上线后，退款规则将遵循应用商店的政策。",
+    "empty": "你还没有订阅任何演员。",
+    "since": "自 {{date}} 起",
+    "unsubscribe": "取消订阅",
+    "unsubscribeTitle": "取消订阅",
+    "unsubscribeConfirm": "要取消订阅 {{name}} 吗？",
+    "language": "语言",
+    "languageSystem": "跟随设备语言"
+  },
+  "console": {
+    "title": "我管理的演员",
+    "empty": "你还没有负责的演员。",
+    "monitoring": "正在监控 {{name}}",
+    "tabs": { "monitor": "监控", "replies": "回复", "stats": "统计" },
+    "media": { "PHOTO": "照片", "AUDIO": "语音", "VIDEO": "视频", "TEXT": "文字" },
+    "kind": { "story": "限时动态", "message": "消息" },
+    "monitorEmpty": "演员还没有发送消息或限时动态。",
+    "repliesEmpty": "还没有粉丝回复。",
+    "deletedFan": "已注销的粉丝",
+    "activeSubscribers": "活跃订阅人数",
+    "lastBroadcast": "最近发送日期",
+    "noBroadcast": "暂无发送记录"
+  },
+  "onboarding": {
+    "birthDateTitle": "请填写你的出生日期",
+    "birthDateHint": "未满14周岁的用户，需要先取得父母（法定监护人）的同意才能使用本服务。",
+    "next": "下一步",
+    "saveFailed": "保存失败。",
+    "consentTitle": "需要监护人同意",
+    "consentHint": "输入父母（法定监护人）的邮箱，我们会发送同意确认邮件。完成同意后即可订阅和聊天。",
+    "consentSentTitle": "邮件已发送",
+    "consentSentHint": "父母点击邮件中的链接完成同意后，你就可以自动开始使用了。",
+    "consentResend": "重新发送邮件",
+    "parentEmailPlaceholder": "父母的邮箱",
+    "consentSend": "发送同意邮件",
+    "consentSendFailed": "邮件发送失败。"
+  },
+  "legal": {
+    "draftTitle": "本文件为草案",
+    "draftBody": "正式上线前必须经过律师审核，目前不具有法律效力。",
+    "koreanOnly": "此草案目前仅提供韩语版本。"
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "common": {
+    "cancel": "キャンセル",
+    "logout": "ログアウト",
+    "requestFailed": "リクエストに失敗しました（{{status}}）"
+  },
+  "tabs": { "actors": "俳優", "chats": "トーク", "my": "マイ" },
+  "screens": { "console": "コンソール", "terms": "利用規約", "privacy": "プライバシーポリシー" },
+  "price": { "perMonth": "฿{{price}}/月", "amount": "฿{{price}}" },
+  "login": {
+    "tagline": "好きな俳優と1対1でトークしよう",
+    "demoTitle": "メールアドレスでデモログイン",
+    "demoHint": "ソーシャルログインは本番用の認証情報が用意でき次第ここに表示されます。今はメールアドレスだけで全体の流れを試せます。",
+    "namePlaceholder": "ニックネーム（任意）",
+    "submit": "ログイン",
+    "failed": "ログインできませんでした。"
+  },
+  "actors": {
+    "title": "俳優をさがす",
+    "searchPlaceholder": "俳優名・事務所名で検索",
+    "all": "すべて",
+    "loadFailed": "俳優一覧を読み込めませんでした。",
+    "empty": "検索結果がありません。"
+  },
+  "actorDetail": {
+    "monthlyPrice": "月額 {{price}}（サンドボックス決済 — 実際の請求はありません）",
+    "discountApplied": "ペアの俳優もあわせて購読中のため、{{base}} → {{effective}} に割引されました。",
+    "subscribeFailed": "購読できませんでした。",
+    "chat": "トークする",
+    "subscribe": "購読する"
+  },
+  "chats": {
+    "title": "トーク",
+    "loadFailed": "トーク一覧を読み込めませんでした。",
+    "empty": "まだ購読している俳優がいません。「俳優」タブから購読を始めましょう。",
+    "noConversation": "まだメッセージがありません"
+  },
+  "chat": {
+    "voiceMessage": "🎧 ボイスメッセージ",
+    "loadFailed": "トークを読み込めませんでした。この俳優を購読しているか確認してください。",
+    "replyPlaceholder": "返信する（テキストのみ）",
+    "send": "送信"
+  },
+  "mypage": {
+    "title": "マイページ",
+    "subscriptions": "購読の管理",
+    "subscriptionsHint": "決済なしで購読状態だけを管理するデモ画面です。実際の返金規定は正式リリース時にストアのポリシーに従います。",
+    "empty": "購読中の俳優はいません。",
+    "since": "{{date}}から",
+    "unsubscribe": "解約",
+    "unsubscribeTitle": "購読の解約",
+    "unsubscribeConfirm": "{{name}}の購読を解約しますか？",
+    "language": "言語",
+    "languageSystem": "端末の言語に合わせる"
+  },
+  "console": {
+    "title": "担当している俳優",
+    "empty": "担当している俳優はいません。",
+    "monitoring": "{{name}}をモニタリング中",
+    "tabs": { "monitor": "モニタリング", "replies": "返信", "stats": "統計" },
+    "media": { "PHOTO": "写真", "AUDIO": "音声", "VIDEO": "動画", "TEXT": "テキスト" },
+    "kind": { "story": "ストーリー", "message": "メッセージ" },
+    "monitorEmpty": "俳優が送信したメッセージ・ストーリーはまだありません。",
+    "repliesEmpty": "ファンからの返信はまだありません。",
+    "deletedFan": "退会したファン",
+    "activeSubscribers": "アクティブな購読者数",
+    "lastBroadcast": "最終送信日",
+    "noBroadcast": "送信履歴なし"
+  },
+  "onboarding": {
+    "birthDateTitle": "生年月日を入力してください",
+    "birthDateHint": "14歳未満の方は、保護者（法定代理人）の同意を得てからご利用いただけます。",
+    "next": "次へ",
+    "saveFailed": "保存できませんでした。",
+    "consentTitle": "保護者の同意が必要です",
+    "consentHint": "保護者（法定代理人）のメールアドレスを入力すると、同意確認メールをお送りします。同意が完了すると購読・トークができるようになります。",
+    "consentSentTitle": "メールを送信しました",
+    "consentSentHint": "保護者の方がメール内のリンクから同意を完了すると、自動的にご利用いただけるようになります。",
+    "consentResend": "メールを再送信",
+    "parentEmailPlaceholder": "保護者のメールアドレス",
+    "consentSend": "同意メールを送信",
+    "consentSendFailed": "メールを送信できませんでした。"
+  },
+  "legal": {
+    "draftTitle": "この文書は草案です",
+    "draftBody": "正式リリース前に必ず弁護士の確認を受ける必要があり、現時点では法的効力はありません。",
+    "koreanOnly": "この草案は現在、韓国語版のみご用意しています。"
+  }
+}

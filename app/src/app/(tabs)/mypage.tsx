@@ -1,6 +1,7 @@
 import { ActivityIndicator, Alert, FlatList, Image, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -8,19 +9,18 @@ import { useAuth } from '@/lib/auth-context';
 import { useMySubscriptions, useUnsubscribe, type Subscription } from '@/hooks/use-subscriptions';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
-
-function formatPrice(cents: number) {
-  return `฿${(cents / 100).toFixed(0)}/월`;
-}
+import { LANGUAGE_NATIVE_NAMES, SUPPORTED_LANGUAGES, type SupportedLanguage } from '@/i18n/languages';
+import { useLocalePreference } from '@/i18n/locale-preference-context';
 
 function SubscriptionRow({ subscription }: { subscription: Subscription }) {
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
   const unsubscribe = useUnsubscribe(subscription.actorId);
 
   const confirmUnsubscribe = () => {
-    Alert.alert('구독 해지', `${subscription.actor.chatDisplayName} 구독을 해지할까요?`, [
-      { text: '취소', style: 'cancel' },
-      { text: '해지', style: 'destructive', onPress: () => unsubscribe.mutate() },
+    Alert.alert(t('mypage.unsubscribeTitle'), t('mypage.unsubscribeConfirm', { name: subscription.actor.chatDisplayName }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('mypage.unsubscribe'), style: 'destructive', onPress: () => unsubscribe.mutate() },
     ]);
   };
 
@@ -33,14 +33,47 @@ function SubscriptionRow({ subscription }: { subscription: Subscription }) {
       <ThemedView style={styles.rowBody}>
         <ThemedText type="smallBold">{subscription.actor.chatDisplayName}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          {formatPrice(subscription.actor.monthlyPriceCents)} · {new Date(subscription.startedAt).toLocaleDateString('ko-KR')}부터
+          {t('price.perMonth', { price: (subscription.actor.monthlyPriceCents / 100).toFixed(0) })} ·{' '}
+          {t('mypage.since', { date: new Date(subscription.startedAt).toLocaleDateString(i18n.language) })}
         </ThemedText>
       </ThemedView>
       <Pressable onPress={confirmUnsubscribe} disabled={unsubscribe.isPending} style={styles.unsubscribeButton}>
         <ThemedText type="small" themeColor="danger">
-          해지
+          {t('mypage.unsubscribe')}
         </ThemedText>
       </Pressable>
+    </ThemedView>
+  );
+}
+
+// 언어 선택 — "기기 언어 따르기"(기본) 또는 직접 고정. 언어 이름은 항상 그 언어 자신의 표기로.
+function LanguagePicker() {
+  const theme = useTheme();
+  const { t } = useTranslation();
+  const { override, setOverride } = useLocalePreference();
+  const options: { value: SupportedLanguage | null; label: string }[] = [
+    { value: null, label: t('mypage.languageSystem') },
+    ...SUPPORTED_LANGUAGES.map((language) => ({ value: language, label: LANGUAGE_NATIVE_NAMES[language] })),
+  ];
+
+  return (
+    <ThemedView style={styles.languageSection}>
+      <ThemedText type="smallBold">{t('mypage.language')}</ThemedText>
+      <ThemedView style={styles.languageOptions}>
+        {options.map((option) => {
+          const selected = override === option.value;
+          return (
+            <Pressable
+              key={option.value ?? 'system'}
+              onPress={() => setOverride(option.value)}
+              style={[styles.languageChip, { backgroundColor: selected ? theme.tint : theme.backgroundElement }]}>
+              <ThemedText type="small" style={selected ? styles.languageChipTextSelected : undefined}>
+                {option.label}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </ThemedView>
     </ThemedView>
   );
 }
@@ -48,20 +81,21 @@ function SubscriptionRow({ subscription }: { subscription: Subscription }) {
 export default function MyPageScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const { t } = useTranslation();
   const { logout } = useAuth();
   const { data: subscriptions, isLoading } = useMySubscriptions();
 
   return (
     <SafeAreaView style={styles.container}>
       <ThemedText type="title" style={styles.title}>
-        마이페이지
+        {t('mypage.title')}
       </ThemedText>
 
       <ThemedText type="smallBold" style={styles.sectionLabel}>
-        구독 관리
+        {t('mypage.subscriptions')}
       </ThemedText>
       <ThemedText type="small" themeColor="textSecondary" style={styles.sectionHint}>
-        결제 없이 구독 상태만 관리하는 데모 화면이에요. 실제 환불 규정은 정식 출시 때 앱스토어 정책을 따라요.
+        {t('mypage.subscriptionsHint')}
       </ThemedText>
 
       {isLoading ? (
@@ -73,29 +107,31 @@ export default function MyPageScreen() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <ThemedText type="small" themeColor="textSecondary" style={styles.emptyMessage}>
-              구독 중인 배우가 없어요.
+              {t('mypage.empty')}
             </ThemedText>
           }
           renderItem={({ item }) => <SubscriptionRow subscription={item} />}
         />
       )}
 
+      <LanguagePicker />
+
       <ThemedView style={styles.legalLinks}>
         <Pressable onPress={() => router.push('/terms')}>
           <ThemedText type="small" themeColor="textSecondary">
-            이용약관
+            {t('screens.terms')}
           </ThemedText>
         </Pressable>
         <Pressable onPress={() => router.push('/privacy')}>
           <ThemedText type="small" themeColor="textSecondary">
-            개인정보처리방침
+            {t('screens.privacy')}
           </ThemedText>
         </Pressable>
       </ThemedView>
 
       <Pressable onPress={logout} style={[styles.logoutButton, { borderColor: theme.backgroundSelected }]}>
         <ThemedText type="smallBold" themeColor="danger">
-          로그아웃
+          {t('common.logout')}
         </ThemedText>
       </Pressable>
     </SafeAreaView>
@@ -104,6 +140,10 @@ export default function MyPageScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  languageSection: { paddingHorizontal: Spacing.four, gap: Spacing.two, marginTop: Spacing.two },
+  languageOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  languageChip: { borderRadius: 999, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
+  languageChipTextSelected: { color: '#fff' },
   legalLinks: { flexDirection: 'row', gap: Spacing.four, paddingHorizontal: Spacing.four, marginTop: Spacing.two },
   title: { fontSize: 32, lineHeight: 40, paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
   sectionLabel: { paddingHorizontal: Spacing.four, marginTop: Spacing.four },

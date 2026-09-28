@@ -186,4 +186,12 @@ export class AuthService {
   private generateFallbackName(): string {
     return `팬${Date.now().toString(36)}`;
   }
+
+  getMe(userId: string) {
+    return this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { id: true, role: true, locale: true } });
+  }
+
+  updateLocale(userId: string, locale: string) {
+    return this.prisma.user.update({ where: { id: userId }, data: { locale }, select: { id: true, role: true, locale: true } });
+  }
 }

@@ -6,8 +6,12 @@ import * as Sentry from '@sentry/react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
+import '@/i18n';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { LocalePreferenceProvider } from '@/i18n/locale-preference-context';
+import { useSyncLocale } from '@/hooks/use-sync-locale';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { useOnboardingStatus } from '@/hooks/use-onboarding';
 
@@ -63,7 +67,13 @@ function AuthGate({ children }: { children: ReactNode }) {
 
 export default Sentry.wrap(RootLayout);
 
+function LocaleSync() {
+  useSyncLocale();
+  return null;
+}
+
 function RootLayout() {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const [fontsLoaded, fontError] = useFonts({ NotoSansThai_400Regular });
 
@@ -71,7 +81,9 @@ function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <LocalePreferenceProvider>
       <AuthProvider>
+        <LocaleSync />
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <AnimatedSplashOverlay />
           <AuthGate>
@@ -80,20 +92,22 @@ function RootLayout() {
               <Stack.Screen name="login" />
               <Stack.Screen name="actor/[id]" options={{ headerShown: true, title: '' }} />
               <Stack.Screen name="chat/[actorId]" options={{ headerShown: true, title: '' }} />
-              <Stack.Screen name="console/index" options={{ headerShown: true, title: '콘솔' }} />
+              <Stack.Screen name="console/index" options={{ headerShown: true, title: t('screens.console') }} />
               <Stack.Screen name="console/[actorId]" options={{ headerShown: true, title: '' }} />
+              {/* 운영자 화면은 운영자(한국어) 전용이라 의도적으로 다국어 처리 안 함 */}
               <Stack.Screen name="admin/index" options={{ headerShown: true, title: '운영자' }} />
               <Stack.Screen name="admin/reports" options={{ headerShown: true, title: '신고 처리' }} />
               <Stack.Screen name="admin/banned-words" options={{ headerShown: true, title: '금칙어 관리' }} />
               <Stack.Screen name="admin/users" options={{ headerShown: true, title: '회원 관리' }} />
               <Stack.Screen name="onboarding/birth-date" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/parental-consent" options={{ headerShown: true, title: '' }} />
-              <Stack.Screen name="terms" options={{ headerShown: true, title: '이용약관' }} />
-              <Stack.Screen name="privacy" options={{ headerShown: true, title: '개인정보처리방침' }} />
+              <Stack.Screen name="terms" options={{ headerShown: true, title: t('screens.terms') }} />
+              <Stack.Screen name="privacy" options={{ headerShown: true, title: t('screens.privacy') }} />
             </Stack>
           </AuthGate>
         </ThemeProvider>
       </AuthProvider>
+      </LocalePreferenceProvider>
     </QueryClientProvider>
   );
 }

@@ -1,6 +1,8 @@
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -8,14 +10,15 @@ import { useMySubscriptions, type Subscription } from '@/hooks/use-subscriptions
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
-function formatLastActive(sub: Subscription) {
+function formatLastActive(sub: Subscription, t: TFunction, locale: string) {
   const latest = [sub.lastArtistMessageAt, sub.lastFanReplyAt].filter(Boolean).sort().at(-1);
-  if (!latest) return '아직 대화가 없어요';
-  return new Date(latest).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+  if (!latest) return t('chats.noConversation');
+  return new Date(latest).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
 }
 
 function ChatRow({ subscription, onPress }: { subscription: Subscription; onPress: () => void }) {
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
   return (
     <Pressable onPress={onPress} style={[styles.row, { borderBottomColor: theme.backgroundElement }]}>
       <Image
@@ -25,7 +28,7 @@ function ChatRow({ subscription, onPress }: { subscription: Subscription; onPres
       <ThemedView style={styles.rowBody}>
         <ThemedText type="smallBold">{subscription.actor.chatDisplayName}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          {formatLastActive(subscription)}
+          {formatLastActive(subscription, t, i18n.language)}
         </ThemedText>
       </ThemedView>
     </Pressable>
@@ -35,19 +38,20 @@ function ChatRow({ subscription, onPress }: { subscription: Subscription; onPres
 export default function ChatsScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const { t } = useTranslation();
   const { data: subscriptions, isLoading, isError } = useMySubscriptions();
 
   return (
     <SafeAreaView style={styles.container}>
       <ThemedText type="title" style={styles.title}>
-        대화
+        {t('chats.title')}
       </ThemedText>
 
       {isLoading ? (
         <ActivityIndicator style={styles.loading} color={theme.tint} />
       ) : isError ? (
         <ThemedText style={styles.centerMessage} themeColor="danger">
-          대화 목록을 불러오지 못했어요.
+          {t('chats.loadFailed')}
         </ThemedText>
       ) : (
         <FlatList
@@ -55,7 +59,7 @@ export default function ChatsScreen() {
           keyExtractor={(item) => item.id}
           ListEmptyComponent={
             <ThemedText style={styles.centerMessage} themeColor="textSecondary">
-              아직 구독한 배우가 없어요. 배우 탭에서 구독을 시작해보세요.
+              {t('chats.empty')}
             </ThemedText>
           }
           renderItem={({ item }) => (

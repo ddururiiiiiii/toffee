@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -8,6 +9,7 @@ import { Spacing } from '@/constants/theme';
 
 // 초안 — 정식 출시 전 반드시 변호사 검토 필요. 실제 서비스 동작(구독 정책, 비대칭 메시징,
 // 모더레이션, 연령 정책)을 반영해서 초안을 잡아뒀을 뿐, 법적 효력을 가진 최종본이 아님.
+// 본문은 변호사 검토 후 최종본이 나오면 언어별로 번역 — 초안 단계에선 한국어만 둠(초안 안내 문구만 다국어)
 const SECTIONS: { title: string; body: string }[] = [
   {
     title: '1. 서비스 개요',
@@ -54,14 +56,20 @@ const SECTIONS: { title: string; body: string }[] = [
 
 export default function TermsScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
         <ThemedView style={[styles.draftNotice, { backgroundColor: theme.tintSoft }]}>
-          <ThemedText type="smallBold">이 문서는 초안입니다</ThemedText>
+          <ThemedText type="smallBold">{t('legal.draftTitle')}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            정식 출시 전 반드시 변호사 검토를 거쳐야 하며, 지금은 법적 효력이 없습니다.
+            {t('legal.draftBody')}
           </ThemedText>
+          {t('legal.koreanOnly') !== '' && (
+            <ThemedText type="small" themeColor="textSecondary">
+              {t('legal.koreanOnly')}
+            </ThemedText>
+          )}
         </ThemedView>
 
         {SECTIONS.map((section) => (

@@ -12,7 +12,7 @@
 | CI/CD (`.github/workflows`), 자동 DB 백업 | CI **완료 (2026-09-28)**. 배포(CD)·DB 백업은 호스팅 결정 후 |
 | 헬스체크 (`/health/live` 분리) | 미착수 |
 | 루트 `CLAUDE.md`, README 컨벤션 문서화 | **이번에 해결** (`CLAUDE.md` 신설) |
-| `Actor` 다국어 필드, 앱 i18n 라이브러리 | 미착수 (메시지 번역 테이블은 이미 있음, 아래 참고) |
+| `Actor` 다국어 필드, 앱 i18n 라이브러리 | 앱 i18n **완료 (2026-09-28)**. `Actor`/`Agency` 같은 DB 콘텐츠 다국어는 미착수 |
 | 브랜드 팔레트/폰트 적용 | **완료** — `app/src/constants/theme.ts`, Noto Sans Thai |
 
 ## 배우 본인 계정 (`Role.ACTOR`) — 구현 완료 (2026-09-18)
@@ -81,6 +81,51 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
 - **아직 안 한 것**: 앱/웹 쪽에 이 엔드포인트들을 실제로 보여주는 화면 자체가 없음
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
+
+## 다국어(i18n) 기반 — 구현 완료 (2026-09-28)
+
+**언어 목록**: `ko, th, en, ja, zh-Hans, zh-Hant` — 앱 `app/src/i18n/languages.ts`와 백엔드
+`backend/src/common/i18n/locales.ts`를 같은 목록으로 유지할 것. 기본(폴백)은 `en`.
+
+**앱** (`i18next` + `react-i18next` + `expo-localization`):
+- 문구 원본은 `app/src/i18n/locales/ko.json`, 나머지 5개 파일에 같은 키(현재 78개). 새 화면은
+  처음부터 `const { t } = useTranslation()` + 키로 작성. 키 누락은 영어로 표시됨.
+- 기기 언어 감지는 `expo-localization`(젤리는 OTA 때문에 NativeModules를 직접 읽었지만, 토피는
+  아직 스토어 빌드 전이고 웹도 지원해야 해서 공식 모듈 사용). 중국어는 `languageScriptCode`
+  (Hant/Hans) 우선, 없으면 지역(TW/HK/MO → 번체, 그 외 → 간체).
+- `LocalePreferenceProvider`: 기본은 기기 언어를 계속 따라가고, 마이페이지에서 직접 고르면
+  고정(`toffee_locale_override`, 네이티브 SecureStore/웹 localStorage — `lib/preference-storage.ts`).
+- `useSyncLocale`: 로그인 상태에서 언어가 정해지거나 바뀌면 `PATCH /auth/me/locale`.
+- 날짜는 `toLocaleDateString(i18n.language)` — 태국어는 불기(2569년) 표기로 나옴(태국 현지
+  관행이라 그대로 둠). 가격은 `price.perMonth`/`price.amount` 키(통화는 ฿ 고정).
+- **의도적으로 한국어만 둔 것**: 운영자(ADMIN) 화면 4개(운영자 본인 전용), 약관/개인정보처리방침
+  **본문**(변호사 검토 후 최종본을 언어별로 — 지금은 초안 안내 + "한국어만 제공" 안내만 다국어).
+- 서버가 돌려주는 에러 메시지(`ApiError.message`)는 아직 한국어 — 화면에 그대로 뜨는 곳이
+  있음(구독 실패 사유 등). 후속 작업.
+
+**백엔드**:
+- `User.locale String?`(마이그레이션 `20260928020000_add_user_locale`), `GET /auth/me`가
+  `{ id, role, locale }` 반환(원래는 JWT의 `{id, role}`만), `PATCH /auth/me/locale`(`@IsIn`).
+- 푸시: `PushService.sendToUser(userId, compose)` / `notifyActorStaff(actorId, compose)` —
+  문구를 고정 문자열 대신 `compose({ locale, displayName })` 함수로 받아 **받는 사람별로** 조립.
+  문구 사전은 `notifications/push-messages.ts`.
+- 팬 새 메시지 푸시는 카톡처럼 제목 = 배우 대화방 이름, 본문 = 메시지 미리보기(60자). 본문이
+  없는 미디어는 "사진을 보냈어요" 등 받는 사람 언어로.
+- **버그 수정**: 원래 팬 푸시 본문에 `{{name}}`이 치환 안 된 채 그대로 나가고 있었음 —
+  `listForFan`에서만 치환하고 푸시엔 원문을 넣었던 것. 이제 받는 팬 이름으로 치환(스태프
+  모니터링 푸시는 원문 유지). `messages.service.spec.ts`로 회귀 테스트.
+
+**번역 품질**: th/ja/zh-Hans/zh-Hant 문구는 전부 기계 작성(원어민 검수 전) — 운영 보류 목록에
+검수 항목으로 올림.
+
+**검증**: 로컬 Postgres 마이그레이션(드리프트 0) → 실서버에서 `PATCH /auth/me/locale` 정상/
+잘못된 값 400 확인 → Expo web + Playwright로 브라우저 언어 th-TH/zh-TW/zh-CN/fr-FR 각각
+태국어/번체/간체/영어(폴백)로 뜨는 것, 마이페이지에서 日本語 선택 시 즉시 전환 + 새로고침 후
+유지 + 서버 `User.locale` 갱신 확인.
+
+**남은 것**: DB 콘텐츠 다국어(`Actor` 이름·소개, `Agency` 이름 — 지금은 입력한 언어 그대로
+표시), 서버 에러 메시지 다국어(에러 코드 방식 검토), 태국 사용자가 생년월일에 불기 연도(2548
+등)를 입력하는 경우 처리.
 
 ## CI + Sentry — 구현 완료 (2026-09-28)
 
@@ -536,9 +581,10 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   (`backend/src/main.ts`).
 - [x] ID 필드는 `@IsUUID()` 대신 `@IsString()+@IsNotEmpty()` — 이미 컨벤션으로 적용 중.
 - [x] JWT는 매 요청마다 DB에서 유저 상태 재조회(정지/차단 즉시 반영) — 이미 구현됨.
-- [ ] **로그인/인증 엔드포인트 rate limiting** — (2026-09-28 정정) 전역 `ThrottlerGuard`
-  (IP당 분당 60회)는 이미 걸려 있음(실서버에서 61번째 요청부터 429 확인). 로그인 엔드포인트
-  전용으로 더 빡빡한 제한(`@Throttle`)은 아직 없음.
+- [x] **로그인/인증 엔드포인트 rate limiting** — (2026-09-28 재정정) 전역 `ThrottlerGuard`
+  (IP당 분당 60회)에 더해, 소셜 로그인 5개 엔드포인트엔 이미 `@Throttle(LOGIN_THROTTLE)`(분당
+  5회)가 걸려 있었음(`auth.controller.ts`). 같은 날 앞서 "로그인 전용 제한은 없음"이라고 적은
+  것도 틀렸던 것 — 확인 없이 체크리스트 문구만 보고 적었음.
 - [x] **의존성 취약점 스캔** — `.github/dependabot.yml`(backend/app npm 주 1회,
   Actions 월 1회, Expo SDK 묶인 패키지 메이저는 제외) (2026-09-28). GitHub 저장소 설정에서
   "Dependabot alerts/security updates"가 켜져 있는지는 사용자가 확인 필요.

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PushService } from '../notifications/push.service.js';
+import { pushStrings } from '../notifications/push-messages.js';
 import { ModerationService } from '../moderation/moderation.service.js';
 import { MessageSenderType } from '../generated/prisma/enums.js';
 import { ensureCanViewActor, ensureIsActorSelf } from '../common/authorization/actor-access.js';
@@ -9,6 +10,11 @@ import type { SendReplyDto } from './dto/send-reply.dto.js';
 import type { SendBroadcastDto } from './dto/send-broadcast.dto.js';
 
 const NAME_PLACEHOLDER = '{{name}}';
+const PUSH_PREVIEW_LENGTH = 60;
+
+function personalize(body: string, fanName: string): string {
+  return body.replaceAll(NAME_PLACEHOLDER, fanName);
+}
 
 @Injectable()
 export class MessagesService {
@@ -35,7 +41,7 @@ export class MessagesService {
       ...message,
       body:
         message.senderType === MessageSenderType.ARTIST && message.body
-          ? message.body.replaceAll(NAME_PLACEHOLDER, fan.displayName)
+          ? personalize(message.body, fan.displayName)
           : message.body,
     }));
   }
@@ -71,17 +77,28 @@ export class MessagesService {
       data: { lastArtistMessageAt: new Date() },
     });
 
-    // 푸시는 실패해도 메시지 발송 자체는 성공으로 처리 (best-effort)
+    // 푸시는 실패해도 메시지 발송 자체는 성공으로 처리 (best-effort). 카톡처럼 제목은 보낸 사람(대화방 이름),
+    // 본문은 메시지 미리보기 — {{name}}은 받는 팬 본인 이름으로 치환, 텍스트가 없으면 미디어 종류 안내를
+    // 받는 사람 언어로.
+    const actor = await this.prisma.actor.findUniqueOrThrow({ where: { id: actorId }, select: { chatDisplayName: true } });
+    const preview = (locale: string | null, fanName?: string) => {
+      if (!dto.body) return pushStrings(locale).media[dto.mediaType];
+      const text = fanName ? personalize(dto.body, fanName) : dto.body;
+      return text.slice(0, PUSH_PREVIEW_LENGTH);
+    };
     await Promise.all(
       activeSubscriptions.map((sub) =>
         this.pushService
-          .sendToUser(sub.userId, '새 메시지가 도착했어요', dto.body?.slice(0, 60) ?? '새로운 콘텐츠를 확인해보세요')
+          .sendToUser(sub.userId, ({ locale, displayName }) => ({ title: actor.chatDisplayName, body: preview(locale, displayName) }))
           .catch(() => {}),
       ),
     );
-    // 소속사 모니터링용 알림 — 팬 알림과 별개, 실패해도 발송 자체엔 영향 없음
+    // 소속사 모니터링용 알림 — 팬 알림과 별개, 실패해도 발송 자체엔 영향 없음(모니터링은 원문 그대로라 치환 안 함)
     await this.pushService
-      .notifyActorStaff(actorId, '아티스트가 새 메시지를 보냈어요', dto.body?.slice(0, 60) ?? '새로운 콘텐츠를 확인해보세요')
+      .notifyActorStaff(actorId, ({ locale }) => ({
+        title: pushStrings(locale).staffNewMessageTitle(actor.chatDisplayName),
+        body: preview(locale),
+      }))
       .catch(() => {});
 
     return message;

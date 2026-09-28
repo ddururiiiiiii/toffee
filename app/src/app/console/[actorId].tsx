@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -20,25 +22,19 @@ import { Spacing } from '@/constants/theme';
 
 type Section = 'monitor' | 'replies' | 'stats';
 
-function mediaLabel(mediaType: string) {
-  switch (mediaType) {
-    case 'PHOTO':
-      return '사진';
-    case 'AUDIO':
-      return '음성';
-    case 'VIDEO':
-      return '영상';
-    default:
-      return '텍스트';
-  }
+const MEDIA_TYPES = new Set(['PHOTO', 'AUDIO', 'VIDEO']);
+
+function mediaLabel(t: TFunction, mediaType: string) {
+  return t(`console.media.${MEDIA_TYPES.has(mediaType) ? mediaType : 'TEXT'}`);
 }
 
 function SegmentedControl({ value, onChange }: { value: Section; onChange: (section: Section) => void }) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const options: { key: Section; label: string }[] = [
-    { key: 'monitor', label: '모니터링' },
-    { key: 'replies', label: '답장' },
-    { key: 'stats', label: '통계' },
+    { key: 'monitor', label: t('console.tabs.monitor') },
+    { key: 'replies', label: t('console.tabs.replies') },
+    { key: 'stats', label: t('console.tabs.stats') },
   ];
   return (
     <ThemedView style={[styles.segments, { backgroundColor: theme.backgroundElement }]}>
@@ -63,6 +59,7 @@ type MonitorItem =
 // 소속사는 발송 권한이 없음 — 배우가 실제로 보낸 메시지/스토리를 읽기 전용으로만 확인
 function MonitorSection({ actorId }: { actorId: string }) {
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
   const { data: broadcasts, isLoading: loadingBroadcasts } = useActorBroadcasts(actorId);
   const { data: stories, isLoading: loadingStories } = useActorStories(actorId);
 
@@ -84,17 +81,17 @@ function MonitorSection({ actorId }: { actorId: string }) {
       contentContainerStyle={styles.repliesList}
       ListEmptyComponent={
         <ThemedText type="small" themeColor="textSecondary" style={styles.emptyMessage}>
-          아직 배우가 보낸 메시지·스토리가 없어요.
+          {t('console.monitorEmpty')}
         </ThemedText>
       }
       renderItem={({ item }) => (
         <ThemedView style={[styles.replyRow, { backgroundColor: theme.backgroundElement }]}>
           <ThemedText type="smallBold">
-            {item.kind === 'story' ? '스토리' : '메시지'} · {mediaLabel(item.mediaType)}
+            {t(`console.kind.${item.kind}`)} · {mediaLabel(t, item.mediaType)}
           </ThemedText>
           {item.kind === 'message' && item.body && <ThemedText type="small">{item.body}</ThemedText>}
           <ThemedText type="small" themeColor="textSecondary">
-            {new Date(item.createdAt).toLocaleString('ko-KR')}
+            {new Date(item.createdAt).toLocaleString(i18n.language)}
           </ThemedText>
         </ThemedView>
       )}
@@ -104,12 +101,13 @@ function MonitorSection({ actorId }: { actorId: string }) {
 
 function ReplyRow({ reply }: { reply: FanReply }) {
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
   return (
     <ThemedView style={[styles.replyRow, { backgroundColor: theme.backgroundElement }]}>
-      <ThemedText type="smallBold">{reply.fanUser?.displayName ?? '탈퇴한 팬'}</ThemedText>
+      <ThemedText type="smallBold">{reply.fanUser?.displayName ?? t('console.deletedFan')}</ThemedText>
       <ThemedText type="small">{reply.body}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
-        {new Date(reply.createdAt).toLocaleString('ko-KR')}
+        {new Date(reply.createdAt).toLocaleString(i18n.language)}
       </ThemedText>
     </ThemedView>
   );
@@ -117,6 +115,7 @@ function ReplyRow({ reply }: { reply: FanReply }) {
 
 function RepliesSection({ actorId }: { actorId: string }) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const { data: replies, isLoading } = useActorReplies(actorId);
 
   if (isLoading) return <ActivityIndicator style={styles.loading} color={theme.tint} />;
@@ -128,7 +127,7 @@ function RepliesSection({ actorId }: { actorId: string }) {
       contentContainerStyle={styles.repliesList}
       ListEmptyComponent={
         <ThemedText type="small" themeColor="textSecondary" style={styles.emptyMessage}>
-          아직 팬 답장이 없어요.
+          {t('console.repliesEmpty')}
         </ThemedText>
       }
       renderItem={({ item }) => <ReplyRow reply={item} />}
@@ -152,22 +151,28 @@ function StatCard({ label, value }: { label: string; value: string }) {
 
 function StatsSection({ actorId }: { actorId: string }) {
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
   const { data: stats, isLoading } = useActorStats(actorId);
 
   if (isLoading || !stats) return <ActivityIndicator style={styles.loading} color={theme.tint} />;
 
   return (
     <ThemedView style={styles.section}>
-      <StatCard label="활성 구독자 수" value={String(stats.subscriberCount)} />
+      <StatCard label={t('console.activeSubscribers')} value={String(stats.subscriberCount)} />
       <StatCard
-        label="마지막 발송일"
-        value={stats.lastBroadcastAt ? new Date(stats.lastBroadcastAt).toLocaleDateString('ko-KR') : '발송 이력 없음'}
+        label={t('console.lastBroadcast')}
+        value={
+          stats.lastBroadcastAt
+            ? new Date(stats.lastBroadcastAt).toLocaleDateString(i18n.language)
+            : t('console.noBroadcast')
+        }
       />
     </ThemedView>
   );
 }
 
 export default function ConsoleActorScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { actorId } = useLocalSearchParams<{ actorId: string }>();
   const { data: actor } = useActor(actorId);
@@ -187,7 +192,7 @@ export default function ConsoleActorScreen() {
             style={styles.actorPreviewAvatar}
           />
           <ThemedText type="small" themeColor="textSecondary">
-            {actor.legalName} 모니터링 중
+            {t('console.monitoring', { name: actor.legalName })}
           </ThemedText>
         </ThemedView>
       )}

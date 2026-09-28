@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -21,6 +22,7 @@ import { Spacing } from '@/constants/theme';
 
 function MessageBubble({ message }: { message: ChatMessage }) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const isArtist = message.senderType === 'ARTIST';
   const bubbleColor = isArtist ? theme.backgroundElement : theme.tint;
   const textColor = isArtist ? theme.text : '#fff';
@@ -31,7 +33,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         {message.mediaType === 'PHOTO' && message.mediaUrl ? (
           <Image source={{ uri: message.mediaUrl }} style={styles.bubbleImage} />
         ) : message.mediaType === 'AUDIO' ? (
-          <ThemedText style={{ color: textColor }}>🎧 음성 메시지</ThemedText>
+          <ThemedText style={{ color: textColor }}>{t('chat.voiceMessage')}</ThemedText>
         ) : null}
         {message.body && <ThemedText style={{ color: textColor }}>{message.body}</ThemedText>}
       </ThemedView>
@@ -41,6 +43,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
 export default function ChatRoomScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { actorId } = useLocalSearchParams<{ actorId: string }>();
   const { data: actor } = useActor(actorId);
@@ -70,7 +73,7 @@ export default function ChatRoomScreen() {
           <ActivityIndicator style={styles.loading} color={theme.tint} />
         ) : isError ? (
           <ThemedText style={styles.centerMessage} themeColor="danger">
-            대화를 불러오지 못했어요. 구독 중인 배우인지 확인해주세요.
+            {t('chat.loadFailed')}
           </ThemedText>
         ) : (
           <FlatList
@@ -87,7 +90,7 @@ export default function ChatRoomScreen() {
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            placeholder="답장 보내기 (텍스트만 가능)"
+            placeholder={t('chat.replyPlaceholder')}
             placeholderTextColor={theme.textSecondary}
             style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
             multiline
@@ -96,7 +99,7 @@ export default function ChatRoomScreen() {
             onPress={handleSend}
             disabled={sendReply.isPending || !draft.trim()}
             style={[styles.sendButton, { backgroundColor: theme.tint, opacity: draft.trim() ? 1 : 0.5 }]}>
-            <ThemedText style={styles.sendButtonText}>전송</ThemedText>
+            <ThemedText style={styles.sendButtonText}>{t('chat.send')}</ThemedText>
           </Pressable>
         </ThemedView>
       </SafeAreaView>

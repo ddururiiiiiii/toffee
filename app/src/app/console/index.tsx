@@ -1,6 +1,7 @@
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -31,13 +32,14 @@ function ActorRow({ actor, onPress }: { actor: Actor; onPress: () => void }) {
 export default function ConsoleHomeScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const { t } = useTranslation();
   const { logout } = useAuth();
   const { data: actors, isLoading } = useMyActors();
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ThemedText type="smallBold" style={styles.sectionLabel}>
-        내가 관리하는 배우
+        {t('console.title')}
       </ThemedText>
 
       {isLoading ? (
@@ -49,7 +51,7 @@ export default function ConsoleHomeScreen() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <ThemedText type="small" themeColor="textSecondary" style={styles.emptyMessage}>
-              담당 중인 배우가 없어요.
+              {t('console.empty')}
             </ThemedText>
           }
           renderItem={({ item }) => (
@@ -60,7 +62,7 @@ export default function ConsoleHomeScreen() {
 
       <Pressable onPress={logout} style={[styles.logoutButton, { borderColor: theme.backgroundSelected }]}>
         <ThemedText type="smallBold" themeColor="danger">
-          로그아웃
+          {t('common.logout')}
         </ThemedText>
       </Pressable>
     </SafeAreaView>

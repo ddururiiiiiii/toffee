@@ -2,16 +2,13 @@ import { useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useActors, useAgencies, type Actor } from '@/hooks/use-actors';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
-
-function formatPrice(cents: number) {
-  return `฿${(cents / 100).toFixed(0)}/월`;
-}
 
 function AgencyChip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   const theme = useTheme();
@@ -28,6 +25,7 @@ function AgencyChip({ label, selected, onPress }: { label: string; selected: boo
 
 function ActorCard({ actor, onPress }: { actor: Actor; onPress: () => void }) {
   const theme = useTheme();
+  const { t } = useTranslation();
   return (
     <Pressable onPress={onPress} style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
       <Image
@@ -38,7 +36,7 @@ function ActorCard({ actor, onPress }: { actor: Actor; onPress: () => void }) {
         <ThemedText type="smallBold">{actor.legalName}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
           {actor.agency ? `${actor.agency.name} · ` : ''}
-          {formatPrice(actor.monthlyPriceCents)}
+          {t('price.perMonth', { price: (actor.monthlyPriceCents / 100).toFixed(0) })}
         </ThemedText>
       </ThemedView>
     </Pressable>
@@ -47,6 +45,7 @@ function ActorCard({ actor, onPress }: { actor: Actor; onPress: () => void }) {
 
 export default function ActorListScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [agencyId, setAgencyId] = useState<string | null>(null);
@@ -57,18 +56,18 @@ export default function ActorListScreen() {
     <SafeAreaView style={styles.container}>
       <ThemedView style={styles.header}>
         <ThemedText type="title" style={styles.title}>
-          배우 찾기
+          {t('actors.title')}
         </ThemedText>
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="배우 또는 소속사 이름으로 검색"
+          placeholder={t('actors.searchPlaceholder')}
           placeholderTextColor={theme.textSecondary}
           style={[styles.search, { color: theme.text, backgroundColor: theme.backgroundElement }]}
         />
         {agencies && agencies.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-            <AgencyChip label="전체" selected={agencyId === null} onPress={() => setAgencyId(null)} />
+            <AgencyChip label={t('actors.all')} selected={agencyId === null} onPress={() => setAgencyId(null)} />
             {agencies.map((agency) => (
               <AgencyChip
                 key={agency.id}
@@ -85,7 +84,7 @@ export default function ActorListScreen() {
         <ActivityIndicator style={styles.loading} color={theme.tint} />
       ) : isError ? (
         <ThemedText style={styles.centerMessage} themeColor="danger">
-          배우 목록을 불러오지 못했어요.
+          {t('actors.loadFailed')}
         </ThemedText>
       ) : (
         <FlatList
@@ -96,7 +95,7 @@ export default function ActorListScreen() {
           refreshing={isRefetching}
           ListEmptyComponent={
             <ThemedText style={styles.centerMessage} themeColor="textSecondary">
-              검색 결과가 없어요.
+              {t('actors.empty')}
             </ThemedText>
           }
           renderItem={({ item }) => (

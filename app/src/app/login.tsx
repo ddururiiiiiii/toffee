@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -12,6 +13,7 @@ import { Spacing } from '@/constants/theme';
 
 export default function LoginScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const { login } = useAuth();
   const [email, setEmail] = useState('fan1@toffee.demo');
   const [name, setName] = useState('');
@@ -29,14 +31,13 @@ export default function LoginScreen() {
           Toffee
         </ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-          좋아하는 배우와 1:1로 대화해보세요
+          {t('login.tagline')}
         </ThemedText>
 
         <ThemedView type="backgroundElement" style={styles.form}>
-          <ThemedText type="smallBold">이메일로 데모 로그인</ThemedText>
+          <ThemedText type="smallBold">{t('login.demoTitle')}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            소셜 로그인은 실제 앱 크리덴셜이 생기면 여기 자리에 붙어요. 지금은 이메일만으로 전체 플로우를
-            테스트할 수 있어요.
+            {t('login.demoHint')}
           </ThemedText>
           <TextInput
             value={email}
@@ -50,7 +51,7 @@ export default function LoginScreen() {
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder="닉네임 (선택)"
+            placeholder={t('login.namePlaceholder')}
             placeholderTextColor={theme.textSecondary}
             style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
           />
@@ -61,12 +62,12 @@ export default function LoginScreen() {
             {devLogin.isPending ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <ThemedText style={styles.buttonText}>로그인</ThemedText>
+              <ThemedText style={styles.buttonText}>{t('login.submit')}</ThemedText>
             )}
           </Pressable>
           {devLogin.isError && (
             <ThemedText themeColor="danger" type="small">
-              {devLogin.error instanceof ApiError ? devLogin.error.message : '로그인에 실패했어요.'}
+              {devLogin.error instanceof ApiError ? devLogin.error.message : t('login.failed')}
             </ThemedText>
           )}
         </ThemedView>

@@ -5,6 +5,12 @@ import { getMessaging } from 'firebase-admin/messaging';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Role } from '../generated/prisma/enums.js';
 
+export interface PushRecipient {
+  locale: string | null;
+  displayName: string;
+}
+export type ComposePush = (recipient: PushRecipient) => { title: string; body: string };
+
 /** FCM이 "이 토큰은 더 이상 유효하지 않다"고 알려줄 때의 에러 코드 — 재시도해도 계속 실패하므로 저장된 토큰을 지워야 함 */
 const INVALID_TOKEN_ERROR_CODES = new Set([
   'messaging/registration-token-not-registered',
@@ -31,11 +37,18 @@ export class PushService implements OnModuleInit {
     this.app = getApps()[0] ?? initializeApp({ credential: cert(serviceAccount) });
   }
 
-  /** userId로 등록된 토큰을 찾아 발송하고, 죽은 토큰이면 DB에서 지워서 다음 로그인 때 새 토큰이 등록되게 함 */
-  async sendToUser(userId: string, title: string, body: string, data?: Record<string, string>): Promise<void> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { fcmToken: true } });
+  /**
+   * userId로 등록된 토큰을 찾아 발송하고, 죽은 토큰이면 DB에서 지워서 다음 로그인 때 새 토큰이 등록되게 함.
+   * 문구는 받는 사람마다 언어(User.locale)·이름이 달라서 compose 함수로 받아 사람별로 만듦.
+   */
+  async sendToUser(userId: string, compose: ComposePush, data?: Record<string, string>): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { fcmToken: true, locale: true, displayName: true },
+    });
     if (!user?.fcmToken) return;
 
+    const { title, body } = compose({ locale: user.locale, displayName: user.displayName });
     const result = await this.send(user.fcmToken, title, body, data);
     if (result.invalidToken) {
       await this.prisma.user.update({ where: { id: userId }, data: { fcmToken: null } });
@@ -43,14 +56,14 @@ export class PushService implements OnModuleInit {
   }
 
   // 배우가 새 메시지/스토리를 보낼 때 현재 소속사 스태프 전원에게 알림(모니터링용) — best-effort
-  async notifyActorStaff(actorId: string, title: string, body: string, data?: Record<string, string>): Promise<void> {
+  async notifyActorStaff(actorId: string, compose: ComposePush, data?: Record<string, string>): Promise<void> {
     const actor = await this.prisma.actor.findUnique({ where: { id: actorId }, select: { agencyId: true } });
     if (!actor?.agencyId) return;
     const staff = await this.prisma.user.findMany({
       where: { agencyId: actor.agencyId, role: Role.AGENCY_STAFF },
       select: { id: true },
     });
-    await Promise.all(staff.map((staffUser) => this.sendToUser(staffUser.id, title, body, data).catch(() => {})));
+    await Promise.all(staff.map((staffUser) => this.sendToUser(staffUser.id, compose, data).catch(() => {})));
   }
 
   private async send(

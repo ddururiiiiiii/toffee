@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { GoogleLoginDto } from './dto/google-login.dto.js';
@@ -7,6 +7,7 @@ import { NaverLoginDto } from './dto/naver-login.dto.js';
 import { KakaoLoginDto } from './dto/kakao-login.dto.js';
 import { LineLoginDto } from './dto/line-login.dto.js';
 import { DevLoginDto } from './dto/dev-login.dto.js';
+import { UpdateLocaleDto } from './dto/update-locale.dto.js';
 import { AuthProvider, Role } from '../generated/prisma/enums.js';
 import { Public } from '../common/decorators/public.decorator.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
@@ -79,6 +80,12 @@ export class AuthController {
 
   @Get('me')
   me(@CurrentUser() user: AuthenticatedUser) {
-    return user;
+    return this.authService.getMe(user.id);
+  }
+
+  // 앱 표시 언어 동기화 — 푸시 등 서버가 만드는 문구의 언어를 정하는 데 씀
+  @Patch('me/locale')
+  updateLocale(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateLocaleDto) {
+    return this.authService.updateLocale(user.id, dto.locale);
   }
 }

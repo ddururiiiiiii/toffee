@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PushService } from '../notifications/push.service.js';
+import { pushStrings } from '../notifications/push-messages.js';
 import { ensureCanViewActor, ensureIsActorSelf } from '../common/authorization/actor-access.js';
 import { ensureActiveSubscription } from '../common/authorization/ensure-active-subscription.js';
 import { Role } from '../generated/prisma/enums.js';
@@ -29,7 +30,13 @@ export class StoriesService {
     });
 
     // 소속사 모니터링용 알림 — 실패해도 업로드 자체엔 영향 없음
-    await this.pushService.notifyActorStaff(actorId, '아티스트가 새 스토리를 올렸어요', '지금 확인해보세요').catch(() => {});
+    const actor = await this.prisma.actor.findUniqueOrThrow({ where: { id: actorId }, select: { chatDisplayName: true } });
+    await this.pushService
+      .notifyActorStaff(actorId, ({ locale }) => {
+        const strings = pushStrings(locale);
+        return { title: strings.staffNewStoryTitle(actor.chatDisplayName), body: strings.staffNewStoryBody };
+      })
+      .catch(() => {});
 
     return story;
   }

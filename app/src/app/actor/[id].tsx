@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -11,12 +13,13 @@ import { useMySubscriptions, useSubscribe } from '@/hooks/use-subscriptions';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
-function formatPrice(cents: number) {
-  return `฿${(cents / 100).toFixed(0)}`;
+function formatPrice(t: TFunction, cents: number) {
+  return t('price.amount', { price: (cents / 100).toFixed(0) });
 }
 
 export default function ActorDetailScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: actor, isLoading } = useActor(id);
@@ -31,7 +34,10 @@ export default function ActorDetailScreen() {
       onSuccess: (result) => {
         if (result.bundleDiscountApplied) {
           setDiscountNote(
-            `함께 구독 중인 배우가 있어서 ${formatPrice(result.basePriceCents)} → ${formatPrice(result.effectivePriceCents)}로 할인 적용됐어요.`,
+            t('actorDetail.discountApplied', {
+              base: formatPrice(t, result.basePriceCents),
+              effective: formatPrice(t, result.effectivePriceCents),
+            }),
           );
         } else {
           router.push(`/chat/${id}`);
@@ -59,7 +65,9 @@ export default function ActorDetailScreen() {
           {actor.legalName}
         </ThemedText>
         {actor.agency && <ThemedText themeColor="textSecondary">{actor.agency.name}</ThemedText>}
-        <ThemedText themeColor="textSecondary">월 {formatPrice(actor.monthlyPriceCents)} (샌드박스 결제 — 실제 청구 없음)</ThemedText>
+        <ThemedText themeColor="textSecondary">
+          {t('actorDetail.monthlyPrice', { price: formatPrice(t, actor.monthlyPriceCents) })}
+        </ThemedText>
 
         {discountNote && (
           <ThemedView type="tintSoft" style={styles.discountNote}>
@@ -69,7 +77,7 @@ export default function ActorDetailScreen() {
 
         {subscribe.isError && (
           <ThemedText themeColor="danger" type="small">
-            {subscribe.error instanceof ApiError ? subscribe.error.message : '구독에 실패했어요.'}
+            {subscribe.error instanceof ApiError ? subscribe.error.message : t('actorDetail.subscribeFailed')}
           </ThemedText>
         )}
 
@@ -77,7 +85,7 @@ export default function ActorDetailScreen() {
           <Pressable
             onPress={() => router.push(`/chat/${id}`)}
             style={[styles.button, { backgroundColor: theme.tint }]}>
-            <ThemedText style={styles.buttonText}>대화하기</ThemedText>
+            <ThemedText style={styles.buttonText}>{t('actorDetail.chat')}</ThemedText>
           </Pressable>
         ) : (
           <Pressable
@@ -87,7 +95,7 @@ export default function ActorDetailScreen() {
             {subscribe.isPending ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <ThemedText style={styles.buttonText}>구독하기</ThemedText>
+              <ThemedText style={styles.buttonText}>{t('actorDetail.subscribe')}</ThemedText>
             )}
           </Pressable>
         )}

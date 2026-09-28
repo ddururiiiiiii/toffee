@@ -71,6 +71,9 @@ model User {
   displayName           String
   email                 String?               @unique
   fcmToken              String?
+  // 앱 표시 언어(ko/th/en/ja/zh-Hans/zh-Hant) — 푸시 알림처럼 서버가 만드는 문구의 언어를 고르는 데 씀.
+  // 앱이 기기 언어/설정 변경 시 PATCH /auth/me/locale로 동기화. null이면 기본 언어(en).
+  locale                String?
   status                UserStatus            @default(ACTIVE)
   suspendedUntil        DateTime?
   bannedAt              DateTime?

@@ -1,5 +1,6 @@
 import { API_URL } from './env';
 import { getCachedToken } from './token-storage';
+import i18n from '@/i18n';
 
 export class ApiError extends Error {
   constructor(
@@ -23,7 +24,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { message?: string | string[] };
     const message = Array.isArray(body.message) ? body.message.join(', ') : body.message;
-    throw new ApiError(res.status, message ?? `요청에 실패했어요 (${res.status})`);
+    throw new ApiError(res.status, message ?? i18n.t('common.requestFailed', { status: res.status }));
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;

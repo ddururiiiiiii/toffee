@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -12,6 +13,7 @@ import { Spacing } from '@/constants/theme';
 // 만 14세 미만이면 법정대리인 동의가 필요해서 물어보는 것 — 그 외 용도로는 안 씀
 export default function BirthDateOnboardingScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const [year, setYear] = useState('');
   const [month, setMonth] = useState('');
   const [day, setDay] = useState('');
@@ -28,10 +30,10 @@ export default function BirthDateOnboardingScreen() {
     <SafeAreaView style={styles.container}>
       <ThemedView style={styles.content}>
         <ThemedText type="title" style={styles.title}>
-          생년월일을 알려주세요
+          {t('onboarding.birthDateTitle')}
         </ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-          만 14세 미만이면 법정대리인(부모님) 동의를 먼저 받아야 서비스를 이용할 수 있어요.
+          {t('onboarding.birthDateHint')}
         </ThemedText>
 
         <ThemedView style={styles.row}>
@@ -71,12 +73,12 @@ export default function BirthDateOnboardingScreen() {
           {setBirthDate.isPending ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <ThemedText style={styles.buttonText}>다음</ThemedText>
+            <ThemedText style={styles.buttonText}>{t('onboarding.next')}</ThemedText>
           )}
         </Pressable>
         {setBirthDate.isError && (
           <ThemedText themeColor="danger" type="small">
-            {setBirthDate.error instanceof ApiError ? setBirthDate.error.message : '저장하지 못했어요.'}
+            {setBirthDate.error instanceof ApiError ? setBirthDate.error.message : t('onboarding.saveFailed')}
           </ThemedText>
         )}
       </ThemedView>
