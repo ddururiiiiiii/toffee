@@ -1,256 +1,159 @@
 import { useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { Bell, CreditCard, FileText, Globe, LifeBuoy, LogOut, ShieldCheck, Sparkles } from 'lucide-react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Avatar } from '@/components/ui/avatar';
+import { ListRow } from '@/components/ui/list-row';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
-import { useMySubscriptions, useUnsubscribe, type Subscription } from '@/hooks/use-subscriptions';
-import { useTheme } from '@/hooks/use-theme';
-import { Spacing } from '@/constants/theme';
-import { LANGUAGE_NATIVE_NAMES, SUPPORTED_LANGUAGES, type SupportedLanguage } from '@/i18n/languages';
-import { useLocalePreference } from '@/i18n/locale-preference-context';
-import { NicknameForm } from '@/components/nickname-form';
 import { confirm } from '@/lib/confirm';
-import { useDeleteAccount, useMe } from '@/hooks/use-onboarding';
-import { SupportLink } from '@/components/support-link';
 import { ApiError } from '@/lib/api-client';
+import { SUPPORT_EMAIL } from '@/lib/env';
+import { openSupportMail } from '@/lib/support';
+import { openStoreSubscriptions } from '@/lib/store-links';
+import { useMySubscriptions } from '@/hooks/use-subscriptions';
+import { useDeleteAccount, useMe } from '@/hooks/use-onboarding';
+import { useTheme } from '@/hooks/use-theme';
+import { LANGUAGE_NATIVE_NAMES } from '@/i18n/languages';
+import { useLocalePreference } from '@/i18n/locale-preference-context';
+import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 
-function SubscriptionRow({ subscription }: { subscription: Subscription }) {
+/**
+ * Profile — DESIGN_GUIDE §10: 단순한 설정 목록. 구독 카드는 여기 늘어놓지 않고 "구독 관리"로 들어감(§11).
+ * 구독 관리 · 알림 · 언어 · 결제 수단(스토어) · 고객센터 · 약관·개인정보 · 로그아웃, 맨 아래 회원 탈퇴.
+ */
+export default function ProfileScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const { t, i18n } = useTranslation();
-  const unsubscribe = useUnsubscribe(subscription.actorId);
-
-  // lib/confirm — 웹에선 Alert 버튼이 동작하지 않아 예전엔 웹에서 해지 버튼이 아무 반응이 없었음
-  const confirmUnsubscribe = async () => {
-    const ok = await confirm(
-      t('mypage.unsubscribeTitle'),
-      t('mypage.unsubscribeConfirm', { name: subscription.actor.chatDisplayName }),
-      t('mypage.unsubscribe'),
-      t('common.cancel'),
-    );
-    if (ok) unsubscribe.mutate();
-  };
-
-  return (
-    <ThemedView style={[styles.row, { backgroundColor: theme.backgroundElement }]}>
-      <Image
-        source={{ uri: subscription.actor.chatProfileImageUrl ?? undefined }}
-        style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]}
-      />
-      <ThemedView style={styles.rowBody}>
-        <ThemedText type="smallBold">{subscription.actor.chatDisplayName}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {t('price.perMonth', { price: (subscription.actor.monthlyPriceCents / 100).toFixed(0) })} ·{' '}
-          {t('mypage.since', { date: new Date(subscription.startedAt).toLocaleDateString(i18n.language) })}
-        </ThemedText>
-      </ThemedView>
-      <Pressable onPress={confirmUnsubscribe} disabled={unsubscribe.isPending} style={styles.unsubscribeButton}>
-        <ThemedText type="small" themeColor="danger">
-          {t('mypage.unsubscribe')}
-        </ThemedText>
-      </Pressable>
-    </ThemedView>
-  );
-}
-
-// 언어 선택 — "기기 언어 따르기"(기본) 또는 직접 고정. 언어 이름은 항상 그 언어 자신의 표기로.
-function LanguagePicker() {
-  const theme = useTheme();
-  const { t } = useTranslation();
-  const { override, setOverride } = useLocalePreference();
-  const options: { value: SupportedLanguage | null; label: string }[] = [
-    { value: null, label: t('mypage.languageSystem') },
-    ...SUPPORTED_LANGUAGES.map((language) => ({ value: language, label: LANGUAGE_NATIVE_NAMES[language] })),
-  ];
-
-  return (
-    <ThemedView style={styles.languageSection}>
-      <ThemedText type="smallBold">{t('mypage.language')}</ThemedText>
-      <ThemedView style={styles.languageOptions}>
-        {options.map((option) => {
-          const selected = override === option.value;
-          return (
-            <Pressable
-              key={option.value ?? 'system'}
-              onPress={() => setOverride(option.value)}
-              style={[styles.languageChip, { backgroundColor: selected ? theme.tint : theme.backgroundElement }]}>
-              <ThemedText type="small" style={selected ? styles.languageChipTextSelected : undefined}>
-                {option.label}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
-      </ThemedView>
-    </ThemedView>
-  );
-}
-
-// 닉네임 보기/바꾸기 — 7일에 한 번이라 바꿀 수 없는 기간엔 다음 가능 날짜만 보여줌
-function NicknameSection() {
-  const theme = useTheme();
-  const { t, i18n } = useTranslation();
+  const { logout } = useAuth();
   const { data: me } = useMe();
-  const [editing, setEditing] = useState(false);
+  const { data: subscriptions } = useMySubscriptions();
+  const { override } = useLocalePreference();
+  const deleteAccount = useDeleteAccount();
+  const [notice, setNotice] = useState<string | null>(null);
+
   const availableAt = me?.nicknameChangeAvailableAt ? new Date(me.nicknameChangeAvailableAt) : null;
   const locked = !!availableAt && availableAt > new Date();
 
-  return (
-    <ThemedView style={styles.languageSection}>
-      <ThemedText type="smallBold">{t('nickname.label')}</ThemedText>
-      {editing ? (
-        <NicknameForm initial={me?.nickname} onSaved={() => setEditing(false)} />
-      ) : (
-        <ThemedView style={styles.nicknameRow}>
-          <ThemedText>{me?.nickname ?? '-'}</ThemedText>
-          {locked ? (
-            <ThemedText type="small" themeColor="textSecondary">
-              {t('nickname.nextChange', { date: availableAt.toLocaleDateString(i18n.language) })}
-            </ThemedText>
-          ) : (
-            <Pressable onPress={() => setEditing(true)} hitSlop={8}>
-              <ThemedText type="smallBold" style={{ color: theme.tint }}>
-                {t('nickname.change')}
-              </ThemedText>
-            </Pressable>
-          )}
-        </ThemedView>
-      )}
-      <ThemedText type="small" themeColor="textSecondary">
-        {t('nickname.rule')}
-      </ThemedText>
-    </ThemedView>
-  );
-}
+  const openSupport = () => {
+    setNotice(null);
+    openSupportMail(me?.id).catch(() => setNotice(t('support.openFailed', { email: SUPPORT_EMAIL })));
+  };
 
-// 회원 탈퇴 — 되돌릴 수 없고, 스토어 구독은 앱이 끊을 수 없어서 스토어에서 먼저 해지하라고 안내(애플 가이드라인 5.1.1)
-function DeleteAccountSection() {
-  const { t } = useTranslation();
-  const { logout } = useAuth();
-  const deleteAccount = useDeleteAccount();
-  const [error, setError] = useState<string | null>(null);
-
-  const start = async () => {
+  // 회원 탈퇴 — 되돌릴 수 없고, 스토어 구독은 앱이 끊을 수 없어서 스토어에서 먼저 해지하라고 안내(애플 가이드라인 5.1.1)
+  const startDelete = async () => {
     const ok = await confirm(t('deleteAccount.title'), t('deleteAccount.body'), t('deleteAccount.confirm'), t('common.cancel'));
     if (!ok) return;
-    setError(null);
+    setNotice(null);
     deleteAccount.mutate(undefined, {
       onSuccess: () => void logout(),
-      onError: (e) => setError(e instanceof ApiError ? e.message : t('deleteAccount.failed')),
+      onError: (e) => setNotice(e instanceof ApiError ? e.message : t('deleteAccount.failed')),
     });
   };
 
   return (
-    <ThemedView style={styles.deleteSection}>
-      <Pressable onPress={start} disabled={deleteAccount.isPending} hitSlop={8}>
-        <ThemedText type="small" themeColor="textSecondary" style={styles.deleteText}>
-          {t('deleteAccount.title')}
-        </ThemedText>
-      </Pressable>
-      {error && (
-        <ThemedText type="small" themeColor="danger">
-          {error}
-        </ThemedText>
-      )}
-    </ThemedView>
-  );
-}
-
-export default function MyPageScreen() {
-  const theme = useTheme();
-  const router = useRouter();
-  const { t } = useTranslation();
-  const { logout } = useAuth();
-  const { data: subscriptions, isLoading } = useMySubscriptions();
-
-  // 항목이 늘어서 전체를 스크롤로(예전엔 고정 배치라 작은 화면에서 아래가 잘릴 수 있었음). 구독 목록은 몇 개뿐이라 map
-  return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <ThemedText type="title" style={styles.title}>
-          {t('mypage.title')}
+        <ThemedText type="display" style={styles.title}>
+          {t('profile.title')}
         </ThemedText>
 
-        <ThemedText type="smallBold" style={styles.sectionLabel}>
-          {t('mypage.subscriptions')}
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary" style={styles.sectionHint}>
-          {t('mypage.subscriptionsHint')}
-        </ThemedText>
-
-        {isLoading ? (
-          <ActivityIndicator style={styles.loading} color={theme.tint} />
-        ) : (
-          <ThemedView style={styles.list}>
-            {subscriptions?.length ? (
-              subscriptions.map((item) => <SubscriptionRow key={item.id} subscription={item} />)
-            ) : (
-              <ThemedText type="small" themeColor="textSecondary" style={styles.emptyMessage}>
-                {t('mypage.empty')}
+        <View style={[styles.me, { backgroundColor: theme.backgroundElement }]}>
+          <Avatar name={me?.nickname ?? '?'} size={56} />
+          <View style={styles.meBody}>
+            <ThemedText type="headline" numberOfLines={1}>
+              {me?.nickname ?? t('profile.noNickname')}
+            </ThemedText>
+            {locked && availableAt ? (
+              <ThemedText type="small" themeColor="textSecondary">
+                {t('nickname.nextChange', { date: availableAt.toLocaleDateString(i18n.language) })}
               </ThemedText>
+            ) : (
+              <Pressable onPress={() => router.push('/settings/nickname')} hitSlop={8} accessibilityRole="button">
+                <ThemedText type="smallBold" style={{ color: theme.tint }}>
+                  {t('profile.editNickname')}
+                </ThemedText>
+              </Pressable>
             )}
-          </ThemedView>
-        )}
+          </View>
+        </View>
 
-        <NicknameSection />
-        <LanguagePicker />
+        <Section label={t('profile.account')}>
+          <ListRow
+            icon={Sparkles}
+            title={t('profile.manageSubscriptions')}
+            value={subscriptions ? t('profile.subscriptionCount', { count: subscriptions.length }) : undefined}
+            onPress={() => router.push('/subscriptions')}
+          />
+          <ListRow icon={Bell} title={t('profile.notifications')} onPress={() => router.push('/settings/notifications')} />
+          <ListRow
+            icon={Globe}
+            title={t('profile.language')}
+            value={override ? LANGUAGE_NATIVE_NAMES[override] : t('profile.languageSystem')}
+            onPress={() => router.push('/settings/language')}
+          />
+          <ListRow icon={CreditCard} title={t('profile.paymentMethod')} subtitle={t('profile.paymentMethodHint')} onPress={() => void openStoreSubscriptions().catch(() => {})} />
+        </Section>
 
-        <ThemedView style={styles.legalLinks}>
-          <Pressable onPress={() => router.push('/terms')}>
-            <ThemedText type="small" themeColor="textSecondary">
-              {t('screens.terms')}
-            </ThemedText>
-          </Pressable>
-          <Pressable onPress={() => router.push('/privacy')}>
-            <ThemedText type="small" themeColor="textSecondary">
-              {t('screens.privacy')}
-            </ThemedText>
-          </Pressable>
-        </ThemedView>
-        <ThemedView style={styles.supportRow}>
-          <SupportLink />
-        </ThemedView>
+        <Section label={t('profile.support')}>
+          <ListRow
+            icon={LifeBuoy}
+            title={t('profile.help')}
+            subtitle={SUPPORT_EMAIL ? undefined : t('support.notReady')}
+            onPress={SUPPORT_EMAIL ? openSupport : undefined}
+          />
+          <ListRow icon={FileText} title={t('profile.terms')} onPress={() => router.push('/terms')} />
+          <ListRow icon={ShieldCheck} title={t('profile.privacy')} onPress={() => router.push('/privacy')} />
+        </Section>
 
-        <Pressable onPress={logout} style={[styles.logoutButton, { borderColor: theme.backgroundSelected }]}>
-          <ThemedText type="smallBold" themeColor="danger">
-            {t('common.logout')}
+        <Section>
+          <ListRow icon={LogOut} title={t('profile.logout')} onPress={() => void logout()} showChevron={false} />
+        </Section>
+
+        {notice ? (
+          <ThemedText type="small" themeColor="danger" style={styles.center}>
+            {notice}
           </ThemedText>
-        </Pressable>
-        <DeleteAccountSection />
+        ) : null}
+        <Button title={t('deleteAccount.title')} variant="ghost" size="md" onPress={startDelete} loading={deleteAccount.isPending} style={styles.delete} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+function Section({ label, children }: { label?: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.section}>
+      {label ? (
+        <ThemedText type="captionBold" themeColor="textTertiary" style={styles.sectionLabel}>
+          {label.toUpperCase()}
+        </ThemedText>
+      ) : null}
+      {children}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { paddingBottom: Spacing.five },
-  supportRow: { paddingHorizontal: Spacing.four, marginTop: Spacing.three, backgroundColor: 'transparent' },
-  deleteSection: { alignItems: 'center', gap: 4, backgroundColor: 'transparent' },
-  deleteText: { textDecorationLine: 'underline' },
-  languageSection: { paddingHorizontal: Spacing.four, gap: Spacing.two, marginTop: Spacing.two, backgroundColor: 'transparent' },
-  nicknameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, backgroundColor: 'transparent' },
-  languageOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, backgroundColor: 'transparent' },
-  languageChip: { borderRadius: 999, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
-  languageChipTextSelected: { color: '#fff' },
-  legalLinks: { flexDirection: 'row', gap: Spacing.four, paddingHorizontal: Spacing.four, marginTop: Spacing.two, backgroundColor: 'transparent' },
-  title: { fontSize: 32, lineHeight: 40, paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
-  sectionLabel: { paddingHorizontal: Spacing.four, marginTop: Spacing.four },
-  sectionHint: { paddingHorizontal: Spacing.four, marginTop: 2 },
-  list: { padding: Spacing.four, gap: Spacing.three, backgroundColor: 'transparent' },
-  row: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: Spacing.three, gap: Spacing.three },
-  avatar: { width: 48, height: 48, borderRadius: 24 },
-  rowBody: { flex: 1, gap: 2 },
-  unsubscribeButton: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
-  emptyMessage: { textAlign: 'center', marginTop: Spacing.four },
-  loading: { marginTop: Spacing.four },
-  logoutButton: {
-    margin: Spacing.four,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: Spacing.three,
+  scroll: { paddingBottom: Spacing.five, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
+  title: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two, paddingBottom: Spacing.three },
+  me: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: Spacing.three,
+    marginHorizontal: Spacing.four,
+    padding: Spacing.three,
+    borderRadius: Radius.lg,
   },
+  meBody: { flex: 1, gap: 2 },
+  section: { marginTop: Spacing.four },
+  sectionLabel: { paddingHorizontal: Spacing.four, marginBottom: Spacing.one, letterSpacing: 0.6 },
+  center: { textAlign: 'center', marginTop: Spacing.three },
+  delete: { alignSelf: 'center', marginTop: Spacing.three },
 });

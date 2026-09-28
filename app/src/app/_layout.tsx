@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 
 import '@/i18n';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { Colors, fontFor } from '@/constants/theme';
 import { LocalePreferenceProvider } from '@/i18n/locale-preference-context';
 import { useSyncLocale } from '@/hooks/use-sync-locale';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
@@ -104,8 +105,9 @@ function SessionEffects() {
 }
 
 function RootLayout() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const colorScheme = useColorScheme();
+  const palette = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const [fontsLoaded, fontError] = useFonts({ NotoSansThai_400Regular, NotoSansThai_500Medium, NotoSansThai_600SemiBold, NotoSansThai_700Bold });
 
   if (!fontsLoaded && !fontError) return null;
@@ -118,10 +120,26 @@ function RootLayout() {
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <AnimatedSplashOverlay />
           <AuthGate>
-            <Stack screenOptions={{ headerShown: false }}>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                // 모든 상단바 공통 — 그림자 없이 흰 배경, 제목은 브랜드 글꼴(가이드: 깔끔·절제)
+                headerShadowVisible: false,
+                headerStyle: { backgroundColor: palette.background },
+                headerTintColor: palette.text,
+                headerTitleStyle: { ...fontFor(600, i18n.language), fontSize: 17 },
+                headerBackButtonDisplayMode: 'minimal',
+                contentStyle: { backgroundColor: palette.background },
+              }}>
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="login" />
-              <Stack.Screen name="actor/[id]" options={{ headerShown: true, title: '' }} />
+              <Stack.Screen name="actor/[id]" options={{ headerShown: false }} />
+              <Stack.Screen name="subscribe/[actorId]" options={{ headerShown: false }} />
+              <Stack.Screen name="subscriptions/index" options={{ headerShown: true, title: t('profile.manageSubscriptions') }} />
+              <Stack.Screen name="subscriptions/[actorId]" options={{ headerShown: true, title: '' }} />
+              <Stack.Screen name="settings/language" options={{ headerShown: true, title: t('profile.language') }} />
+              <Stack.Screen name="settings/nickname" options={{ headerShown: true, title: t('profile.editNickname') }} />
+              <Stack.Screen name="settings/notifications" options={{ headerShown: true, title: t('profile.notifications') }} />
               <Stack.Screen name="chat/[actorId]" options={{ headerShown: true, title: '' }} />
               <Stack.Screen name="report" options={{ headerShown: true, title: t('report.title'), presentation: 'modal' }} />
               <Stack.Screen name="blocks/[actorId]" options={{ headerShown: true, title: t('block.manage') }} />
