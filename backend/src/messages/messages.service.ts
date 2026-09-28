@@ -126,8 +126,9 @@ export class MessagesService {
     return { messageId: target?.id ?? null, limit, used, remaining: target ? Math.max(limit - used, 0) : 0 };
   }
 
-  // 팬 본인의 대화방: 구독 시작일 이후의 방송 메시지 + 본인이 보낸 답장만, 시간순
-  async listForFan(userId: string, actorId: string) {
+  // 팬 본인의 대화방: 구독 시작일 이후의 방송 메시지 + 본인이 보낸 답장만. page.limit를 주면 최신 → 오래된 순으로
+  // N개(before 이전), 안 주면 전부 시간순(예전 방식). 오래 구독할수록 대화가 길어져서 앱은 나눠 받음(2026-09-28 점검)
+  async listForFan(userId: string, actorId: string, page: { limit?: number; before?: string } = {}) {
     const subscription = await ensureActiveSubscription(this.prisma, userId, actorId);
     const messages = await this.prisma.message.findMany({
       where: {
@@ -138,7 +139,9 @@ export class MessagesService {
         OR: [{ senderType: MessageSenderType.ARTIST }, { fanUserId: userId }],
       },
       include: quoteInclude(actorId),
-      orderBy: { createdAt: 'asc' },
+      orderBy: page.limit ? [{ createdAt: 'desc' }, { id: 'desc' }] : { createdAt: 'asc' },
+      ...(page.limit ? { take: page.limit } : {}),
+      ...(page.limit && page.before ? { cursor: { id: page.before }, skip: 1 } : {}),
     });
 
     const fan = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });

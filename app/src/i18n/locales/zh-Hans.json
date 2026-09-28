@@ -51,7 +51,7 @@
   },
   "chat": {
     "loadFailed": "无法加载聊天。请确认你是否已订阅该演员。",
-    "replyPlaceholder": "发送回复（仅限文字）",
+    "replyPlaceholder": "发送消息…",
     "send": "发送",
     "waitingFirst": "已开始订阅！{{name}} 发送的消息会出现在这里。",
     "replyAfterFirst": "明星发送第一条消息后即可回复。",
@@ -63,7 +63,13 @@
     "notificationsOn": "通知已开启",
     "notificationsOff": "通知已关闭",
     "muted": "已关闭此聊天的通知，仍会照常收到消息。",
-    "unmuted": "已开启此聊天的通知。"
+    "unmuted": "已开启此聊天的通知。",
+    "report": "举报",
+    "closeMenu": "关闭",
+    "messageActions": "长按可举报",
+    "newMessages": "{{count}} 条新消息 ↓",
+    "notSubscribedTitle": "订阅已结束",
+    "waitingTitle": "已开始订阅"
   },
   "mypage": {
     "title": "我的",

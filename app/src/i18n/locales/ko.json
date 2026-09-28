@@ -51,8 +51,8 @@
   },
   "chat": {
     "loadFailed": "대화를 불러오지 못했어요. 구독 중인 배우인지 확인해주세요.",
-    "replyPlaceholder": "답장 보내기 (텍스트만 가능)",
-    "send": "전송",
+    "replyPlaceholder": "메시지 보내기",
+    "send": "보내기",
     "waitingFirst": "구독을 시작했어요! {{name}}님이 보내는 메시지가 여기에 도착해요.",
     "replyAfterFirst": "스타의 첫 메시지가 오면 답장할 수 있어요.",
     "sendFailed": "보내지 못했어요. 다시 시도해 주세요.",
@@ -63,7 +63,13 @@
     "notificationsOn": "알림 켜짐",
     "notificationsOff": "알림 꺼짐",
     "muted": "이 채팅방 알림을 껐어요. 메시지는 그대로 받아요.",
-    "unmuted": "이 채팅방 알림을 켰어요."
+    "unmuted": "이 채팅방 알림을 켰어요.",
+    "report": "신고",
+    "closeMenu": "닫기",
+    "messageActions": "길게 눌러 신고",
+    "newMessages": "새 메시지 {{count}}개 ↓",
+    "notSubscribedTitle": "구독이 끝났어요",
+    "waitingTitle": "구독을 시작했어요"
   },
   "mypage": {
     "title": "마이페이지",

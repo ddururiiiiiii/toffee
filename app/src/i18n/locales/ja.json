@@ -51,7 +51,7 @@
   },
   "chat": {
     "loadFailed": "トークを読み込めませんでした。この俳優を購読しているか確認してください。",
-    "replyPlaceholder": "返信する（テキストのみ）",
+    "replyPlaceholder": "メッセージを送信…",
     "send": "送信",
     "waitingFirst": "購読を開始しました！{{name}}さんからのメッセージがここに届きます。",
     "replyAfterFirst": "スターから最初のメッセージが届くと返信できます。",
@@ -63,7 +63,13 @@
     "notificationsOn": "通知オン",
     "notificationsOff": "通知オフ",
     "muted": "このトークの通知をオフにしました。メッセージは引き続き届きます。",
-    "unmuted": "このトークの通知をオンにしました。"
+    "unmuted": "このトークの通知をオンにしました。",
+    "report": "通報",
+    "closeMenu": "閉じる",
+    "messageActions": "長押しで通報",
+    "newMessages": "新着 {{count}}件 ↓",
+    "notSubscribedTitle": "購読が終了しました",
+    "waitingTitle": "購読を開始しました"
   },
   "mypage": {
     "title": "マイページ",

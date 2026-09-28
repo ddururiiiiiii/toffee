@@ -51,7 +51,7 @@
   },
   "chat": {
     "loadFailed": "無法載入聊天。請確認你是否已訂閱這位演員。",
-    "replyPlaceholder": "傳送回覆（僅限文字）",
+    "replyPlaceholder": "傳送訊息…",
     "send": "傳送",
     "waitingFirst": "已開始訂閱！{{name}} 傳送的訊息會出現在這裡。",
     "replyAfterFirst": "明星傳送第一則訊息後即可回覆。",
@@ -63,7 +63,13 @@
     "notificationsOn": "通知已開啟",
     "notificationsOff": "通知已關閉",
     "muted": "已關閉此聊天的通知，仍會照常收到訊息。",
-    "unmuted": "已開啟此聊天的通知。"
+    "unmuted": "已開啟此聊天的通知。",
+    "report": "檢舉",
+    "closeMenu": "關閉",
+    "messageActions": "長按可檢舉",
+    "newMessages": "{{count}} 則新訊息 ↓",
+    "notSubscribedTitle": "訂閱已結束",
+    "waitingTitle": "已開始訂閱"
   },
   "mypage": {
     "title": "我的",

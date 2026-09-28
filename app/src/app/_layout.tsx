@@ -1,3 +1,4 @@
+import { InAppBanner } from '@/components/in-app-banner';
 import { useEffect, type ReactNode } from 'react';
 import {
   NotoSansThai_400Regular,
@@ -151,6 +152,7 @@ function RootLayout() {
               <Stack.Screen name="terms" options={{ headerShown: true, title: t('screens.terms') }} />
               <Stack.Screen name="privacy" options={{ headerShown: true, title: t('screens.privacy') }} />
             </Stack>
+            <InAppBanner />
           </AuthGate>
         </ThemeProvider>
       </AuthProvider>

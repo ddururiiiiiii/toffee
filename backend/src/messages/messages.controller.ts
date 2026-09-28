@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { MessagesService } from './messages.service.js';
-import { ListRepliesQueryDto } from './dto/list-replies-query.dto.js';
+import { ListMessagesQueryDto, ListRepliesQueryDto } from './dto/list-replies-query.dto.js';
 import { SendReplyDto } from './dto/send-reply.dto.js';
 import { SendBroadcastDto } from './dto/send-broadcast.dto.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
@@ -13,8 +13,8 @@ export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 
   @Get()
-  listForFan(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string) {
-    return this.messagesService.listForFan(user.id, actorId);
+  listForFan(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string, @Query() query: ListMessagesQueryDto) {
+    return this.messagesService.listForFan(user.id, actorId, { limit: query.limit, before: query.before });
   }
 
   @Post('reply')

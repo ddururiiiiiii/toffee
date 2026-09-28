@@ -51,7 +51,7 @@
   },
   "chat": {
     "loadFailed": "Couldn't load this chat. Please check that you're subscribed to this actor.",
-    "replyPlaceholder": "Send a reply (text only)",
+    "replyPlaceholder": "Message…",
     "send": "Send",
     "waitingFirst": "You're subscribed! Messages from {{name}} will arrive here.",
     "replyAfterFirst": "You can reply once the star sends their first message.",
@@ -63,7 +63,13 @@
     "notificationsOn": "Notifications on",
     "notificationsOff": "Notifications off",
     "muted": "Notifications for this chat are off. You'll still receive messages.",
-    "unmuted": "Notifications for this chat are on."
+    "unmuted": "Notifications for this chat are on.",
+    "report": "Report",
+    "closeMenu": "Close",
+    "messageActions": "Long press to report",
+    "newMessages": "{{count}} new ↓",
+    "notSubscribedTitle": "Your subscription has ended",
+    "waitingTitle": "You're subscribed"
   },
   "mypage": {
     "title": "My page",

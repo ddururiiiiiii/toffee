@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { Download, Pause, Play } from 'lucide-react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { fallbackWaveform, formatDuration, resample } from '@/lib/waveform';
@@ -67,19 +68,23 @@ export function VoiceMessage({ id, url, durationMs, waveform, tone, onSave }: Pr
 
   const total = status.duration > 0 ? status.duration : (durationMs ?? 0) / 1000;
   const progress = total > 0 ? Math.min(1, status.currentTime / total) : 0;
-  const strong = tone === 'light' ? '#fff' : '#3A3D4A';
-  const weak = tone === 'light' ? 'rgba(255,255,255,0.45)' : 'rgba(58,61,74,0.3)';
+  // 2A 시안: 라벤더 재생 버튼 + 라벤더 음파(재생된 부분은 진하게)
+  const strong = tone === 'light' ? '#fff' : '#7C8CFF';
+  const weak = tone === 'light' ? 'rgba(255,255,255,0.45)' : 'rgba(124,140,255,0.35)';
+  const label = tone === 'light' ? '#fff' : '#3A3D4A';
   const loading = status.playing && !status.isLoaded;
 
   // 재생 영역과 저장 버튼은 형제로 둠 — 버튼 안에 버튼을 넣으면 웹에서 <button> 중첩 오류
   return (
     <View style={styles.container}>
       <Pressable onPress={toggle} style={styles.row} accessibilityRole="button" disabled={!url}>
-        <View style={[styles.playButton, { borderColor: strong }]}>
+        <View style={[styles.playButton, { backgroundColor: tone === 'light' ? 'rgba(255,255,255,0.25)' : 'rgba(124,140,255,0.16)' }]}>
           {loading ? (
             <ActivityIndicator size="small" color={strong} />
+          ) : status.playing ? (
+            <Pause size={16} color={strong} fill={strong} />
           ) : (
-            <ThemedText style={[styles.playIcon, { color: strong }]}>{status.playing ? '❚❚' : '▶'}</ThemedText>
+            <Play size={16} color={strong} fill={strong} style={styles.playIcon} />
           )}
         </View>
         <View style={styles.bars}>
@@ -96,13 +101,13 @@ export function VoiceMessage({ id, url, durationMs, waveform, tone, onSave }: Pr
             />
           ))}
         </View>
-        <ThemedText type="small" style={[styles.time, { color: strong }]}>
+        <ThemedText type="small" style={[styles.time, { color: label }]}>
           {formatDuration(status.playing || status.currentTime > 0 ? total - status.currentTime : total)}
         </ThemedText>
       </Pressable>
       {onSave && url ? (
         <Pressable onPress={onSave} hitSlop={10} accessibilityRole="button" accessibilityLabel="save">
-          <ThemedText style={[styles.saveIcon, { color: strong }]}>⤓</ThemedText>
+          <Download size={18} color={label} strokeWidth={1.75} />
         </Pressable>
       ) : null}
     </View>
@@ -118,16 +123,14 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   playButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 1.5,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  playIcon: { fontSize: 11, lineHeight: 14 },
+  playIcon: { marginLeft: 2 },
   bars: { flexDirection: 'row', alignItems: 'center', gap: 2, height: 26 },
   bar: { width: 3, borderRadius: 2 },
   time: { minWidth: 34, fontVariant: ['tabular-nums'] },
-  saveIcon: { fontSize: 18, paddingHorizontal: 2 },
 });

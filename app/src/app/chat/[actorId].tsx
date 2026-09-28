@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -7,92 +7,49 @@ import {
   Pressable,
   StyleSheet,
   TextInput,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { ArrowUp, Bell, BellOff, CloudOff, Flag, Lock, MessageCircleHeart, X } from 'lucide-react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { ApiError } from '@/lib/api-client';
-import { useMySubscriptions, useSetNotificationsMuted } from '@/hooks/use-subscriptions';
-import { ThemedView } from '@/components/themed-view';
+import { Avatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Icon } from '@/components/ui/icon';
+import { IconButton } from '@/components/ui/icon-button';
 import { MediaTile } from '@/components/media-tile';
 import { QuoteBlock } from '@/components/quote-block';
 import { VoiceMessage } from '@/components/voice-message';
+import { ApiError } from '@/lib/api-client';
 import { saveMedia } from '@/lib/save-media';
 import { useActor } from '@/hooks/use-actors';
 import { useActorMessages, useReplyQuota, useSendReply, type ChatMessage } from '@/hooks/use-messages';
+import { useMySubscriptions, useSetNotificationsMuted } from '@/hooks/use-subscriptions';
 import { useTheme } from '@/hooks/use-theme';
-import { Spacing } from '@/constants/theme';
+import { fontFor, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 
-function MessageBubble({
-  message,
-  highlighted,
-  onSaveVoice,
-}: {
-  message: ChatMessage;
-  /** 알림을 눌러 들어왔을 때 그 메시지를 잠깐 강조 */
-  highlighted: boolean;
-  onSaveVoice: () => void;
-}) {
-  const theme = useTheme();
-  const isArtist = message.senderType === 'ARTIST';
-  const bubbleColor = isArtist ? theme.backgroundElement : theme.tint;
-  const textColor = isArtist ? theme.text : '#fff';
+// 맨 아래(최신)에서 이만큼 안쪽이면 "맨 아래를 보고 있음" — 새 메시지를 따라감
+const AT_BOTTOM_PX = 80;
+// 같은 사람이 이 시간 안에 이어 보낸 메시지는 한 묶음(시간·프로필 사진은 묶음 끝에 한 번)
+const GROUP_GAP_MS = 5 * 60 * 1000;
 
-  return (
-    <ThemedView style={[styles.bubbleRow, isArtist ? styles.bubbleRowLeft : styles.bubbleRowRight]}>
-      <ThemedView style={[styles.bubble, { backgroundColor: bubbleColor }, highlighted && { borderWidth: 2, borderColor: theme.tint }]}>
-        {message.replyTo && <QuoteBlock quote={message.replyTo} tone={isArtist ? 'dark' : 'light'} />}
-        {message.mediaType === 'PHOTO' || message.mediaType === 'VIDEO' ? (
-          <MediaTile id={message.id} url={message.mediaUrl} mediaType={message.mediaType} durationMs={message.mediaDurationMs} thumbnailUrl={message.thumbnailUrl} />
-        ) : message.mediaType === 'AUDIO' ? (
-          <VoiceMessage
-            id={message.id}
-            url={message.mediaUrl}
-            durationMs={message.mediaDurationMs}
-            waveform={message.waveform}
-            tone={isArtist ? 'dark' : 'light'}
-            onSave={onSaveVoice}
-          />
-        ) : null}
-        {message.body && <ThemedText style={{ color: textColor }}>{message.body}</ThemedText>}
-      </ThemedView>
-      {isArtist && <ArtistMessageMenu messageId={message.id} />}
-    </ThemedView>
-  );
-}
+const sameDay = (a: string, b: string) => new Date(a).toDateString() === new Date(b).toDateString();
 
-// 스타 메시지 옆 ⋯ → 신고(말풍선 안에 재생·보기 버튼이 있어 말풍선 전체를 길게 누르기 대신 별도 버튼으로)
-function ArtistMessageMenu({ messageId }: { messageId: string }) {
-  const router = useRouter();
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  return open ? (
-    <ThemedView style={styles.menu}>
-      <Pressable onPress={() => router.push({ pathname: '/report', params: { messageId } })} hitSlop={8}>
-        <ThemedText type="smallBold" themeColor="danger">
-          {t('report.action')}
-        </ThemedText>
-      </Pressable>
-      <Pressable onPress={() => setOpen(false)} hitSlop={8}>
-        <ThemedText type="smallBold" themeColor="textSecondary">
-          ✕
-        </ThemedText>
-      </Pressable>
-    </ThemedView>
-  ) : (
-    <Pressable onPress={() => setOpen(true)} hitSlop={10} style={styles.menu} accessibilityLabel={t('safety.more')}>
-      <ThemedText type="smallBold" themeColor="textSecondary">
-        ⋯
-      </ThemedText>
-    </Pressable>
-  );
-}
-
+/**
+ * 팬 채팅방 — 시안 2A Minimal Premium(docs/product/brand/exploration/2a-chat-minimal-premium.png) + DESIGN_GUIDE §9.
+ * 실제 1:1 DM처럼 조용하고 여백 있게: 스타는 왼쪽 Cloud 말풍선(묶음 끝에 작은 프로필 사진), 팬은 오른쪽 Periwinkle.
+ * 팬은 글·이모지만(사진·음성·영상 없음). 신고는 스타 말풍선을 길게 눌러서(말풍선마다 버튼을 늘어놓지 않음).
+ * 목록은 최신이 맨 아래인 뒤집힌 목록 — 맨 아래를 보고 있으면 새 메시지를 따라가고, 위로 올려 읽는 중이면 끌어내리지
+ * 않고 "새 메시지 N개 ↓"만(예전엔 사진 로딩·폴링 때마다 맨 아래로 끌려 내려갔음). 위 끝까지 올리면 이전 대화를 더 불러옴.
+ */
 export default function ChatRoomScreen() {
   const theme = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigation = useNavigation();
   const router = useRouter();
   // focus: 푸시 알림을 눌러 들어왔을 때 보여줄 메시지 id(없거나 목록에 없으면 평소처럼 맨 아래)
@@ -101,209 +58,422 @@ export default function ChatRoomScreen() {
   const { data: subscriptions } = useMySubscriptions();
   const subscription = subscriptions?.find((s) => s.actorId === actorId);
   const setMuted = useSetNotificationsMuted(actorId);
-  const { data: messages, isLoading, isError, error } = useActorMessages(actorId);
+  const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useActorMessages(actorId);
   const notSubscribed = error instanceof ApiError && error.status === 403;
   const sendReply = useSendReply(actorId);
   const [draft, setDraft] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+
+  // 최신 → 오래된 순(서버 순서) — 뒤집힌 목록이라 첫 항목이 맨 아래
+  const messages = useMemo(() => {
+    const seen = new Set<string>();
+    return (data?.pages.flat() ?? []).filter((m) => !seen.has(m.id) && seen.add(m.id));
+  }, [data]);
+
   const listRef = useRef<FlatList<ChatMessage>>(null);
-  // 목록 높이가 바뀔 때마다(사진 로딩 등) 맨 아래로 내리는데, 알림으로 들어온 직후 잠깐은 그 메시지에 고정
-  const focusRef = useRef<string | null>(null);
-  const handledFocus = useRef<string | null>(null);
-  const [highlightId, setHighlightId] = useState<string | null>(null);
-
-  // 5초 폴링으로 messages가 바뀌어도 타이머가 취소되지 않게 화면을 떠날 때만 정리
-  const focusTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  useEffect(() => () => focusTimers.current.forEach(clearTimeout), []);
-  useEffect(() => {
-    const index = focus && messages ? messages.findIndex((m) => m.id === focus) : -1;
-    if (!focus || index < 0 || handledFocus.current === focus) return;
-    handledFocus.current = focus;
-    focusRef.current = focus;
-    setHighlightId(focus);
-    focusTimers.current.push(
-      // 목록이 먼저 그려져 맨 아래로 내려간 뒤일 수 있어서 여기서도 한 번 이동
-      setTimeout(() => listRef.current?.scrollToIndex({ index, viewPosition: 0.5, animated: false }), 0),
-      // 1.5초 뒤부터는 평소처럼 새 메시지가 오면 맨 아래로
-      setTimeout(() => (focusRef.current = null), 1500),
-      setTimeout(() => setHighlightId(null), 2500),
-    );
-  }, [focus, messages]);
-
-  const scrollToFocusOrEnd = () => {
-    const index = focusRef.current && messages ? messages.findIndex((m) => m.id === focusRef.current) : -1;
-    if (index >= 0) listRef.current?.scrollToIndex({ index, viewPosition: 0.5, animated: false });
-    else listRef.current?.scrollToEnd({ animated: false });
+  const [atBottom, setAtBottom] = useState(true);
+  const [seenNewestId, setSeenNewestId] = useState<string | undefined>(undefined);
+  const newestId = messages[0]?.id;
+  const unseen = atBottom || !seenNewestId ? 0 : Math.max(messages.findIndex((m) => m.id === seenNewestId), 0);
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const bottom = event.nativeEvent.contentOffset.y < AT_BOTTOM_PX;
+    if (bottom !== atBottom) setAtBottom(bottom);
+    if (!bottom && atBottom) setSeenNewestId(newestId);
+    if (bottom && seenNewestId) setSeenNewestId(undefined);
   };
 
+  // 알림으로 들어왔으면 그 메시지로 이동해 잠깐 강조(이미 한 번 처리한 focus는 폴링으로 목록이 바뀌어도 다시 안 함)
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const handledFocus = useRef<string | null>(null);
   useEffect(() => {
-    if (!actor) return;
+    const index = focus ? messages.findIndex((m) => m.id === focus) : -1;
+    if (!focus || index < 0 || handledFocus.current === focus) return;
+    handledFocus.current = focus;
+    setHighlightId(focus);
+    const scroll = setTimeout(() => listRef.current?.scrollToIndex({ index, viewPosition: 0.5, animated: false }), 50);
+    const clear = setTimeout(() => setHighlightId(null), 2500);
+    return () => {
+      clearTimeout(scroll);
+      clearTimeout(clear);
+    };
+  }, [focus, messages]);
+
+  useEffect(() => {
     navigation.setOptions({
-      title: actor.chatDisplayName,
+      headerShadowVisible: false,
+      headerStyle: { backgroundColor: theme.background },
+      headerTitle: () =>
+        actor ? (
+          <View style={styles.headerTitle}>
+            <Avatar uri={actor.chatProfileImageUrl} name={actor.chatDisplayName} size={34} />
+            <ThemedText type="headline" numberOfLines={1}>
+              {actor.chatDisplayName}
+            </ThemedText>
+          </View>
+        ) : null,
       // 카톡처럼 채팅방별 알림 끄기 — 구독 중일 때만
       headerRight: subscription
         ? () => (
-            <Pressable
-              accessibilityRole="switch"
-              accessibilityState={{ checked: !subscription.notificationsMuted }}
-              accessibilityLabel={t(subscription.notificationsMuted ? 'chat.notificationsOff' : 'chat.notificationsOn')}
+            <IconButton
+              icon={subscription.notificationsMuted ? BellOff : Bell}
+              label={t(subscription.notificationsMuted ? 'chat.notificationsOff' : 'chat.notificationsOn')}
+              color={subscription.notificationsMuted ? theme.textTertiary : theme.text}
               onPress={() => {
                 setNotice(t(subscription.notificationsMuted ? 'chat.unmuted' : 'chat.muted'));
                 setMuted.mutate(!subscription.notificationsMuted);
               }}
-              hitSlop={8}
-              style={styles.headerButton}>
-              <ThemedText>{subscription.notificationsMuted ? '🔕' : '🔔'}</ThemedText>
-            </Pressable>
+            />
           )
         : undefined,
     });
-  }, [actor, navigation, subscription, setMuted, t]);
+  }, [actor, navigation, subscription, setMuted, t, theme]);
+
+  // 알림 안내 등 짧은 문구는 잠깐 보였다 사라짐
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), 3500);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
   const saveVoice = (message: ChatMessage) => {
     if (!message.mediaUrl) return;
-    setNotice(null);
     saveMedia({ id: message.id, url: message.mediaUrl, mediaType: 'AUDIO' })
       .then((result) => setNotice(result === 'saved' ? t('media.saved') : null))
       .catch(() => setNotice(t('media.saveFailed')));
   };
 
-  // 실패하면 쓴 글을 되돌려 놓고 이유를 보여줌(예전엔 금칙어·차단 등으로 실패해도 글이 조용히 사라졌음)
+  // 실패하면 쓴 글을 되돌려 놓고 이유를 보여줌(금칙어·차단·답장 한도 등)
   const handleSend = () => {
     const body = draft.trim();
     if (!body) return;
     setDraft('');
     setNotice(null);
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
     sendReply.mutate(body, {
-      onError: (error) => {
+      onError: (err) => {
         setDraft((current) => current || body);
-        setNotice(error instanceof ApiError ? error.message : t('chat.sendFailed'));
+        setNotice(err instanceof ApiError ? err.message : t('chat.sendFailed'));
       },
     });
   };
-  // 버블 방식: 팬 답장은 가장 최근 스타 메시지에 붙음 — 구독 후 스타 메시지가 아직 없으면 답장할 곳이 없어서 입력창 대신 안내
-  const canReply = !!messages?.some((message) => message.senderType === 'ARTIST');
-  // 스타 메시지 하나당 답장 수 제한(기본 3) — 다 쓰면 다음 메시지까지 입력창 대신 안내
+
+  // 버블 방식: 팬 답장은 가장 최근 스타 메시지에 붙음 — 구독 후 스타 메시지가 아직 없으면 입력창 대신 안내
+  const canReply = messages.some((message) => message.senderType === 'ARTIST');
   const { data: quota } = useReplyQuota(actorId, canReply);
   const outOfReplies = !!quota && quota.remaining === 0;
 
-  return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={90}>
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        {isLoading ? (
-          <ActivityIndicator style={styles.loading} color={theme.tint} />
-        ) : isError ? (
-          // 403 = 구독이 없음(해지·만료) — 다시 구독하는 길을 보여줌
-          notSubscribed ? (
-            <ThemedView style={styles.endedBox}>
-              <ThemedText style={styles.endedText} themeColor="textSecondary">
-                {t('chat.notSubscribed', { name: actor?.chatDisplayName ?? '' })}
-              </ThemedText>
-              <Pressable
-                onPress={() => router.replace({ pathname: '/actor/[id]', params: { id: actorId } })}
-                style={[styles.sendButton, { backgroundColor: theme.tint }]}>
-                <ThemedText style={styles.sendButtonText}>{t('chat.resubscribe')}</ThemedText>
-              </Pressable>
-            </ThemedView>
-          ) : (
-            <ThemedText style={styles.centerMessage} themeColor="danger">
-              {t('chat.loadFailed')}
-            </ThemedText>
-          )
-        ) : (
-          <FlatList
-            ref={listRef}
-            data={messages}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.list}
-            onContentSizeChange={scrollToFocusOrEnd}
-            // 아직 그려지지 않은 위치면 대략 이동 후 다시 시도
-            onScrollToIndexFailed={({ index, averageItemLength }) => {
-              listRef.current?.scrollToOffset({ offset: averageItemLength * index, animated: false });
-              setTimeout(() => listRef.current?.scrollToIndex({ index, viewPosition: 0.5, animated: false }), 100);
-            }}
-            renderItem={({ item }) => (
-              <MessageBubble message={item} highlighted={item.id === highlightId} onSaveVoice={() => saveVoice(item)} />
-            )}
-            ListEmptyComponent={
-              <ThemedText type="small" themeColor="textSecondary" style={styles.centerMessage}>
-                {t('chat.waitingFirst', { name: actor?.chatDisplayName ?? '' })}
-              </ThemedText>
-            }
-          />
-        )}
-
-        {notice && (
-          <ThemedText type="small" themeColor="textSecondary" style={styles.notice} onPress={() => setNotice(null)}>
+  const body = isLoading ? (
+    <ActivityIndicator style={styles.loading} color={theme.tint} />
+  ) : notSubscribed ? (
+    // 403 = 구독이 없음(해지·만료) — 다시 구독하는 길을 보여줌
+    <EmptyState
+      icon={Lock}
+      title={t('chat.notSubscribedTitle')}
+      body={t('chat.notSubscribed', { name: actor?.chatDisplayName ?? '' })}
+      action={<Button title={t('chat.resubscribe')} onPress={() => router.replace({ pathname: '/actor/[id]', params: { id: actorId } })} />}
+    />
+  ) : isError ? (
+    <EmptyState
+      icon={CloudOff}
+      title={t('chat.loadFailed')}
+      action={<Button title={t('discover.retry')} variant="secondary" onPress={() => void refetch()} />}
+    />
+  ) : (
+    <View style={styles.listArea}>
+      <FlatList
+        ref={listRef}
+        inverted
+        data={messages}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.list}
+        onScroll={onScroll}
+        scrollEventThrottle={100}
+        keyboardShouldPersistTaps="handled"
+        maintainVisibleContentPosition={{ minIndexForVisible: 0, autoscrollToTopThreshold: AT_BOTTOM_PX }}
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+        }}
+        onEndReachedThreshold={0.3}
+        onScrollToIndexFailed={({ index, averageItemLength }) => {
+          listRef.current?.scrollToOffset({ offset: averageItemLength * index, animated: false });
+          setTimeout(() => listRef.current?.scrollToIndex({ index, viewPosition: 0.5, animated: false }), 100);
+        }}
+        ListFooterComponent={isFetchingNextPage ? <ActivityIndicator color={theme.tint} style={styles.pageLoading} /> : null}
+        ListEmptyComponent={
+          <View style={styles.flip}>
+            <EmptyState icon={MessageCircleHeart} title={t('chat.waitingTitle')} body={t('chat.waitingFirst', { name: actor?.chatDisplayName ?? '' })} />
+          </View>
+        }
+        renderItem={({ item, index }) => {
+          // 뒤집힌 목록: index-1이 더 최신, index+1이 더 오래된 메시지
+          const newer = messages[index - 1];
+          const older = messages[index + 1];
+          const endsGroup =
+            !newer ||
+            newer.senderType !== item.senderType ||
+            new Date(newer.createdAt).getTime() - new Date(item.createdAt).getTime() > GROUP_GAP_MS ||
+            !sameDay(newer.createdAt, item.createdAt);
+          const dayChanged = !older || !sameDay(older.createdAt, item.createdAt);
+          return (
+            <View>
+              {dayChanged && <DaySeparator iso={item.createdAt} locale={i18n.language} />}
+              <MessageRow
+                message={item}
+                avatarUri={actor?.chatProfileImageUrl}
+                actorName={actor?.chatDisplayName}
+                showAvatarAndTime={endsGroup}
+                highlighted={item.id === highlightId}
+                menuOpen={menuFor === item.id}
+                onOpenMenu={() => setMenuFor(item.id)}
+                onCloseMenu={() => setMenuFor(null)}
+                onReport={() => {
+                  setMenuFor(null);
+                  router.push({ pathname: '/report', params: { messageId: item.id } });
+                }}
+                onSaveVoice={() => saveVoice(item)}
+              />
+            </View>
+          );
+        }}
+      />
+      {unseen > 0 && (
+        <Pressable
+          onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
+          style={[styles.newPill, { backgroundColor: theme.primary }]}
+          accessibilityRole="button">
+          <ThemedText type="smallBold" style={{ color: theme.onPrimary }}>
+            {t('chat.newMessages', { count: unseen })}
+          </ThemedText>
+        </Pressable>
+      )}
+      {notice && (
+        <Pressable onPress={() => setNotice(null)} style={[styles.toast, { backgroundColor: theme.primary }]}>
+          <ThemedText type="small" style={{ color: theme.onPrimary, textAlign: 'center' }}>
             {notice}
           </ThemedText>
-        )}
+        </Pressable>
+      )}
+    </View>
+  );
 
-        {isLoading || isError ? null : !canReply || outOfReplies ? (
-          <ThemedText
-            type="small"
-            themeColor="textSecondary"
-            style={[styles.waitingBar, { borderTopColor: theme.backgroundElement }]}>
-            {canReply ? t('chat.noRepliesLeft', { limit: quota?.limit }) : t('chat.replyAfterFirst')}
-          </ThemedText>
-        ) : (
-          <ThemedView style={[styles.inputArea, { borderTopColor: theme.backgroundElement }]}>
-            {quota && (
-              <ThemedText type="small" themeColor="textSecondary" style={styles.quota}>
-                {t('chat.repliesLeft', { count: quota.remaining })}
+  const showComposer = !isLoading && !isError;
+  return (
+    <KeyboardAvoidingView style={[styles.container, { backgroundColor: theme.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+      <SafeAreaView style={styles.inner} edges={['bottom']}>
+        {body}
+        {showComposer &&
+          (!canReply || outOfReplies ? (
+            <View style={[styles.waitingBar, { borderTopColor: theme.border }]}>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
+                {canReply ? t('chat.noRepliesLeft', { limit: quota?.limit }) : t('chat.replyAfterFirst')}
               </ThemedText>
-            )}
-            <ThemedView style={styles.inputRow}>
-              <TextInput
-                value={draft}
-                onChangeText={setDraft}
-                placeholder={t('chat.replyPlaceholder')}
-                placeholderTextColor={theme.textSecondary}
-                style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
-                multiline
-              />
-              <Pressable
-                onPress={handleSend}
-                disabled={sendReply.isPending || !draft.trim()}
-                style={[styles.sendButton, { backgroundColor: theme.tint, opacity: draft.trim() ? 1 : 0.5 }]}>
-                <ThemedText style={styles.sendButtonText}>{t('chat.send')}</ThemedText>
-              </Pressable>
-            </ThemedView>
-          </ThemedView>
-        )}
+            </View>
+          ) : (
+            <View style={styles.composer}>
+              {quota && (
+                <ThemedText type="caption" themeColor="textTertiary" style={styles.quota}>
+                  {t('chat.repliesLeft', { count: quota.remaining })}
+                </ThemedText>
+              )}
+              <View style={styles.inputRow}>
+                <TextInput
+                  value={draft}
+                  onChangeText={setDraft}
+                  placeholder={t('chat.replyPlaceholder')}
+                  placeholderTextColor={theme.textTertiary}
+                  style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }, fontFor(400, i18n.language)]}
+                  multiline
+                  // 웹 textarea가 기본 두 줄 높이로 커지지 않게
+                  numberOfLines={1}
+                  maxLength={1000}
+                />
+                <Pressable
+                  onPress={handleSend}
+                  disabled={sendReply.isPending || !draft.trim()}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('chat.send')}
+                  style={[styles.sendButton, { backgroundColor: draft.trim() ? theme.tint : theme.backgroundElement }]}>
+                  {sendReply.isPending ? (
+                    <ActivityIndicator color="#ffffff" size="small" />
+                  ) : (
+                    <Icon as={ArrowUp} size={20} strokeWidth={2.25} color={draft.trim() ? '#ffffff' : theme.textTertiary} />
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          ))}
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
 }
 
+function DaySeparator({ iso, locale }: { iso: string; locale: string }) {
+  return (
+    <ThemedText type="caption" themeColor="textTertiary" style={styles.day}>
+      {new Date(iso).toLocaleDateString(locale, { month: 'long', day: 'numeric', weekday: 'short' })}
+    </ThemedText>
+  );
+}
+
+function MessageRow({
+  message,
+  avatarUri,
+  actorName,
+  showAvatarAndTime,
+  highlighted,
+  menuOpen,
+  onOpenMenu,
+  onCloseMenu,
+  onReport,
+  onSaveVoice,
+}: {
+  message: ChatMessage;
+  avatarUri?: string | null;
+  actorName?: string;
+  showAvatarAndTime: boolean;
+  highlighted: boolean;
+  menuOpen: boolean;
+  onOpenMenu: () => void;
+  onCloseMenu: () => void;
+  onReport: () => void;
+  onSaveVoice: () => void;
+}) {
+  const theme = useTheme();
+  const { t, i18n } = useTranslation();
+  const isArtist = message.senderType === 'ARTIST';
+  const isMedia = message.mediaType === 'PHOTO' || message.mediaType === 'VIDEO';
+  const time = new Date(message.createdAt).toLocaleTimeString(i18n.language, { hour: 'numeric', minute: '2-digit' });
+
+  const bubble = (
+    <Pressable
+      onLongPress={isArtist ? onOpenMenu : undefined}
+      delayLongPress={350}
+      accessibilityHint={isArtist ? t('chat.messageActions') : undefined}
+      accessibilityActions={isArtist ? [{ name: 'report', label: t('chat.report') }] : undefined}
+      onAccessibilityAction={(event) => {
+        if (event.nativeEvent.actionName === 'report') onReport();
+      }}
+      style={[styles.bubbleWrap, highlighted && { borderRadius: Radius.lg + 2, borderWidth: 2, borderColor: theme.tint }]}>
+      {isMedia ? (
+        <View style={styles.mediaGroup}>
+          {message.replyTo && <QuoteBlock quote={message.replyTo} tone="dark" />}
+          <MediaTile id={message.id} url={message.mediaUrl} mediaType={message.mediaType as 'PHOTO' | 'VIDEO'} durationMs={message.mediaDurationMs} thumbnailUrl={message.thumbnailUrl} />
+          {message.body ? (
+            <View style={[styles.bubble, { backgroundColor: theme.backgroundElement }]}>
+              <ThemedText>{message.body}</ThemedText>
+            </View>
+          ) : null}
+        </View>
+      ) : (
+        <View style={[styles.bubble, { backgroundColor: isArtist ? theme.backgroundElement : theme.tintSoft }]}>
+          {message.replyTo && <QuoteBlock quote={message.replyTo} tone="dark" />}
+          {message.mediaType === 'AUDIO' ? (
+            <VoiceMessage id={message.id} url={message.mediaUrl} durationMs={message.mediaDurationMs} waveform={message.waveform} tone="dark" onSave={onSaveVoice} />
+          ) : null}
+          {message.body ? <ThemedText>{message.body}</ThemedText> : null}
+        </View>
+      )}
+    </Pressable>
+  );
+
+  return (
+    <View style={[styles.row, !showAvatarAndTime && styles.rowTight]}>
+      <View style={[styles.line, isArtist ? styles.lineLeft : styles.lineRight]}>
+        {isArtist && (
+          <View style={styles.avatarSlot}>
+            {showAvatarAndTime ? <Avatar uri={avatarUri} name={actorName} size={30} /> : null}
+          </View>
+        )}
+        <View style={[styles.column, isArtist ? styles.columnLeft : styles.columnRight]}>
+          {bubble}
+          {menuOpen && (
+            <View style={[styles.menu, { backgroundColor: theme.background, borderColor: theme.border }]}>
+              <Pressable onPress={onReport} style={styles.menuItem} accessibilityRole="button">
+                <Icon as={Flag} size={16} color={theme.danger} />
+                <ThemedText type="smallBold" themeColor="danger">
+                  {t('chat.report')}
+                </ThemedText>
+              </Pressable>
+              <IconButton icon={X} size={16} label={t('chat.closeMenu')} onPress={onCloseMenu} style={styles.menuClose} />
+            </View>
+          )}
+          {showAvatarAndTime && (
+            <ThemedText type="caption" themeColor="textTertiary" style={styles.time}>
+              {time}
+            </ThemedText>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  headerButton: { paddingHorizontal: Spacing.three },
   container: { flex: 1 },
-  list: { padding: Spacing.three, gap: Spacing.two },
-  // 행 컨테이너는 배경 없이(ThemedView 기본 흰 배경이 회색 화면 위에 띠처럼 보였음)
-  bubbleRow: { flexDirection: 'row', backgroundColor: 'transparent' },
-  bubbleRowLeft: { justifyContent: 'flex-start', alignItems: 'flex-end' },
-  menu: { flexDirection: 'row', gap: 10, paddingHorizontal: 6, paddingBottom: 4, backgroundColor: 'transparent' },
-  bubbleRowRight: { justifyContent: 'flex-end' },
-  bubble: { maxWidth: '78%', borderRadius: 16, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: 4 },
-  notice: { textAlign: 'center', paddingVertical: Spacing.one },
-  endedBox: { alignItems: 'center', gap: Spacing.three, marginTop: Spacing.six, paddingHorizontal: Spacing.four, backgroundColor: 'transparent' },
-  endedText: { textAlign: 'center' },
-  inputArea: { borderTopWidth: StyleSheet.hairlineWidth },
-  quota: { paddingHorizontal: Spacing.three, paddingTop: Spacing.one },
-  waitingBar: { textAlign: 'center', padding: Spacing.three, borderTopWidth: 1 },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: Spacing.two,
-    padding: Spacing.three,
-  },
-  input: { flex: 1, borderRadius: 20, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, fontSize: 16, maxHeight: 100 },
-  sendButton: { borderRadius: 20, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
-  sendButtonText: { color: '#fff', fontWeight: '600' },
+  inner: { flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
+  headerTitle: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, maxWidth: 240 },
+  listArea: { flex: 1 },
+  list: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.three },
+  // 뒤집힌 목록 안의 빈 화면은 위아래가 뒤집혀 보이지 않게
+  flip: { transform: [{ scaleY: -1 }] },
+  pageLoading: { marginVertical: Spacing.three },
   loading: { marginTop: Spacing.six },
-  centerMessage: { textAlign: 'center', marginTop: Spacing.six, paddingHorizontal: Spacing.four },
+  day: { textAlign: 'center', marginVertical: Spacing.three },
+  row: { marginBottom: Spacing.three },
+  rowTight: { marginBottom: 4 },
+  line: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.two },
+  lineLeft: { justifyContent: 'flex-start' },
+  lineRight: { justifyContent: 'flex-end' },
+  avatarSlot: { width: 30, marginBottom: 20 },
+  column: { maxWidth: '78%', gap: 4 },
+  columnLeft: { alignItems: 'flex-start' },
+  columnRight: { alignItems: 'flex-end' },
+  bubbleWrap: { maxWidth: '100%' },
+  bubble: { borderRadius: Radius.lg + 2, paddingHorizontal: 14, paddingVertical: 10, gap: 6 },
+  mediaGroup: { gap: 4 },
+  time: { paddingHorizontal: 4 },
+  menu: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.md,
+    paddingLeft: Spacing.three,
+  },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: Spacing.two },
+  menuClose: { width: 36, height: 36 },
+  newPill: {
+    position: 'absolute',
+    bottom: Spacing.three,
+    alignSelf: 'center',
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  toast: {
+    position: 'absolute',
+    top: Spacing.three,
+    alignSelf: 'center',
+    maxWidth: '86%',
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  composer: { paddingHorizontal: Spacing.three, paddingTop: Spacing.two, paddingBottom: Spacing.two, gap: 4 },
+  quota: { paddingHorizontal: Spacing.two },
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.two },
+  input: {
+    flex: 1,
+    minHeight: 44,
+    maxHeight: 120,
+    borderRadius: 22,
+    paddingHorizontal: Spacing.three,
+    paddingTop: 11,
+    paddingBottom: 11,
+    fontSize: 15,
+    outlineStyle: 'none',
+  } as object,
+  sendButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  waitingBar: { padding: Spacing.three, borderTopWidth: StyleSheet.hairlineWidth },
+  center: { textAlign: 'center' },
 });

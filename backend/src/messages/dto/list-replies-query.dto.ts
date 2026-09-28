@@ -22,3 +22,18 @@ export class ListRepliesQueryDto {
   @IsNotEmpty()
   before?: string;
 }
+
+/** 팬 채팅방 나눠 받기 — limit(1~200)를 주면 최신 → 오래된 순, before(메시지 id) 이전 것 */
+export class ListMessagesQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  limit?: number;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  before?: string;
+}

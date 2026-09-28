@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/lib/auth-context';
+import { showInAppBanner } from '@/components/in-app-banner';
 import {
   registerThisDevice,
   subscribeForegroundMessages,
@@ -36,10 +37,13 @@ export function usePushNotifications(): void {
       else if (role === 'ACTOR') router.push(`/studio/${actorId}`);
       else if (role === 'USER') router.push({ pathname: '/chat/[actorId]', params: { actorId, ...(messageId ? { focus: messageId } : {}) } });
     };
-    const refresh = ({ actorId }: PushData) => {
-      if (!actorId) return;
-      void queryClient.invalidateQueries({ queryKey: ['messages', actorId] });
-      void queryClient.invalidateQueries({ queryKey: ['actor-broadcasts', actorId] });
+    // 앱을 보고 있을 때 온 알림: 해당 대화·인박스를 새로 불러오고 위쪽 배너로 알려줌(누르면 그 대화로)
+    const refresh = (data: PushData) => {
+      if (!data.actorId) return;
+      void queryClient.invalidateQueries({ queryKey: ['messages', data.actorId] });
+      void queryClient.invalidateQueries({ queryKey: ['actor-broadcasts', data.actorId] });
+      void queryClient.invalidateQueries({ queryKey: ['my-subscriptions'] });
+      if (data.title || data.body) showInAppBanner({ title: data.title, body: data.body, actorId: data.actorId, onPress: () => open(data) });
     };
     const unsubscribeOpens = subscribeNotificationOpens(open);
     const unsubscribeForeground = subscribeForegroundMessages(refresh);
