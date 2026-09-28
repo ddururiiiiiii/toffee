@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { FanReplyActions } from '@/components/fan-reply-actions';
 import { useMessageReplies, useStudioMessages } from '@/hooks/use-studio';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
@@ -37,6 +38,13 @@ export default function MessageRepliesScreen() {
           data={replies}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          ListHeaderComponent={
+            <Pressable onPress={() => router.push(`/blocks/${actorId}`)} hitSlop={8} style={styles.blocksLink}>
+              <ThemedText type="small" themeColor="textSecondary">
+                {t('block.manage')} ›
+              </ThemedText>
+            </Pressable>
+          }
           ListEmptyComponent={
             <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
               {t('studio.repliesEmpty')}
@@ -50,6 +58,14 @@ export default function MessageRepliesScreen() {
                 <ThemedText type="small" themeColor="textSecondary">
                   {new Date(item.createdAt).toLocaleString(i18n.language)}
                 </ThemedText>
+                {item.fanUser && (
+                  <FanReplyActions
+                    actorId={actorId}
+                    messageId={item.id}
+                    fanUserId={item.fanUser.id}
+                    nickname={item.fanUser.nickname ?? ''}
+                  />
+                )}
                 {item.fanUser && (
                   <Pressable
                     hitSlop={8}
@@ -86,5 +102,6 @@ const styles = StyleSheet.create({
   list: { padding: Spacing.three, gap: Spacing.two },
   empty: { textAlign: 'center', marginTop: Spacing.four },
   reply: { borderRadius: 12, padding: Spacing.three, gap: 2 },
-  replyFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'transparent' },
+  blocksLink: { alignSelf: 'flex-end' },
+  replyFooter: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: 'transparent' },
 });

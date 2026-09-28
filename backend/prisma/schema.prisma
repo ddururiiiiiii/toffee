@@ -37,6 +37,15 @@ enum MessageMediaType {
   VIDEO
 }
 
+// 신고 사유 분류 — 운영자 대기열에서 빠르게 판단하려고(자세한 내용은 reason에 선택 입력)
+enum ReportCategory {
+  SPAM
+  ABUSE
+  SEXUAL
+  PRIVACY
+  OTHER
+}
+
 enum ReportStatus {
   PENDING
   RESOLVED
@@ -91,15 +100,17 @@ model User {
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
 
-  authIdentities  AuthIdentity[]
-  subscriptions   Subscription[]
-  fanMessages     Message[]        @relation("FanMessages")
-  agency          Agency?          @relation(fields: [agencyId], references: [id])
-  pushDevices     PushDevice[]
-  reportsFiled    Report[]         @relation("ReportsFiled")
-  actorSelf       Actor?           @relation("ActorSelf")
-  storyViews      StoryView[]
-  parentalConsent ParentalConsent?
+  authIdentities    AuthIdentity[]
+  subscriptions     Subscription[]
+  fanMessages       Message[]        @relation("FanMessages")
+  agency            Agency?          @relation(fields: [agencyId], references: [id])
+  pushDevices       PushDevice[]
+  blockedInChannels ActorFanBlock[]  @relation("BlockedInChannels")
+  blocksIssued      ActorFanBlock[]  @relation("BlocksIssued")
+  reportsFiled      Report[]         @relation("ReportsFiled")
+  actorSelf         Actor?           @relation("ActorSelf")
+  storyViews        StoryView[]
+  parentalConsent   ParentalConsent?
 }
 
 // 푸시 받을 기기 — 한 사람이 폰·태블릿 등 여러 기기로 받을 수 있게 기기(토큰)마다 한 줄(유료 서비스라
@@ -165,6 +176,7 @@ model Actor {
   selfUser         User?                @relation("ActorSelf", fields: [selfUserId], references: [id])
   agency           Agency?              @relation(fields: [agencyId], references: [id])
   agencyHistory    ActorAgencyHistory[]
+  fanBlocks        ActorFanBlock[]
   subscriptions    Subscription[]
   messages         Message[]
   pairingsAsFirst  GlCp[]               @relation("PairingActorOne")
@@ -319,16 +331,20 @@ model StoryView {
 }
 
 model Report {
-  id           String       @id @default(uuid())
+  id           String         @id @default(uuid())
   messageId    String
   reportedById String
-  reason       String
-  status       ReportStatus @default(PENDING)
-  createdAt    DateTime     @default(now())
+  category     ReportCategory @default(OTHER)
+  reason       String?
+  status       ReportStatus   @default(PENDING)
+  createdAt    DateTime       @default(now())
   resolvedAt   DateTime?
 
   message    Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
   reportedBy User    @relation("ReportsFiled", fields: [reportedById], references: [id])
+
+  // 같은 사람이 같은 메시지를 여러 번 신고해서 순위를 올리는 걸 막음
+  @@unique([messageId, reportedById])
 }
 
 // 팬 답장 전송 전에 대조하는 금칙어 목록 — 한국어/태국어/영어 3개 언어로 관리
@@ -339,4 +355,23 @@ model BannedWord {
   createdAt DateTime @default(now())
 
   @@unique([term, language])
+}
+
+// 배우 채널 단위 차단 — 배우 본인·소속사가 운영자 없이 바로 걸 수 있음(잠정 정책, STATUS.md). 차단된 팬은 그
+// 배우에게 답장을 못 보내고, 이미 보낸 답장도 스타·소속사 화면에서 빠짐. 구독·메시지 열람은 그대로 유지(환불
+// 문제 없음). 서비스 전체 제재(정지·차단)는 운영자만(User.status).
+model ActorFanBlock {
+  id          String   @id @default(uuid())
+  actorId     String
+  fanUserId   String
+  blockedById String
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  actor     Actor @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  fanUser   User  @relation("BlockedInChannels", fields: [fanUserId], references: [id], onDelete: Cascade)
+  blockedBy User  @relation("BlocksIssued", fields: [blockedById], references: [id])
+
+  @@unique([actorId, fanUserId])
+  @@index([fanUserId])
 }

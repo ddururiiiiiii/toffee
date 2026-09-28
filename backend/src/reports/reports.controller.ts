@@ -12,7 +12,7 @@ export class ReportsController {
 
   @Post()
   create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateReportDto) {
-    return this.reportsService.create(user.id, dto.messageId, dto.reason);
+    return this.reportsService.create(user.id, dto.messageId, dto.category, dto.reason);
   }
 
   // 'pending'은 ':id' 라우트보다 먼저 등록해야 함

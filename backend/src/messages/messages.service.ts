@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PushService } from '../notifications/push.service.js';
 import { pushStrings } from '../notifications/push-messages.js';
@@ -14,26 +14,34 @@ import type { SendBroadcastDto } from './dto/send-broadcast.dto.js';
 const NAME_PLACEHOLDER = '{{name}}';
 const QUOTE_PREVIEW_LENGTH = 120;
 
-// 스타의 인용 답장이 가리키는 팬 메시지 — 화면에 보여줄 요약만 가져옴
-const QUOTE_INCLUDE = {
-  replyTo: {
-    select: {
-      id: true,
-      senderType: true,
-      body: true,
-      mediaType: true,
-      fanUser: { select: { nickname: true, status: true } },
-      reports: { where: { status: ReportStatus.RESOLVED }, select: { id: true }, take: 1 },
+// 스타의 인용 답장이 가리키는 팬 메시지 — 화면에 보여줄 요약만 가져옴(이 채널에서 차단됐는지도 같이)
+function quoteInclude(actorId: string) {
+  return {
+    replyTo: {
+      select: {
+        id: true,
+        senderType: true,
+        body: true,
+        mediaType: true,
+        fanUser: {
+          select: {
+            nickname: true,
+            status: true,
+            blockedInChannels: { where: { actorId }, select: { id: true }, take: 1 },
+          },
+        },
+        reports: { where: { status: ReportStatus.RESOLVED }, select: { id: true }, take: 1 },
+      },
     },
-  },
-} as const;
+  } as const;
+}
 
 interface QuotedSource {
   id: string;
   senderType: MessageSenderType;
   body: string | null;
   mediaType: MessageMediaType;
-  fanUser: { nickname: string | null; status: UserStatus } | null;
+  fanUser: { nickname: string | null; status: UserStatus; blockedInChannels?: { id: string }[] } | null;
   reports: { id: string }[];
 }
 
@@ -44,13 +52,22 @@ interface QuotedSource {
  */
 export function toQuote(source: QuotedSource | null) {
   if (!source || source.senderType !== MessageSenderType.FAN) return null;
-  const hidden = !source.fanUser || source.fanUser.status !== UserStatus.ACTIVE || source.reports.length > 0;
+  const hidden =
+    !source.fanUser ||
+    source.fanUser.status !== UserStatus.ACTIVE ||
+    (source.fanUser.blockedInChannels?.length ?? 0) > 0 ||
+    source.reports.length > 0;
   return {
     id: source.id,
     hidden,
     nickname: hidden ? null : (source.fanUser?.nickname ?? null),
     body: hidden || !source.body ? null : source.body.slice(0, QUOTE_PREVIEW_LENGTH),
   };
+}
+
+// 이 배우 채널에서 차단되지 않은 팬
+function notBlockedIn(actorId: string) {
+  return { blockedInChannels: { none: { actorId } } };
 }
 
 function withQuote<T extends { replyTo: QuotedSource | null }>(message: T) {
@@ -81,7 +98,7 @@ export class MessagesService {
         createdAt: { gte: subscription.startedAt },
         OR: [{ senderType: MessageSenderType.ARTIST }, { fanUserId: userId }],
       },
-      include: QUOTE_INCLUDE,
+      include: quoteInclude(actorId),
       orderBy: { createdAt: 'asc' },
     });
 
@@ -99,6 +116,12 @@ export class MessagesService {
 
   async sendReply(userId: string, actorId: string, dto: SendReplyDto) {
     const subscription = await ensureActiveSubscription(this.prisma, userId, actorId);
+    // 채널 차단: 구독·열람은 그대로지만 답장은 못 보냄(잠정 정책 — 차단 사실을 알림, STATUS.md)
+    const blocked = await this.prisma.actorFanBlock.findUnique({
+      where: { actorId_fanUserId: { actorId, fanUserId: userId } },
+      select: { id: true },
+    });
+    if (blocked) throw new ForbiddenException('이 채널에서는 답장을 보낼 수 없어요.');
     await this.moderationService.assertNoBannedWords(dto.body);
     // 버블 방식: 팬은 대상을 고르지 않고, 지금 팬 화면에 보이는 가장 최근 스타 메시지에 대한 답장이 됨
     // (구독 전 메시지는 팬에게 안 보이므로 제외). 스타 화면은 이걸로 메시지별 답장을 묶어 보여줌.
@@ -152,7 +175,7 @@ export class MessagesService {
           : {}),
         ...(dto.mediaType === MessageMediaType.AUDIO ? { waveform: dto.waveform ?? undefined } : {}),
       },
-      include: QUOTE_INCLUDE,
+      include: quoteInclude(actorId),
     });
     const message = await this.mediaService.withReadUrl(withQuote(created));
 
@@ -203,7 +226,12 @@ export class MessagesService {
   async listReplies(requesterId: string, actorId: string, messageId?: string) {
     await ensureCanViewActor(this.prisma, requesterId, actorId);
     const replies = await this.prisma.message.findMany({
-      where: { actorId, senderType: MessageSenderType.FAN, ...(messageId ? { replyToMessageId: messageId } : {}) },
+      where: {
+        actorId,
+        senderType: MessageSenderType.FAN,
+        fanUser: notBlockedIn(actorId),
+        ...(messageId ? { replyToMessageId: messageId } : {}),
+      },
       include: { fanUser: { select: { id: true, nickname: true } } },
       orderBy: { createdAt: 'desc' },
     });
@@ -220,7 +248,11 @@ export class MessagesService {
     const messages = await this.prisma.message.findMany({
       where: { actorId, senderType: MessageSenderType.ARTIST },
       orderBy: { createdAt: 'desc' },
-      include: { ...QUOTE_INCLUDE, _count: { select: { replies: { where: { senderType: MessageSenderType.FAN } } } } },
+      include: {
+        ...quoteInclude(actorId),
+        // 이 채널에서 차단된 팬의 답장은 세지 않음
+        _count: { select: { replies: { where: { senderType: MessageSenderType.FAN, fanUser: notBlockedIn(actorId) } } } },
+      },
     });
     return this.mediaService.withReadUrls(
       messages.map(({ _count, ...message }) => ({ ...withQuote(message), replyCount: _count.replies })),

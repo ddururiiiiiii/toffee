@@ -9,7 +9,7 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
@@ -47,7 +47,35 @@ function MessageBubble({ message, onSaveVoice }: { message: ChatMessage; onSaveV
         ) : null}
         {message.body && <ThemedText style={{ color: textColor }}>{message.body}</ThemedText>}
       </ThemedView>
+      {isArtist && <ArtistMessageMenu messageId={message.id} />}
     </ThemedView>
+  );
+}
+
+// 스타 메시지 옆 ⋯ → 신고(말풍선 안에 재생·보기 버튼이 있어 말풍선 전체를 길게 누르기 대신 별도 버튼으로)
+function ArtistMessageMenu({ messageId }: { messageId: string }) {
+  const router = useRouter();
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  return open ? (
+    <ThemedView style={styles.menu}>
+      <Pressable onPress={() => router.push({ pathname: '/report', params: { messageId } })} hitSlop={8}>
+        <ThemedText type="smallBold" themeColor="danger">
+          {t('report.action')}
+        </ThemedText>
+      </Pressable>
+      <Pressable onPress={() => setOpen(false)} hitSlop={8}>
+        <ThemedText type="smallBold" themeColor="textSecondary">
+          ✕
+        </ThemedText>
+      </Pressable>
+    </ThemedView>
+  ) : (
+    <Pressable onPress={() => setOpen(true)} hitSlop={10} style={styles.menu} accessibilityLabel={t('safety.more')}>
+      <ThemedText type="smallBold" themeColor="textSecondary">
+        ⋯
+      </ThemedText>
+    </Pressable>
   );
 }
 
@@ -137,7 +165,8 @@ const styles = StyleSheet.create({
   list: { padding: Spacing.three, gap: Spacing.two },
   // 행 컨테이너는 배경 없이(ThemedView 기본 흰 배경이 회색 화면 위에 띠처럼 보였음)
   bubbleRow: { flexDirection: 'row', backgroundColor: 'transparent' },
-  bubbleRowLeft: { justifyContent: 'flex-start' },
+  bubbleRowLeft: { justifyContent: 'flex-start', alignItems: 'flex-end' },
+  menu: { flexDirection: 'row', gap: 10, paddingHorizontal: 6, paddingBottom: 4, backgroundColor: 'transparent' },
   bubbleRowRight: { justifyContent: 'flex-end' },
   bubble: { maxWidth: '78%', borderRadius: 16, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: 4 },
   notice: { textAlign: 'center', paddingVertical: Spacing.one },

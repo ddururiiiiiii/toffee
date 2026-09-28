@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { FanReplyActions } from '@/components/fan-reply-actions';
 import { useActor } from '@/hooks/use-actors';
 import {
   useActorStats,
@@ -99,22 +100,33 @@ function MonitorSection({ actorId }: { actorId: string }) {
   );
 }
 
-function ReplyRow({ reply }: { reply: FanReply }) {
+function ReplyRow({ reply, actorId }: { reply: FanReply; actorId: string }) {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
   return (
     <ThemedView style={[styles.replyRow, { backgroundColor: theme.backgroundElement }]}>
       <ThemedText type="smallBold">{reply.fanUser ? `${reply.fanUser.nickname ?? t('console.noNickname')} ${reply.fanUser.tag}` : t('console.deletedFan')}</ThemedText>
       <ThemedText type="small">{reply.body}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        {new Date(reply.createdAt).toLocaleString(i18n.language)}
-      </ThemedText>
+      <ThemedView style={styles.replyFooter}>
+        <ThemedText type="small" themeColor="textSecondary">
+          {new Date(reply.createdAt).toLocaleString(i18n.language)}
+        </ThemedText>
+        {reply.fanUser && (
+          <FanReplyActions
+            actorId={actorId}
+            messageId={reply.id}
+            fanUserId={reply.fanUser.id}
+            nickname={reply.fanUser.nickname ?? ''}
+          />
+        )}
+      </ThemedView>
     </ThemedView>
   );
 }
 
 function RepliesSection({ actorId }: { actorId: string }) {
   const theme = useTheme();
+  const router = useRouter();
   const { t } = useTranslation();
   const { data: replies, isLoading } = useActorReplies(actorId);
 
@@ -130,7 +142,14 @@ function RepliesSection({ actorId }: { actorId: string }) {
           {t('console.repliesEmpty')}
         </ThemedText>
       }
-      renderItem={({ item }) => <ReplyRow reply={item} />}
+      ListHeaderComponent={
+        <Pressable onPress={() => router.push(`/blocks/${actorId}`)} hitSlop={8} style={styles.blocksLink}>
+          <ThemedText type="small" themeColor="textSecondary">
+            {t('block.manage')} ›
+          </ThemedText>
+        </Pressable>
+      }
+      renderItem={({ item }) => <ReplyRow reply={item} actorId={actorId} />}
     />
   );
 }
@@ -204,6 +223,8 @@ export default function ConsoleActorScreen() {
 }
 
 const styles = StyleSheet.create({
+  replyFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'transparent' },
+  blocksLink: { alignSelf: 'flex-end' },
   container: { flex: 1 },
   segments: { flexDirection: 'row', margin: Spacing.four, borderRadius: 10, padding: 4, gap: 4 },
   segment: { flex: 1, alignItems: 'center', paddingVertical: Spacing.two, borderRadius: 8 },

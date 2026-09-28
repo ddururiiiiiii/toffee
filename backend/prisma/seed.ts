@@ -176,6 +176,7 @@ async function main() {
     data: {
       messageId: recentBroadcast.id,
       reportedById: fan2.id,
+      category: 'SPAM',
       reason: '(데모) 스팸성 메시지로 신고',
     },
   });

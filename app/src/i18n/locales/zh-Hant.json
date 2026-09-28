@@ -170,5 +170,34 @@
     "hidden": "這則訊息已被隱藏",
     "action": "回覆",
     "publicNotice": "所有訂閱者都看得到，粉絲以暱稱顯示。"
+  },
+  "report": {
+    "title": "檢舉",
+    "action": "檢舉",
+    "hint": "請選擇問題類型，營運人員會進行確認。",
+    "category": {
+      "SPAM": "垃圾訊息·廣告",
+      "ABUSE": "辱罵·騷擾",
+      "SEXUAL": "色情內容",
+      "PRIVACY": "洩露個人資料",
+      "OTHER": "其他"
+    },
+    "reasonPlaceholder": "詳細說明（選填）",
+    "submit": "送出檢舉",
+    "failed": "檢舉失敗。",
+    "doneTitle": "已檢舉",
+    "doneBody": "營運人員確認後會進行必要的處理。"
+  },
+  "block": {
+    "action": "封鎖",
+    "manage": "封鎖管理",
+    "confirmTitle": "要在此頻道封鎖 {{nickname}} 嗎？",
+    "confirmBody": "封鎖後，這位粉絲將無法傳送回覆，已傳送的回覆也會從列表中消失。訂閱和查看訊息不受影響，可隨時解除。",
+    "listHint": "被封鎖的粉絲無法在此頻道回覆，解除後即可再次回覆。",
+    "empty": "沒有被封鎖的粉絲。",
+    "unblock": "解除"
+  },
+  "safety": {
+    "more": "更多"
   }
 }

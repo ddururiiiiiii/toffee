@@ -82,6 +82,25 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
 
+## 신고·차단 (2026-09-28, 잠정 정책)
+
+- 스키마(마이그레이션 `20260928080000_add_report_category_and_channel_blocks`): `ReportCategory` enum +
+  `Report.category`, `Report.reason` 선택으로, `@@unique([messageId, reportedById])`(기존 중복은 마이그레이션에서
+  가장 먼저 한 것만 남기고 삭제), `ActorFanBlock { actorId, fanUserId, blockedById, reason }` `@@unique([actorId, fanUserId])`.
+- **신고** `POST /reports { messageId, category, reason? }` — 신고자가 그 메시지를 볼 수 있어야 함: 스타 메시지는
+  구독 중인 팬만(구독 이후 메시지), 팬 답장은 그 채널의 배우 본인·소속사만(`ensureCanViewActor`), 운영자는 전부.
+  자기 메시지 신고 400, 중복 409. 대기열 `GET /reports/pending`은 메시지 단위로 묶어 `reportCount`·`categories`와
+  함께 **신고한 사람 수 내림차순**(자동 제재 대신). 처리/기각은 같은 메시지의 대기 신고를 한 번에.
+- **차단** `GET|POST /actors/:actorId/blocks`, `DELETE /actors/:actorId/blocks/:fanUserId` — `@Roles(ACTOR,
+  AGENCY_STAFF, ADMIN)` + `ensureCanViewActor`, 팬(USER)만 대상. 효과: `sendReply` 403, `listReplies`·`replyCount`에서
+  제외(`fanUser.blockedInChannels.none`), 인용 요약에서도 `hidden`(`quoteInclude(actorId)`). 구독·`listForFan`은 영향 없음.
+- 앱: `app/report.tsx`(공용 신고 모달), `app/blocks/[actorId].tsx`(차단 관리), `components/fan-reply-actions.tsx`
+  (스튜디오·콘솔 답장 줄의 ⋯ → 신고/차단, 차단은 `lib/confirm.ts`로 확인), 팬 채팅의 스타 메시지 옆 ⋯ → 신고,
+  운영자 신고 화면에 분류·신고 수·채널·팬 닉네임/로그인 이름.
+- 검증: 실서버(정상 신고, 중복 409, 구독 전 메시지 403, 자기 메시지 400, 팬이 다른 팬 답장 403, 이전 소속사 403,
+  대기열 정렬, 차단 후 답장 403·열람 200·목록/답장 수에서 제외, 권한 없는 차단 403, 해제 후 답장 201) +
+  브라우저(팬 신고 완료 화면, 콘솔에서 차단하면 답장이 목록에서 사라짐, 차단 관리에서 해제, 운영자 목록 표시).
+
 ## 인용 답장 (2026-09-28)
 
 - 스키마 변경 없음 — 기존 `Message.replyToMessageId`(팬 답장 자동 연결용으로 이미 추가)를 스타 메시지에도 사용.

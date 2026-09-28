@@ -170,5 +170,34 @@
     "hidden": "This message is hidden",
     "action": "Reply",
     "publicNotice": "Visible to all subscribers; the fan is shown by nickname."
+  },
+  "report": {
+    "title": "Report",
+    "action": "Report",
+    "hint": "Choose what the problem is. Our team will review your report.",
+    "category": {
+      "SPAM": "Spam / ads",
+      "ABUSE": "Abuse / harassment",
+      "SEXUAL": "Sexual content",
+      "PRIVACY": "Personal info exposed",
+      "OTHER": "Other"
+    },
+    "reasonPlaceholder": "More details (optional)",
+    "submit": "Submit report",
+    "failed": "Couldn't send the report.",
+    "doneTitle": "Report sent",
+    "doneBody": "We'll review it and take action if needed."
+  },
+  "block": {
+    "action": "Block",
+    "manage": "Blocked fans",
+    "confirmTitle": "Block {{nickname}} in this channel?",
+    "confirmBody": "They won't be able to send replies, and their existing replies will disappear from your list. Their subscription and access to messages stay the same. You can unblock anytime.",
+    "listHint": "Blocked fans can't reply in this channel. Unblock to allow replies again.",
+    "empty": "No blocked fans.",
+    "unblock": "Unblock"
+  },
+  "safety": {
+    "more": "More"
   }
 }

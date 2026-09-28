@@ -1,18 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 
+// 같은 메시지 신고는 서버가 한 줄로 묶고(reportCount), 여러 명이 신고한 것부터 내려줌
 export interface PendingReport {
   id: string;
-  reason: string;
+  category: string;
+  reason: string | null;
   createdAt: string;
+  reportCount: number;
+  categories: string[];
   message: {
     id: string;
     actorId: string;
     senderType: 'ARTIST' | 'FAN';
     body: string | null;
     mediaType: string;
+    fanUser: { id: string; nickname: string | null; displayName: string } | null;
+    actor: { chatDisplayName: string };
   };
-  reportedBy: { id: string; displayName: string };
+  reportedBy: { id: string; displayName: string; nickname: string | null; role: string };
 }
 
 export function usePendingReports() {

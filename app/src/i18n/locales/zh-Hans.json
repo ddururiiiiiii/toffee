@@ -170,5 +170,34 @@
     "hidden": "这条消息已被隐藏",
     "action": "回复",
     "publicNotice": "所有订阅者都能看到，粉丝以昵称显示。"
+  },
+  "report": {
+    "title": "举报",
+    "action": "举报",
+    "hint": "请选择问题类型，运营人员会进行核查。",
+    "category": {
+      "SPAM": "垃圾信息·广告",
+      "ABUSE": "辱骂·骚扰",
+      "SEXUAL": "色情内容",
+      "PRIVACY": "泄露个人信息",
+      "OTHER": "其他"
+    },
+    "reasonPlaceholder": "详细说明（选填）",
+    "submit": "提交举报",
+    "failed": "举报失败。",
+    "doneTitle": "已举报",
+    "doneBody": "运营人员核查后会进行必要的处理。"
+  },
+  "block": {
+    "action": "屏蔽",
+    "manage": "屏蔽管理",
+    "confirmTitle": "要在此频道屏蔽 {{nickname}} 吗？",
+    "confirmBody": "屏蔽后，该粉丝将无法发送回复，已发送的回复也会从列表中消失。订阅和查看消息不受影响，可随时解除。",
+    "listHint": "被屏蔽的粉丝无法在此频道回复，解除后可再次回复。",
+    "empty": "没有被屏蔽的粉丝。",
+    "unblock": "解除"
+  },
+  "safety": {
+    "more": "更多"
   }
 }
