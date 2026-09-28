@@ -30,17 +30,15 @@
 
 ## 세션 환경
 
-- `node_modules`가 커밋되어 있지 않음 — `backend/`, `app/` 각각에서 `npm ci`(또는
-  peer dependency 충돌 시 `npm install --legacy-peer-deps` — 알려진 이슈는
-  `docs/engineering/architecture-notes.md` 참고) 먼저 실행해야 `tsc`/lint/`prisma`
+- `node_modules`가 커밋되어 있지 않음 — `backend/`, `app/` 각각에서 `npm ci` 먼저 실행해야 `tsc`/lint/`prisma`
   커맨드가 동작함.
 - 이 원격 세션엔 DB 연결이 없는 경우가 많음 — `npx prisma migrate dev`는 못 씀.
   스키마를 고치면 `npx prisma format` → `npx prisma generate` → `npx prisma validate`로
   검증하고, 마이그레이션 SQL은 `prisma/migrations/`의 기존 파일을 본떠 손으로 작성할
   것. 파일명은 `YYYYMMDDHHmmss_설명` 형식.
-- 커밋 전엔 최소 `backend`: `npx tsc --noEmit`, `npm run lint`(oxlint), `npx nest build`
-  / `app`: `npx tsc --noEmit`, `npx eslint src` 통과를 확인할 것(자동화 테스트는 아직
-  없음). 백엔드는 ESLint가 아니라 oxlint라 `npx eslint src`를 치면 설정 파일이 없다고
+- 커밋 전엔 최소 `backend`: `npx tsc --noEmit`, `npm run lint`(oxlint), `npm test`, `npx nest build`
+  / `app`: `npx tsc --noEmit`, `npx eslint src` 통과를 확인할 것 — push하면 GitHub Actions CI(`.github/workflows/ci.yml`)가
+  같은 검사 + 마이그레이션 드리프트 검사를 다시 돌림. 백엔드는 ESLint가 아니라 oxlint라 `npx eslint src`를 치면 설정 파일이 없다고
   실패함(정상). 앱 `tsc`가 `*.module.css`/`global.css` 타입을 못 찾는다고 실패하면
   gitignore된 `app/expo-env.d.ts`가 없는 것 — `/// <reference types="expo/types" />`
   한 줄로 만들어 주거나 `npx expo start`를 한 번 띄우면 자동 생성됨.

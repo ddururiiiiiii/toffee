@@ -33,6 +33,13 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "ddururiiiiiii",
+          "project": "toffee-app"
+        }
       ]
     ],
     "experiments": {

@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { NotoSansThai_400Regular } from '@expo-google-fonts/noto-sans-thai';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
+import * as Sentry from '@sentry/react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -9,6 +10,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { useOnboardingStatus } from '@/hooks/use-onboarding';
+
+// DSN이 비어 있으면(로컬 개발) SDK가 아무것도 전송하지 않고 조용히 꺼진 채로 동작함.
+// 앱 쪽은 요청 바디/헤더를 자동 수집하지 않고 사용자 정보도 붙이지 않음(PII 없음).
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  environment: __DEV__ ? 'development' : 'production',
+});
 
 SplashScreen.preventAutoHideAsync();
 
@@ -53,7 +61,9 @@ function AuthGate({ children }: { children: ReactNode }) {
   return children;
 }
 
-export default function RootLayout() {
+export default Sentry.wrap(RootLayout);
+
+function RootLayout() {
   const colorScheme = useColorScheme();
   const [fontsLoaded, fontError] = useFonts({ NotoSansThai_400Regular });
 

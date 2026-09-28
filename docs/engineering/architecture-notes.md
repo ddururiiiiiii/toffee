@@ -8,8 +8,8 @@
 | 항목 | 상태 |
 |---|---|
 | 앱 dev/prod 빌드 분리 (`app.config.ts` + `eas.json` 멀티 프로필) | 미착수 |
-| Sentry (백엔드+앱) | 미착수 — 가장 시급 |
-| CI/CD (`.github/workflows`), 자동 DB 백업 | 미착수 |
+| Sentry (백엔드+앱) | **완료 (2026-09-28)** — 아래 "CI + Sentry" 절 |
+| CI/CD (`.github/workflows`), 자동 DB 백업 | CI **완료 (2026-09-28)**. 배포(CD)·DB 백업은 호스팅 결정 후 |
 | 헬스체크 (`/health/live` 분리) | 미착수 |
 | 루트 `CLAUDE.md`, README 컨벤션 문서화 | **이번에 해결** (`CLAUDE.md` 신설) |
 | `Actor` 다국어 필드, 앱 i18n 라이브러리 | 미착수 (메시지 번역 테이블은 이미 있음, 아래 참고) |
@@ -81,6 +81,42 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
 - **아직 안 한 것**: 앱/웹 쪽에 이 엔드포인트들을 실제로 보여주는 화면 자체가 없음
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
+
+## CI + Sentry — 구현 완료 (2026-09-28)
+
+**CI** (`.github/workflows/ci.yml`, 모든 브랜치 push + main 대상 PR):
+- `backend`: `npm ci` → `prisma generate/validate` → `tsc --noEmit` → `npm run lint`(oxlint)
+  → `npm test`(vitest) → `npm run build`.
+- `migrations`: Postgres 16 서비스 컨테이너에 `prisma migrate deploy` → `prisma migrate diff
+  --from-config-datasource --to-schema prisma/schema.prisma --exit-code`(손으로 쓴 마이그레이션
+  SQL이 스키마와 어긋나면 exit 2로 실패 — 일부러 필드를 추가해서 실패하는 것까지 확인) →
+  `npm run db:seed`.
+- `app`: `npm ci` → `expo-env.d.ts` 생성(gitignore 대상) → `tsc --noEmit` → `eslint src`.
+- 배포(CD)·EAS 빌드·DB 백업 워크플로는 호스팅/스토어 설정이 정해진 뒤 젤리 것을 옮겨올 것.
+- `.github/dependabot.yml` 같이 추가.
+
+**Sentry 백엔드** (`@sentry/nestjs` 11):
+- 백엔드가 ESM이라 젤리처럼 `main.ts` 첫 줄 import로는 초기화 순서가 보장 안 됨 →
+  `src/instrument.ts`를 `node --import ./dist/instrument.js dist/main`(`npm run start:prod`)으로
+  먼저 로드(Sentry 공식 ESM 방식). `nest start`(개발)로 띄우면 Sentry는 안 켜짐 — 의도된 것.
+- `SentryModule.forRoot()` + `APP_FILTER: SentryGlobalFilter` — 처리 안 된 예외(5xx)만 전송,
+  `HttpException`(4xx)은 제외.
+- PII: v11부터 `sendDefaultPii`가 없어지고 `dataCollection`으로 바뀜 — `userInfo/cookies/
+  urlQueryParams: false`, 요청 헤더는 `authorization/cookie/x-api-key` 제외, 응답 바디 미수집.
+  2차로 `common/sentry/scrub-event.ts`의 `scrubEvent`(beforeSend)가 바디의 `idToken/
+  accessToken/email/parentEmail/birthDate/signedTransaction/purchaseToken/fcmToken` 등을
+  재귀적으로 가리고 쿼리스트링·쿠키 제거, `user`는 id만 남김. 단위 테스트
+  (`scrub-event.spec.ts`) + 로컬 가짜 Sentry 서버로 실제 전송 확인: DB를 내려 500을 내자
+  이벤트 1건(404는 0건)이 왔고 토큰/이메일/쿼리스트링 원문은 하나도 없었음.
+- `.env.example`에 `SENTRY_DSN` 추가.
+
+**Sentry 앱** (`@sentry/react-native` ~7.11 — Expo SDK 57 번들 버전, `expo install`이 이
+세션 프록시에 막혀서 `bundledNativeModules.json` 기준으로 직접 설치):
+- `_layout.tsx`에서 `Sentry.init({ dsn: EXPO_PUBLIC_SENTRY_DSN })` + `Sentry.wrap(RootLayout)`.
+- `app.json` 플러그인 `@sentry/react-native/expo`(`organization: ddururiiiiiii`,
+  `project: toffee-app` — 젤리와 같은 조직 가정, Sentry에서 이 이름으로 프로젝트를 만들어야
+  함). 소스맵 업로드는 EAS 빌드 시 `SENTRY_AUTH_TOKEN`이 있어야 동작.
+- 웹 번들(`expo export --platform web`) 정상 생성 확인. 네이티브 빌드는 이 환경에서 확인 불가.
 
 ## 소속사(`Agency`) + 소속 이력(`ActorAgencyHistory`) — 구현 완료 (2026-09-28)
 
@@ -500,10 +536,12 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   (`backend/src/main.ts`).
 - [x] ID 필드는 `@IsUUID()` 대신 `@IsString()+@IsNotEmpty()` — 이미 컨벤션으로 적용 중.
 - [x] JWT는 매 요청마다 DB에서 유저 상태 재조회(정지/차단 즉시 반영) — 이미 구현됨.
-- [ ] **로그인/인증 엔드포인트 rate limiting** — 아직 없음. 무차별 대입 공격 방지용
-  (`@nestjs/throttler` 등 검토).
-- [ ] **의존성 취약점 스캔** — `npm audit`이나 GitHub Dependabot 알림 아직 미설정
-  (CI/CD 자체가 없어서 같이 미착수).
+- [ ] **로그인/인증 엔드포인트 rate limiting** — (2026-09-28 정정) 전역 `ThrottlerGuard`
+  (IP당 분당 60회)는 이미 걸려 있음(실서버에서 61번째 요청부터 429 확인). 로그인 엔드포인트
+  전용으로 더 빡빡한 제한(`@Throttle`)은 아직 없음.
+- [x] **의존성 취약점 스캔** — `.github/dependabot.yml`(backend/app npm 주 1회,
+  Actions 월 1회, Expo SDK 묶인 패키지 메이저는 제외) (2026-09-28). GitHub 저장소 설정에서
+  "Dependabot alerts/security updates"가 켜져 있는지는 사용자가 확인 필요.
 - [ ] **관리자(ADMIN) 계정 추가 보호** — 지금은 일반 로그인과 동일한 인증 수준.
   민감한 권한(회원 정지/차단, 금칙어 관리)을 고려하면 2단계 인증(TOTP 등) 도입을
   검토할 것.
@@ -511,10 +549,10 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   아직 코드에 없음(업로드 화면 자체도 아직 없어서 같이 미착수).
 - [ ] **CORS 허용 목록** — 지금 개발 단계 설정이 프로덕션 기준으로 좁혀졌는지 재점검
   필요.
-- [ ] **민감정보 로깅 방지** — JWT 토큰, 비밀번호, 부모 이메일 같은 PII가 에러 로그에
-  그대로 찍히지 않는지 점검 필요(Sentry 연동 시 같이 필터링 규칙을 넣을 것).
-- [ ] **Sentry(에러 모니터링)** — 여전히 미연동, "젤리 대비 갭" 표에서 가장 시급한
-  항목으로 이미 표시돼 있음.
+- [x] **민감정보 로깅 방지 (Sentry 쪽)** — `dataCollection` 제한 + `scrubEvent`
+  (2026-09-28). 단 Nest 기본 로거가 콘솔에 찍는 에러 스택(Prisma 에러 메시지 등)은 호스팅
+  로그에 그대로 남음 — 호스팅 정할 때 로그 보존 기간/접근 권한 같이 정할 것.
+- [x] **Sentry(에러 모니터링)** — 백엔드+앱 연동 완료(2026-09-28), DSN만 넣으면 동작.
 
 ### 개인정보/규제 메모
 
@@ -525,6 +563,9 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
 
 ## 알려진 인프라 이슈
 
-- `backend`의 `npm ci`가 `@nestjs/config@^4.0.4`(peer: `@nestjs/common@^10||^11`)와
+- ~~`backend`의 `npm ci`가 `@nestjs/config@^4.0.4`(peer: `@nestjs/common@^10||^11`)와
   루트 `@nestjs/common@^12.0.1` 버전 충돌로 실패함 — `--legacy-peer-deps`로 우회 설치
-  중. 근본 해결(버전 정리)은 아직 안 함.
+  중.~~ **해결 (2026-09-28)**: `@nestjs/config` 4→12, `@nestjs/jwt` 11→12,
+  `@nestjs/passport` 11→12, `@nestjs/throttler` 6.5→6.7(전부 Nest 12 peer 지원 버전)로
+  올리고 lockfile을 `--legacy-peer-deps` 없이 다시 생성 — 이제 그냥 `npm ci`로 설치됨
+  (CI도 이걸로 돎). 업그레이드 후 로그인(JWT 발급/검증), 401 가드, 스로틀링 실서버 확인.

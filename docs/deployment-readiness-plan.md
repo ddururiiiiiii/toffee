@@ -22,6 +22,50 @@
 
 ---
 
+## 2026-09-28 (이어서) — CI + Sentry
+
+### 배경
+
+젤리 대비 갭 중 "가장 시급"으로 표시돼 있던 두 가지. 앞으로 CP방·게시판·다국어·미디어처럼
+스키마와 화면을 크게 건드리는 작업이 이어지므로 그 전에 안전망부터 깔기로 함.
+
+### 한 일
+
+- **CI**(`.github/workflows/ci.yml`): backend(tsc/oxlint/vitest/build), migrations(빈
+  Postgres에 전체 마이그레이션 적용 → schema.prisma와 드리프트 검사 → 시드), app(tsc/eslint).
+  손으로 쓰는 마이그레이션이 스키마와 어긋나면 CI가 잡아내게 한 게 핵심.
+- **Dependabot**(`.github/dependabot.yml`) — 보안 체크리스트 "의존성 취약점 스캔" 해결.
+- **Sentry**: 백엔드(`@sentry/nestjs`, ESM이라 `node --import`로 선로딩) + 앱
+  (`@sentry/react-native`). 에러 리포트에 토큰·이메일·부모 이메일·생년월일·영수증이 안
+  실리도록 수집 범위 제한 + 전송 전 필터 — 보안 체크리스트 "민감정보 로깅 방지"도 같이 해결.
+- 부수적으로 오래된 인프라 이슈 해결: backend `npm ci`가 Nest 패키지 peer 버전 충돌로
+  `--legacy-peer-deps` 없이는 실패하던 문제 → Nest 12 지원 버전으로 올려서 해결.
+
+### 확인
+
+로컬 Postgres로 CI의 마이그레이션 단계를 그대로 재현(드리프트 0, 일부러 어긋나게 하면 exit
+2), 업그레이드한 패키지로 실서버 로그인·401·429 확인, 가짜 Sentry 서버로 5xx만 전송되고
+민감정보가 가려지는 것 확인, 앱 웹 번들 생성 확인. 실제 GitHub Actions 실행 결과는 이
+브랜치 push 후 확인 필요.
+
+### 정정
+
+- 보안 체크리스트에 "로그인 rate limiting 아직 없음"이라고 적혀 있었는데, 전역
+  `ThrottlerGuard`(분당 60회)는 이미 있었음 — 로그인 전용 강화만 남은 것으로 정정.
+
+### 남은 일 (사용자)
+
+- sentry.io에서 프로젝트 2개 생성(NestJS: 백엔드용, React Native: `toffee-app`) → DSN을
+  백엔드 `SENTRY_DSN`, 앱 `EXPO_PUBLIC_SENTRY_DSN`에. 앱 소스맵 업로드용 `SENTRY_AUTH_TOKEN`은
+  EAS Secret으로.
+- GitHub 저장소 설정에서 Dependabot alerts/security updates 켜져 있는지 확인.
+
+### 다음
+
+파일 업로드(스토리지 선정) → 스타 앱 화면 → 팬 미디어 재생·다운로드 → 닉네임 → 인용 답장.
+
+---
+
 ## 2026-09-28 — 소속사(`Agency`) 도입 + 소속 이력, `trusting-davinci` 작업 이어받기
 
 ### 배경
