@@ -82,6 +82,13 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
 
+## 대화기록 1년 보존 (2026-09-28)
+
+- `MessageRetentionService.removeExpiredFanReplies` — `@Cron('10 4 * * *', { timeZone: 'Asia/Bangkok' })`.
+  `DELETE FROM "Message" USING "Subscription"`로 같은 (팬, 배우)의 구독이 `cancelledAt < now - 365일`인 FAN 메시지 삭제,
+  PENDING 신고가 걸린 건 제외. 스타의 인용은 `replyToMessageId` SetNull → "삭제된 메시지".
+- 검증: 로컬 DB에 400일 전 해지·30일 전 해지·재구독·신고 대기 4가지를 넣고 실행 → 400일 건만 삭제.
+
 ## 배우별 알림 끄기 (2026-09-28)
 
 - `Subscription.notificationsMuted`(마이그레이션 `20260928150000_add_subscription_notifications_muted`),
@@ -321,7 +328,7 @@ S3 호환 오브젝트 스토리지(운영: Cloudflare R2 예정) + **비공개 
   허용 필요(R2 설정) — 운영 보류 목록에 추가. 네이티브 앱은 CORS 무관.
 - 배우 프로필 사진·소속사 로고 업로드는 운영자 전용 `POST /admin/uploads`로 분리(2026-09-28, 아래 "운영자 배우·소속사·계정 관리").
 - 게시판/CP방이 생기면 `UPLOAD_PURPOSES`에 추가.
-- 대화기록 1년 보존 cron이 생기면 메시지 파일도 같이 삭제.
+- 대화기록 1년 보존: `MessageRetentionService`(2026-09-28) — 팬 답장만 대상이라 파일 삭제는 없음(팬은 텍스트만).
 
 ## 다국어(i18n) 기반 — 구현 완료 (2026-09-28)
 
