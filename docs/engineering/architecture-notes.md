@@ -125,6 +125,43 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   지금 `Subscription`은 (팬, 배우)당 1행이고 갱신 시 `iapExpiresAt`만 덮어써서 결제
   건별 기록이 없음. 소속사명 다국어는 i18n 설계 때 같이.
 
+## 채팅 미디어 업로드/재생/다운로드 + 인용 답장 — 현황 점검, 구현 전 (2026-09-28)
+
+현재 코드 기준 점검 결과:
+
+- `MessageMediaType`은 `TEXT/PHOTO/AUDIO/VIDEO` 다 있음. `SendBroadcastDto`는
+  `mediaType` + `mediaUrl(@IsUrl)`만 받음 — **업로드 경로가 전혀 없음**(presigned URL,
+  multer, 스토리지 공급자 모두 미정·미구현. `story-cleanup.service.ts`에도 "스토리지
+  연동이 안 돼 있어 파일 삭제는 후속"이라고 남아 있음).
+- 팬 답장(`SendReplyDto`)은 `body`만 — 텍스트 전용 요구사항은 이미 충족.
+- 앱 채팅방(`app/chat/[actorId].tsx`)은 `PHOTO`만 `<Image>`로 렌더, `AUDIO`는 라벨
+  텍스트만, `VIDEO`는 렌더 안 함. `expo-audio`/`expo-video`/`expo-file-system`/
+  `expo-media-library`/`expo-image-picker` 전부 미설치.
+- `Role.ACTOR` 전용 앱 화면이 없음(`_layout.tsx` 주석 — 지금은 팬 탭으로 빠짐). 즉
+  배우가 앱에서 메시지를 보낼 UI 자체가 없음(소속사 콘솔은 발송 권한 제거로 읽기 전용).
+- `Message`에 답장 대상 필드 없음, 배우→특정 팬 1:1 메시지 개념 없음(아티스트 메시지는
+  `fanUserId` 없는 방송 1건), `listForFan`도 "방송 + 내 답장"만 합쳐서 내려줌.
+
+구현 방향(초안, 제품 결정 후 확정):
+
+1. **스토리지 + 업로드**: S3 호환 스토리지(R2/S3/Supabase 중 택1) presigned PUT →
+   클라이언트 직접 업로드 → `mediaUrl`(또는 object key) 저장. MIME·용량 검증은 보안
+   하드닝 체크리스트의 "업로드 파일 검증" 항목과 같이. 비공개 버킷 + 조회 시 서명 URL
+   발급으로 해야 구독자만 접근 가능(공개 URL이면 링크 공유로 우회됨). 스토리 만료 파일
+   삭제도 여기서 같이 해결.
+2. **배우 앱 화면**: `ACTOR` 라우팅 + 채팅형 발송 화면(카메라/앨범/녹음 첨부) + 팬 답장
+   목록에서 메시지 길게 눌러 "답장".
+3. **팬 채팅방 렌더/다운로드**: 사진 전체화면 뷰어, `expo-audio` 재생 바, `expo-video`
+   플레이어, `expo-file-system` 다운로드 → `expo-media-library`로 갤러리 저장(웹은
+   `<a download>`). 저장 권한 요청 문구는 i18n과 같이.
+4. **인용 답장**: `Message.replyToMessageId String?`(self-relation, `onDelete: SetNull` —
+   원본이 지워지면 "삭제된 메시지"로 표시) 추가. 공개 범위 결정에 따라
+   - 1:1이면 `Message.recipientUserId`(배우→특정 팬) 추가 + `listForFan` 필터에 포함,
+     구독자 수 통계/모니터링 조회에서 방송과 구분.
+   - 전체 공개면 필드만 추가하고 응답에 인용 원문 요약(`replyTo { id, body 앞부분,
+     mediaType, senderType, 팬 표시명 }`) 포함.
+   신고/모더레이션: 인용된 팬 메시지가 신고·삭제되면 인용 미리보기도 가려야 함.
+
 ## 관리자(ADMIN) 전용 UI — 아직 전혀 없음 (2026-09-18 확인)
 
 사용자 질문으로 확인된 사실: `ADMIN` role은 모든 엔드포인트에 접근은 가능하지만
