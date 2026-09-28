@@ -11,6 +11,7 @@ import { ensureActiveSubscription } from '../common/authorization/ensure-active-
 import { fanTag } from '../common/nickname/nickname.js';
 import type { SendReplyDto } from './dto/send-reply.dto.js';
 import type { SendBroadcastDto } from './dto/send-broadcast.dto.js';
+import { appError } from '../common/i18n/app-error.js';
 
 const NAME_PLACEHOLDER = '{{name}}';
 const QUOTE_PREVIEW_LENGTH = 120;
@@ -24,6 +25,7 @@ function quoteInclude(actorId: string) {
         senderType: true,
         body: true,
         mediaType: true,
+        fanUserId: true,
         fanUser: {
           select: {
             nickname: true,
@@ -154,17 +156,15 @@ export class MessagesService {
       where: { actorId_fanUserId: { actorId, fanUserId: userId } },
       select: { id: true },
     });
-    if (blocked) throw new ForbiddenException('이 채널에서는 답장을 보낼 수 없어요.');
+    if (blocked) throw new ForbiddenException(appError('REPLY_BLOCKED'));
     await this.moderationService.assertNoBannedWords(dto.body);
     // 버블 방식: 팬은 대상을 고르지 않고, 지금 팬 화면에 보이는 가장 최근 스타 메시지에 대한 답장이 됨
     // (구독 전·삭제된 메시지는 팬에게 안 보이므로 제외). 스타 화면은 이걸로 메시지별 답장을 묶어 보여줌.
     const { target: latestArtistMessage, used } = await this.replyTarget(userId, actorId, subscription.startedAt);
     // 스타 메시지가 오기 전엔 답장할 곳이 없음 — 예전엔 대상 없이 저장돼서 스타의 "메시지별 답장" 어디에도 안 보였음
-    if (!latestArtistMessage) throw new BadRequestException('스타의 첫 메시지가 오면 답장할 수 있어요.');
+    if (!latestArtistMessage) throw new BadRequestException(appError('REPLY_BEFORE_FIRST'));
     if (used >= this.repliesPerMessage) {
-      throw new BadRequestException(
-        `이 메시지에는 답장을 ${this.repliesPerMessage}개까지 보낼 수 있어요. 스타의 다음 메시지를 기다려 주세요.`,
-      );
+      throw new BadRequestException(appError('REPLY_LIMIT', { limit: this.repliesPerMessage }));
     }
     const [message] = await this.prisma.$transaction([
       this.prisma.message.create({
@@ -193,7 +193,7 @@ export class MessagesService {
         where: { id: dto.replyToMessageId, actorId, senderType: MessageSenderType.FAN },
         select: { id: true },
       });
-      if (!quoted) throw new BadRequestException('이 채널의 팬 메시지만 인용할 수 있어요.');
+      if (!quoted) throw new BadRequestException(appError('QUOTE_INVALID'));
     }
     if (mediaKey) await this.mediaService.verifyForAttach(actorId, 'message', dto.mediaType as Exclude<MessageMediaType, 'TEXT'>, mediaKey);
     const thumbnailKey = dto.mediaType === MessageMediaType.VIDEO && dto.thumbnailKey ? dto.thumbnailKey : null;
@@ -217,12 +217,17 @@ export class MessagesService {
       include: quoteInclude(actorId),
     });
     const message = await this.mediaService.withReadUrl(withQuote(created));
+    // 인용된 팬 — 인용이 가려지지 않았을 때만(정지·탈퇴·차단·신고 처리된 팬 메시지면 따로 알리지 않음)
+    const quotedFanId = message.replyTo && !message.replyTo.hidden ? (created.replyTo?.fanUserId ?? null) : null;
 
     // 알림을 끈 팬은 푸시만 빼고 나머지(메시지 도착·lastArtistMessageAt)는 똑같이
     const activeSubscriptions = await this.prisma.subscription.findMany({
       where: { actorId, cancelledAt: null, notificationsMuted: false },
       select: { userId: true },
     });
+    const pushRecipients = activeSubscriptions.map((sub) => sub.userId);
+    // 인용된 팬이 알림을 받는 구독자면 일반 알림 대신 "내 메시지에 답장했어요" 한 건만
+    const notifyQuotedFan = !!quotedFanId && pushRecipients.includes(quotedFanId);
     await this.prisma.subscription.updateMany({
       where: { actorId, cancelledAt: null },
       data: { lastArtistMessageAt: new Date() },
@@ -241,11 +246,23 @@ export class MessagesService {
     };
     await this.pushService
       .sendToUsers(
-        activeSubscriptions.map((sub) => sub.userId),
+        notifyQuotedFan ? pushRecipients.filter((userId) => userId !== quotedFanId) : pushRecipients,
         ({ locale, displayName }) => ({ title: actor.chatDisplayName, body: preview(locale, displayName) }),
         pushData,
       )
       .catch(() => {});
+    if (notifyQuotedFan && quotedFanId) {
+      await this.pushService
+        .sendToUser(
+          quotedFanId,
+          ({ locale, displayName }) => ({
+            title: pushStrings(locale).quotedReplyTitle(actor.chatDisplayName),
+            body: preview(locale, displayName),
+          }),
+          { ...pushData, type: 'QUOTED_REPLY' },
+        )
+        .catch(() => {});
+    }
     // 소속사 모니터링용 알림 — 팬 알림과 별개, 실패해도 발송 자체엔 영향 없음(모니터링은 원문 그대로라 치환 안 함)
     await this.pushService
       .notifyActorStaff(
@@ -310,7 +327,7 @@ export class MessagesService {
       where: { id: messageId, actorId, senderType: MessageSenderType.ARTIST },
       select: { id: true, deletedAt: true, mediaKey: true, thumbnailKey: true, _count: { select: { reports: true } } },
     });
-    if (!message) throw new NotFoundException('메시지를 찾을 수 없어요.');
+    if (!message) throw new NotFoundException(appError('MESSAGE_NOT_FOUND'));
     if (message.deletedAt) return;
     const keepFile = message._count.reports > 0;
     await this.prisma.message.update({

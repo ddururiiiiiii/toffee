@@ -8,6 +8,7 @@ import { AuthProvider, Role, SubscriptionEventType, UserStatus } from '../genera
 import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
 import { ModerationService } from '../moderation/moderation.service.js';
 import { nextNicknameChangeAt, normalizeNickname } from '../common/nickname/nickname.js';
+import { appError } from '../common/i18n/app-error.js';
 
 interface ExternalIdentity {
   providerId: string;
@@ -55,7 +56,7 @@ export class AuthService {
       audience: this.configService.getOrThrow<string>('GOOGLE_CLIENT_ID'),
     });
     const payload = ticket.getPayload();
-    if (!payload?.sub) throw new UnauthorizedException('유효하지 않은 구글 토큰입니다.');
+    if (!payload?.sub) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'Google' }));
     return {
       providerId: payload.sub,
       email: payload.email ?? null,
@@ -68,7 +69,7 @@ export class AuthService {
     const payload = await appleSignin.verifyIdToken(idToken, {
       audience: this.configService.getOrThrow<string>('APPLE_CLIENT_ID'),
     });
-    if (!payload?.sub) throw new UnauthorizedException('유효하지 않은 애플 토큰입니다.');
+    if (!payload?.sub) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'Apple' }));
     return { providerId: payload.sub, email: payload.email ?? null };
   }
 
@@ -78,7 +79,7 @@ export class AuthService {
       response?: { id: string; email?: string; name?: string; nickname?: string; profile_image?: string };
     }>('https://openapi.naver.com/v1/nid/me', accessToken, '유효하지 않은 네이버 토큰입니다.');
     if (body.resultcode !== '00' || !body.response?.id) {
-      throw new UnauthorizedException('유효하지 않은 네이버 토큰입니다.');
+      throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'Naver' }));
     }
     return {
       providerId: body.response.id,
@@ -93,7 +94,7 @@ export class AuthService {
       id?: number;
       kakao_account?: { email?: string; profile?: { nickname?: string; profile_image_url?: string } };
     }>('https://kapi.kakao.com/v2/user/me', accessToken, '유효하지 않은 카카오 토큰입니다.');
-    if (body.id === undefined) throw new UnauthorizedException('유효하지 않은 카카오 토큰입니다.');
+    if (body.id === undefined) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'Kakao' }));
     return {
       providerId: String(body.id),
       email: body.kakao_account?.email ?? null,
@@ -119,9 +120,9 @@ export class AuthService {
     } finally {
       clearTimeout(timeout);
     }
-    if (!res.ok) throw new UnauthorizedException('유효하지 않은 라인 토큰입니다.');
+    if (!res.ok) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'LINE' }));
     const body = (await res.json()) as { sub?: string; email?: string; name?: string; picture?: string };
-    if (!body.sub) throw new UnauthorizedException('유효하지 않은 라인 토큰입니다.');
+    if (!body.sub) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'LINE' }));
     return {
       providerId: body.sub,
       email: body.email ?? null,
@@ -196,7 +197,7 @@ export class AuthService {
   async deleteAccount(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { role: true, status: true } });
     if (user.role !== Role.USER) {
-      throw new ForbiddenException('배우·소속사 계정은 앱에서 탈퇴할 수 없어요. 운영자에게 요청해 주세요.');
+      throw new ForbiddenException(appError('STAFF_CANNOT_SELF_DELETE'));
     }
     const now = new Date();
     const active = await this.prisma.subscription.findMany({ where: { userId, cancelledAt: null }, select: { actorId: true } });
@@ -251,10 +252,10 @@ export class AuthService {
 
     const availableAt = nextNicknameChangeAt(user);
     if (availableAt) {
-      throw new BadRequestException(`닉네임은 ${availableAt.toISOString().slice(0, 10)} 이후에 바꿀 수 있어요.`);
+      throw new BadRequestException(appError('NICKNAME_CHANGE_LOCKED', { availableAt: availableAt.toISOString() }));
     }
     await this.moderationService.assertNoBannedWords(nickname).catch(() => {
-      throw new BadRequestException('부적절한 표현이 포함된 닉네임은 쓸 수 없어요.');
+      throw new BadRequestException(appError('NICKNAME_INAPPROPRIATE'));
     });
     const actorNameClash = await this.prisma.actor.findFirst({
       where: {
@@ -265,7 +266,7 @@ export class AuthService {
       },
       select: { id: true },
     });
-    if (actorNameClash) throw new BadRequestException('배우 이름과 같은 닉네임은 쓸 수 없어요.');
+    if (actorNameClash) throw new BadRequestException(appError('NICKNAME_MATCHES_ACTOR'));
 
     await this.prisma.user.update({ where: { id: userId }, data: { nickname, nicknameChangedAt: new Date() } });
     return this.getMe(userId);

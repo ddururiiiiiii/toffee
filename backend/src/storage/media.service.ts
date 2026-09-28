@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { fileTypeFromBuffer } from 'file-type';
 import { StorageService } from './storage.service.js';
 import { extensionFor, isStorageKey, keyPrefix, MEDIA_RULES, type UploadableMediaType, type UploadPurpose } from './media-policy.js';
+import { appError } from '../common/i18n/app-error.js';
 
 // file-type이 형식을 판별하는 데 필요한 앞부분 크기(라이브러리 권장값)
 const SNIFF_BYTES = 4100;
@@ -29,36 +30,36 @@ export class MediaService {
   }
 
   verifyForAttach(actorId: string, purpose: UploadPurpose, mediaType: UploadableMediaType, objectKey: string): Promise<void> {
-    return this.verifyAt(keyPrefix(actorId, purpose), mediaType, objectKey, '이 배우가 이 용도로 올린 파일이 아니에요.');
+    return this.verifyAt(keyPrefix(actorId, purpose), mediaType, objectKey);
   }
 
   async createUploadAt(prefix: string, mediaType: UploadableMediaType, contentType: string, sizeBytes: number) {
     const rule = MEDIA_RULES[mediaType];
     if (!rule.declared.has(contentType)) {
-      throw new BadRequestException(`${mediaType}로 올릴 수 없는 파일 형식이에요: ${contentType}`);
+      throw new BadRequestException(appError('UPLOAD_TYPE_NOT_ALLOWED', { mediaType, contentType }));
     }
     if (sizeBytes > rule.maxBytes) {
-      throw new BadRequestException(`파일이 너무 커요(최대 ${Math.floor(rule.maxBytes / 1024 / 1024)}MB).`);
+      throw new BadRequestException(appError('UPLOAD_TOO_LARGE', { maxMb: Math.floor(rule.maxBytes / 1024 / 1024) }));
     }
     const objectKey = `${prefix}${randomUUID()}.${extensionFor(contentType)}`;
     const { url, expiresInSeconds } = await this.storage.createUploadUrl(objectKey, contentType, sizeBytes);
     return { objectKey, uploadUrl: url, method: 'PUT' as const, headers: { 'Content-Type': contentType }, expiresInSeconds };
   }
 
-  async verifyAt(prefix: string, mediaType: UploadableMediaType, objectKey: string, wrongPlaceMessage: string): Promise<void> {
+  async verifyAt(prefix: string, mediaType: UploadableMediaType, objectKey: string): Promise<void> {
     if (!objectKey.startsWith(prefix) || objectKey.includes('..')) {
-      throw new BadRequestException(wrongPlaceMessage);
+      throw new BadRequestException(appError('UPLOAD_WRONG_PLACE'));
     }
     const head = await this.storage.head(objectKey);
-    if (!head) throw new BadRequestException('파일이 아직 업로드되지 않았어요.');
+    if (!head) throw new BadRequestException(appError('UPLOAD_MISSING'));
 
     const rule = MEDIA_RULES[mediaType];
     const detected = await fileTypeFromBuffer(await this.storage.readHead(objectKey, SNIFF_BYTES));
     const problem =
       head.sizeBytes > rule.maxBytes
-        ? '파일이 너무 커요.'
+        ? appError('UPLOAD_TOO_LARGE', { maxMb: Math.floor(rule.maxBytes / 1024 / 1024) })
         : !detected || !rule.detected.has(detected.mime)
-          ? `실제 파일 형식이 ${mediaType}가 아니에요${detected ? `(${detected.mime})` : ''}.`
+          ? appError('UPLOAD_CONTENT_MISMATCH', { mediaType, detected: detected?.mime ?? 'unknown' })
           : null;
     if (problem) {
       // 규칙에 안 맞는 파일은 남겨둘 이유가 없음 — 지우고 거절

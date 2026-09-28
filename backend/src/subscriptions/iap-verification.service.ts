@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleAuth } from 'google-auth-library';
 import { Environment, SignedDataVerifier } from '@apple/app-store-server-library';
+import { appError } from '../common/i18n/app-error.js';
 
 // Apple이 공개하는 루트 인증서 — StoreKit2 JWS(서명된 트랜잭션) 검증에 필요.
 // 자주 안 바뀌는 값이라 프로세스 실행 중엔 한 번만 받아서 메모리에 캐싱.
@@ -39,7 +40,7 @@ export class IapVerificationService {
 
     const payload = await verifier.verifyAndDecodeTransaction(signedTransaction).catch(() => null);
     if (!payload?.originalTransactionId || !payload.expiresDate) {
-      throw new BadRequestException('애플 구매 검증에 실패했어요.');
+      throw new BadRequestException(appError('IAP_APPLE_VERIFY_FAILED'));
     }
 
     return { transactionId: payload.originalTransactionId, expiresAt: new Date(payload.expiresDate) };
@@ -62,11 +63,11 @@ export class IapVerificationService {
     });
     const client = await auth.getClient();
     const accessToken = (await client.getAccessToken()).token;
-    if (!accessToken) throw new BadRequestException('구글 플레이 인증 토큰을 발급받지 못했어요.');
+    if (!accessToken) throw new BadRequestException(appError('IAP_GOOGLE_AUTH_FAILED'));
 
     const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${packageName}/purchases/subscriptions/${productId}/tokens/${purchaseToken}`;
     const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-    if (!res.ok) throw new BadRequestException('구글 플레이 구매 검증에 실패했어요.');
+    if (!res.ok) throw new BadRequestException(appError('IAP_GOOGLE_VERIFY_FAILED'));
     const body = (await res.json()) as GooglePlaySubscriptionResponse;
 
     // Google의 purchaseToken은 구매 인스턴스마다 고유해서 그대로 우리 쪽 트랜잭션 식별자로 씀

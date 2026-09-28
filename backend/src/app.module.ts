@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
-import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
+import { SentryModule } from '@sentry/nestjs/setup';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller.js';
@@ -22,6 +22,7 @@ import { AdminModule } from './admin/admin.module.js';
 import { ParentalConsentModule } from './parental-consent/parental-consent.module.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
+import { LocalizedExceptionFilter } from './common/filters/localized-exception.filter.js';
 
 @Module({
   imports: [
@@ -51,8 +52,8 @@ import { RolesGuard } from './common/guards/roles.guard.js';
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
-    // 처리 안 된 예외(5xx)만 Sentry로 보냄 — HttpException(4xx)은 SDK가 알아서 제외
-    { provide: APP_FILTER, useClass: SentryGlobalFilter },
+    // 오류 문구를 요청 언어로 번역 + 처리 안 된 예외(5xx)만 Sentry로 보냄(SentryGlobalFilter 확장)
+    { provide: APP_FILTER, useClass: LocalizedExceptionFilter },
   ],
 })
 export class AppModule {}

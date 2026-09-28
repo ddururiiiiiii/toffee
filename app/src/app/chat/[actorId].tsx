@@ -25,7 +25,16 @@ import { useActorMessages, useReplyQuota, useSendReply, type ChatMessage } from 
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
-function MessageBubble({ message, onSaveVoice }: { message: ChatMessage; onSaveVoice: () => void }) {
+function MessageBubble({
+  message,
+  highlighted,
+  onSaveVoice,
+}: {
+  message: ChatMessage;
+  /** 알림을 눌러 들어왔을 때 그 메시지를 잠깐 강조 */
+  highlighted: boolean;
+  onSaveVoice: () => void;
+}) {
   const theme = useTheme();
   const isArtist = message.senderType === 'ARTIST';
   const bubbleColor = isArtist ? theme.backgroundElement : theme.tint;
@@ -33,7 +42,7 @@ function MessageBubble({ message, onSaveVoice }: { message: ChatMessage; onSaveV
 
   return (
     <ThemedView style={[styles.bubbleRow, isArtist ? styles.bubbleRowLeft : styles.bubbleRowRight]}>
-      <ThemedView style={[styles.bubble, { backgroundColor: bubbleColor }]}>
+      <ThemedView style={[styles.bubble, { backgroundColor: bubbleColor }, highlighted && { borderWidth: 2, borderColor: theme.tint }]}>
         {message.replyTo && <QuoteBlock quote={message.replyTo} tone={isArtist ? 'dark' : 'light'} />}
         {message.mediaType === 'PHOTO' || message.mediaType === 'VIDEO' ? (
           <MediaTile id={message.id} url={message.mediaUrl} mediaType={message.mediaType} durationMs={message.mediaDurationMs} thumbnailUrl={message.thumbnailUrl} />
@@ -86,7 +95,8 @@ export default function ChatRoomScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const router = useRouter();
-  const { actorId } = useLocalSearchParams<{ actorId: string }>();
+  // focus: 푸시 알림을 눌러 들어왔을 때 보여줄 메시지 id(없거나 목록에 없으면 평소처럼 맨 아래)
+  const { actorId, focus } = useLocalSearchParams<{ actorId: string; focus?: string }>();
   const { data: actor } = useActor(actorId);
   const { data: subscriptions } = useMySubscriptions();
   const subscription = subscriptions?.find((s) => s.actorId === actorId);
@@ -97,6 +107,34 @@ export default function ChatRoomScreen() {
   const [draft, setDraft] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   const listRef = useRef<FlatList<ChatMessage>>(null);
+  // 목록 높이가 바뀔 때마다(사진 로딩 등) 맨 아래로 내리는데, 알림으로 들어온 직후 잠깐은 그 메시지에 고정
+  const focusRef = useRef<string | null>(null);
+  const handledFocus = useRef<string | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  // 5초 폴링으로 messages가 바뀌어도 타이머가 취소되지 않게 화면을 떠날 때만 정리
+  const focusTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => () => focusTimers.current.forEach(clearTimeout), []);
+  useEffect(() => {
+    const index = focus && messages ? messages.findIndex((m) => m.id === focus) : -1;
+    if (!focus || index < 0 || handledFocus.current === focus) return;
+    handledFocus.current = focus;
+    focusRef.current = focus;
+    setHighlightId(focus);
+    focusTimers.current.push(
+      // 목록이 먼저 그려져 맨 아래로 내려간 뒤일 수 있어서 여기서도 한 번 이동
+      setTimeout(() => listRef.current?.scrollToIndex({ index, viewPosition: 0.5, animated: false }), 0),
+      // 1.5초 뒤부터는 평소처럼 새 메시지가 오면 맨 아래로
+      setTimeout(() => (focusRef.current = null), 1500),
+      setTimeout(() => setHighlightId(null), 2500),
+    );
+  }, [focus, messages]);
+
+  const scrollToFocusOrEnd = () => {
+    const index = focusRef.current && messages ? messages.findIndex((m) => m.id === focusRef.current) : -1;
+    if (index >= 0) listRef.current?.scrollToIndex({ index, viewPosition: 0.5, animated: false });
+    else listRef.current?.scrollToEnd({ animated: false });
+  };
 
   useEffect(() => {
     if (!actor) return;
@@ -181,8 +219,15 @@ export default function ChatRoomScreen() {
             data={messages}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
-            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
-            renderItem={({ item }) => <MessageBubble message={item} onSaveVoice={() => saveVoice(item)} />}
+            onContentSizeChange={scrollToFocusOrEnd}
+            // 아직 그려지지 않은 위치면 대략 이동 후 다시 시도
+            onScrollToIndexFailed={({ index, averageItemLength }) => {
+              listRef.current?.scrollToOffset({ offset: averageItemLength * index, animated: false });
+              setTimeout(() => listRef.current?.scrollToIndex({ index, viewPosition: 0.5, animated: false }), 100);
+            }}
+            renderItem={({ item }) => (
+              <MessageBubble message={item} highlighted={item.id === highlightId} onSaveVoice={() => saveVoice(item)} />
+            )}
             ListEmptyComponent={
               <ThemedText type="small" themeColor="textSecondary" style={styles.centerMessage}>
                 {t('chat.waitingFirst', { name: actor?.chatDisplayName ?? '' })}

@@ -4,6 +4,7 @@ import { IapVerificationService } from './iap-verification.service.js';
 import { ParentalConsentStatus, SubscriptionEventType } from '../generated/prisma/enums.js';
 import type { VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
 import { MediaService } from '../storage/media.service.js';
+import { appError } from '../common/i18n/app-error.js';
 
 @Injectable()
 export class SubscriptionsService {
@@ -35,13 +36,13 @@ export class SubscriptionsService {
   async subscribe(userId: string, actorId: string) {
     await this.ensureCanSubscribe(userId);
     const actor = await this.prisma.actor.findUnique({ where: { id: actorId } });
-    if (!actor) throw new NotFoundException('배우를 찾을 수 없습니다.');
+    if (!actor) throw new NotFoundException(appError('ACTOR_NOT_FOUND'));
 
     const existing = await this.prisma.subscription.findUnique({
       where: { userId_actorId: { userId, actorId } },
     });
     if (existing && !existing.cancelledAt) {
-      throw new BadRequestException('이미 구독 중인 배우예요.');
+      throw new BadRequestException(appError('ALREADY_SUBSCRIBED'));
     }
 
     const priceInfo = await this.calculatePrice(userId, actorId, actor.monthlyPriceCents);
@@ -61,7 +62,7 @@ export class SubscriptionsService {
   async verifyPurchase(userId: string, actorId: string, dto: VerifyPurchaseDto) {
     await this.ensureCanSubscribe(userId);
     const actor = await this.prisma.actor.findUnique({ where: { id: actorId } });
-    if (!actor) throw new NotFoundException('배우를 찾을 수 없습니다.');
+    if (!actor) throw new NotFoundException(appError('ACTOR_NOT_FOUND'));
 
     const verified =
       dto.platform === 'IOS'
@@ -98,7 +99,7 @@ export class SubscriptionsService {
       where: { userId_actorId: { userId, actorId } },
     });
     if (!existing || existing.cancelledAt) {
-      throw new NotFoundException('구독 중인 배우가 아니에요.');
+      throw new NotFoundException(appError('NOT_SUBSCRIBED'));
     }
     const [subscription] = await this.prisma.$transaction([
       this.prisma.subscription.update({ where: { id: existing.id }, data: { cancelledAt: new Date() } }),
@@ -110,7 +111,7 @@ export class SubscriptionsService {
   // 배우별 알림 끄기/켜기
   async setNotificationsMuted(userId: string, actorId: string, muted: boolean) {
     const existing = await this.prisma.subscription.findUnique({ where: { userId_actorId: { userId, actorId } } });
-    if (!existing || existing.cancelledAt) throw new NotFoundException('구독 중인 배우가 아니에요.');
+    if (!existing || existing.cancelledAt) throw new NotFoundException(appError('NOT_SUBSCRIBED'));
     return this.prisma.subscription.update({
       where: { id: existing.id },
       data: { notificationsMuted: muted },
@@ -127,7 +128,7 @@ export class SubscriptionsService {
   private async ensureCanSubscribe(userId: string): Promise<void> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (user.parentalConsentStatus === ParentalConsentStatus.PENDING) {
-      throw new ForbiddenException('법정대리인 동의가 완료된 후 구독할 수 있어요.');
+      throw new ForbiddenException(appError('CONSENT_REQUIRED_TO_SUBSCRIBE'));
     }
   }
 

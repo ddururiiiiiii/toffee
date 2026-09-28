@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { MessageSenderType, ReportCategory, ReportStatus, Role } from '../generated/prisma/enums.js';
 import { ensureCanViewActor } from '../common/authorization/actor-access.js';
 import { ensureActiveSubscription } from '../common/authorization/ensure-active-subscription.js';
+import { appError } from '../common/i18n/app-error.js';
 
 @Injectable()
 export class ReportsService {
@@ -18,18 +19,18 @@ export class ReportsService {
       where: { id: messageId },
       select: { id: true, actorId: true, senderType: true, fanUserId: true, createdAt: true },
     });
-    if (!message) throw new NotFoundException('신고하려는 메시지를 찾을 수 없습니다.');
+    if (!message) throw new NotFoundException(appError('REPORT_TARGET_NOT_FOUND'));
     const reporter = await this.prisma.user.findUniqueOrThrow({ where: { id: reportedById }, select: { role: true } });
 
-    if (message.fanUserId === reportedById) throw new BadRequestException('내 메시지는 신고할 수 없어요.');
+    if (message.fanUserId === reportedById) throw new BadRequestException(appError('REPORT_OWN_MESSAGE'));
     if (reporter.role !== Role.ADMIN) {
       if (message.senderType === MessageSenderType.ARTIST) {
-        if (reporter.role !== Role.USER) throw new ForbiddenException('이 메시지를 신고할 수 없어요.');
+        if (reporter.role !== Role.USER) throw new ForbiddenException(appError('REPORT_NOT_ALLOWED'));
         const subscription = await ensureActiveSubscription(this.prisma, reportedById, message.actorId);
-        if (message.createdAt < subscription.startedAt) throw new ForbiddenException('이 메시지를 신고할 수 없어요.');
+        if (message.createdAt < subscription.startedAt) throw new ForbiddenException(appError('REPORT_NOT_ALLOWED'));
       } else {
         if (reporter.role !== Role.ACTOR && reporter.role !== Role.AGENCY_STAFF) {
-          throw new ForbiddenException('이 메시지를 신고할 수 없어요.');
+          throw new ForbiddenException(appError('REPORT_NOT_ALLOWED'));
         }
         await ensureCanViewActor(this.prisma, reportedById, message.actorId);
       }
@@ -41,7 +42,7 @@ export class ReportsService {
         select: { id: true, category: true, status: true, createdAt: true },
       });
     } catch (error) {
-      if ((error as { code?: string }).code === 'P2002') throw new ConflictException('이미 신고한 메시지예요.');
+      if ((error as { code?: string }).code === 'P2002') throw new ConflictException(appError('REPORT_DUPLICATE'));
       throw error;
     }
   }
@@ -123,9 +124,9 @@ export class ReportsService {
 
   private async ensurePending(id: string) {
     const report = await this.prisma.report.findUnique({ where: { id } });
-    if (!report) throw new NotFoundException('신고 내역을 찾을 수 없습니다.');
+    if (!report) throw new NotFoundException(appError('REPORT_NOT_FOUND'));
     if (report.status !== ReportStatus.PENDING) {
-      throw new ConflictException('이미 처리된 신고입니다.');
+      throw new ConflictException(appError('REPORT_ALREADY_HANDLED'));
     }
     return report;
   }

@@ -7,6 +7,7 @@ import { ModerationService } from '../moderation/moderation.service.js';
 import { MessageSenderType, Role } from '../generated/prisma/enums.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { MediaService } from '../storage/media.service.js';
+import { appError } from '../common/i18n/app-error.js';
 
 // legalName/officialProfileImageUrl는 탐색 화면(공식 프로필, 운영자가 관리)에, chatDisplayName(배우가 직접 정하는
 // 닉네임)/chatProfileImageUrl는 채팅방 안에서 씀 — 어느 쪽을 보여줄지는 클라이언트가 화면 맥락에 맞게 고름
@@ -49,7 +50,7 @@ export class ActorsService {
 
   async findOne(id: string) {
     const actor = await this.prisma.actor.findUnique({ where: { id }, select: LIST_SELECT });
-    if (!actor) throw new NotFoundException('배우를 찾을 수 없습니다.');
+    if (!actor) throw new NotFoundException(appError('ACTOR_NOT_FOUND'));
     return this.withImageUrls(actor);
   }
 
@@ -112,7 +113,7 @@ export class ActorsService {
       where: { id: actorId },
       select: { officialProfileImageUrl: true, chatProfileImageUrl: true },
     });
-    if (!actor) throw new NotFoundException('배우를 찾을 수 없습니다.');
+    if (!actor) throw new NotFoundException(appError('ACTOR_NOT_FOUND'));
 
     const data: Prisma.ActorUpdateInput = {};
     const replaced: (string | null)[] = [];
@@ -137,7 +138,7 @@ export class ActorsService {
 
   private async checkImageKey(actorId: string, key: string | null): Promise<string | null> {
     if (key === null) return null;
-    await this.media.verifyAt(profileImagePrefix('ACTOR', actorId), 'PHOTO', key, '이 배우의 프로필용으로 올린 파일이 아니에요.');
+    await this.media.verifyAt(profileImagePrefix('ACTOR', actorId), 'PHOTO', key);
     return key;
   }
 
@@ -161,7 +162,7 @@ export class ActorsService {
     await ensureIsActorSelf(this.prisma, userId, actorId);
     const nickname = normalizeNickname(raw);
     await this.moderation.assertNoBannedWords(nickname).catch(() => {
-      throw new BadRequestException('부적절한 표현이 포함된 닉네임은 쓸 수 없어요.');
+      throw new BadRequestException(appError('NICKNAME_INAPPROPRIATE'));
     });
     const clash = await this.prisma.actor.findFirst({
       where: {
@@ -173,7 +174,7 @@ export class ActorsService {
       },
       select: { id: true },
     });
-    if (clash) throw new ConflictException('다른 배우가 쓰고 있는 이름이에요.');
+    if (clash) throw new ConflictException(appError('ACTOR_NAME_TAKEN'));
     await this.prisma.actor.update({ where: { id: actorId }, data: { chatDisplayName: nickname } });
     return this.findOne(actorId);
   }

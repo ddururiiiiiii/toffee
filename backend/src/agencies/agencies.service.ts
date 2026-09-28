@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { MediaService } from '../storage/media.service.js';
+import { appError } from '../common/i18n/app-error.js';
 
 // 팬 공개용 — 소속사 목록(소속사별 배우 탐색 진입점). 소속 배우 목록 자체는
 // GET /actors?agencyId=... 로 가져옴(검색/정렬 로직을 한 군데에 두기 위해)
@@ -29,7 +30,7 @@ export class AgenciesService {
 
   async findOne(id: string) {
     const agency = await this.prisma.agency.findUnique({ where: { id }, select: AGENCY_SELECT });
-    if (!agency) throw new NotFoundException('소속사를 찾을 수 없습니다.');
+    if (!agency) throw new NotFoundException(appError('AGENCY_NOT_FOUND'));
     return this.toResponse(agency);
   }
 

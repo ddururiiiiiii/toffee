@@ -7,6 +7,7 @@ import { CURRENT_TERMS_VERSION } from '../common/legal/terms.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailService } from '../notifications/email.service.js';
 import { ParentalConsentStatus, Role } from '../generated/prisma/enums.js';
+import { appError } from '../common/i18n/app-error.js';
 
 // 동의가 필요한 나이는 국가별(minor-age.ts) — 가입 때 저장한 기기 지역(User.countryCode) 기준
 const CONSENT_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -43,7 +44,7 @@ export class ParentalConsentService {
   // 가입 첫 단계라 기기 지역·플랫폼도 같이 받아둠(미성년 기준·통계). 이미 있으면(약관 재동의) 덮어쓰지 않음.
   async acceptTerms(userId: string, version: string, device: { countryCode?: string; platform?: string } = {}) {
     if (version !== CURRENT_TERMS_VERSION) {
-      throw new BadRequestException('약관이 새로 바뀌었어요. 앱을 다시 열어 최신 약관을 확인해 주세요.');
+      throw new BadRequestException(appError('TERMS_UPDATED'));
     }
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
@@ -72,7 +73,7 @@ export class ParentalConsentService {
       select: { birthDate: true, countryCode: true },
     });
     if (existing.birthDate) {
-      throw new ConflictException('생년월일은 한 번만 입력할 수 있어요. 잘못 입력했다면 고객센터로 문의해 주세요.');
+      throw new ConflictException(appError('BIRTH_DATE_ONCE'));
     }
     const requiresConsent = calculateAge(birthDate, new Date()) < consentAgeFor(existing.countryCode);
     const user = await this.prisma.user.update({
@@ -91,7 +92,7 @@ export class ParentalConsentService {
   async requestConsent(userId: string, parentEmail: string): Promise<void> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (user.parentalConsentStatus !== ParentalConsentStatus.PENDING) {
-      throw new BadRequestException('법정대리인 동의가 필요한 계정이 아니에요.');
+      throw new BadRequestException(appError('CONSENT_NOT_REQUIRED'));
     }
 
     const token = randomBytes(32).toString('hex');
@@ -120,7 +121,7 @@ export class ParentalConsentService {
   async confirm(token: string): Promise<void> {
     const consent = await this.prisma.parentalConsent.findUnique({ where: { token } });
     if (!consent || consent.expiresAt < new Date()) {
-      throw new BadRequestException('유효하지 않거나 만료된 동의 링크예요.');
+      throw new BadRequestException(appError('CONSENT_LINK_INVALID'));
     }
 
     await this.prisma.$transaction([

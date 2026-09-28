@@ -880,3 +880,27 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   `@nestjs/passport` 11→12, `@nestjs/throttler` 6.5→6.7(전부 Nest 12 peer 지원 버전)로
   올리고 lockfile을 `--legacy-peer-deps` 없이 다시 생성 — 이제 그냥 `npm ci`로 설치됨
   (CI도 이걸로 돎). 업그레이드 후 로그인(JWT 발급/검증), 401 가드, 스로틀링 실서버 확인.
+
+## 서버 오류 문구 다국어 (2026-09-28)
+
+- 예외는 `throw new XxxException(appError('CODE', params?))`(`common/i18n/app-error.ts`)로 던진다. 문구는
+  `common/i18n/error-messages.ts`의 `ERROR_MESSAGES`에 코드별 6개 언어(`satisfies Record<SupportedLocale, …>`라
+  하나라도 빠지면 타입 오류). 예외 객체의 `message`는 한국어(로그·단위 테스트용).
+- `LocalizedExceptionFilter`(`common/filters/`, `SentryGlobalFilter` 확장, APP_FILTER로 등록)가 응답을
+  `{ statusCode, code, message, details? }`로 통일하고 `Accept-Language`로 번역. 앱 `apiClient`가 `i18n.language`를
+  이 헤더로 보냄(`ApiError.code`로 받음 — 분기는 문구가 아니라 코드로).
+  - 코드 없는 HttpException(프레임워크 기본: 401, 404 라우트 없음, 429 스로틀 등)은 상태 코드별 기본 문구, 원문은
+    4xx면 `details`에.
+  - ValidationPipe(메시지 배열)는 `VALIDATION_FAILED` + `details`에 원문.
+  - 처리 안 된 예외는 필터가 직접 Sentry `captureException` + 로그 후 `INTERNAL`(원문은 응답에 안 넣음) — 500을
+    HttpException으로 바꿔 부모 필터에 넘기면 SDK가 "예상된 오류"로 보고 건너뛰기 때문.
+- 날짜 파라미터(정지 해제 시각, 닉네임 변경 가능일)는 ISO로 넘기고 번역 때 받는 사람 언어·태국 시간으로 포맷.
+- 파일 업로드 "다른 용도로 올린 파일" 문구 3종은 `UPLOAD_WRONG_PLACE` 하나로(`MediaService.verifyAt` 인자 제거).
+- 예외: 부모 동의 링크 페이지(`GET /parental-consent/confirm`)는 브라우저 HTML이라 이 필터와 무관하고 아직 한국어만.
+
+## 인용 답장 알림 (2026-09-28)
+
+- `sendBroadcast`: 인용 요약(`toQuote`)이 가려지지 않았고 인용된 팬이 알림 대상 구독자(해지 X, `notificationsMuted`
+  X)면, 일반 발송 목록에서 빼고 `sendToUser`로 `quotedReplyTitle` 알림 한 건(data `type: 'QUOTED_REPLY'`).
+- 앱: 알림 열기 시 팬은 `/chat/[actorId]?focus=<messageId>` — 채팅방이 그 메시지로 `scrollToIndex` 후 2.5초 테두리
+  강조. 사진 로딩 등으로 목록 높이가 바뀌며 맨 아래로 내려가는 걸 막으려고 1.5초 동안은 focus에 고정.

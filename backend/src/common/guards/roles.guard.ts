@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator.js';
 import { Role } from '../../generated/prisma/enums.js';
 import type { AuthenticatedUser } from '../types/authenticated-user.js';
+import { appError } from '../i18n/app-error.js';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -17,7 +18,7 @@ export class RolesGuard implements CanActivate {
 
     const user = context.switchToHttp().getRequest<{ user?: AuthenticatedUser }>().user;
     if (!user || !requiredRoles.includes(user.role)) {
-      throw new ForbiddenException('이 작업을 수행할 권한이 없습니다.');
+      throw new ForbiddenException(appError('FORBIDDEN'));
     }
     return true;
   }

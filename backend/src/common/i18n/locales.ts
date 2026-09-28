@@ -6,3 +6,19 @@ export const DEFAULT_LOCALE: SupportedLocale = 'en';
 export function resolveLocale(value: string | null | undefined): SupportedLocale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(value ?? '') ? (value as SupportedLocale) : DEFAULT_LOCALE;
 }
+
+const TRADITIONAL_CHINESE_REGIONS = new Set(['tw', 'hk', 'mo']);
+
+/**
+ * Accept-Language 헤더 → 지원 언어. 앱은 지금 쓰는 언어 코드(ko, th, zh-Hant…)를 그대로 보내고, 브라우저에서
+ * 직접 열면 "ko-KR,ko;q=0.9" 같은 값이 와서 첫 번째 항목만 봄. 중국어는 스크립트(Hant/Hans) 우선, 없으면 지역.
+ */
+export function localeFromAcceptLanguage(header: string | string[] | undefined): SupportedLocale {
+  const first = (Array.isArray(header) ? header[0] : header)?.split(',')[0]?.split(';')[0]?.trim().toLowerCase();
+  if (!first) return DEFAULT_LOCALE;
+  const [language, ...rest] = first.split('-');
+  if (language === 'zh') {
+    return rest.includes('hant') || rest.some((part) => TRADITIONAL_CHINESE_REGIONS.has(part)) ? 'zh-Hant' : 'zh-Hans';
+  }
+  return resolveLocale(language);
+}

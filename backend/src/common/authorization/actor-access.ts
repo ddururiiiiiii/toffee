@@ -2,6 +2,7 @@ import { ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { Role } from '../../generated/prisma/enums.js';
 import type { Prisma } from '../../generated/prisma/client.js';
+import { appError } from '../i18n/app-error.js';
 
 // 배우 본인만 할 수 있는 행동(메시지·스토리 발송) — ADMIN은 전체 접근, 그 외엔
 // 해당 배우의 본인 계정(Actor.selfUserId)만.
@@ -13,7 +14,7 @@ export async function ensureIsActorSelf(prisma: PrismaService, userId: string, a
     where: { id: actorId, selfUserId: userId },
     select: { id: true },
   });
-  if (!actor) throw new ForbiddenException('이 아티스트 본인 계정만 할 수 있어요.');
+  if (!actor) throw new ForbiddenException(appError('ACTOR_SELF_ONLY'));
 }
 
 // 스태프/배우 본인이 "볼 수 있는 배우" 조건 — 같은 소속사(현재 소속 기준) 스태프면 그 소속사 배우
@@ -35,5 +36,5 @@ export async function ensureCanViewActor(prisma: PrismaService, userId: string, 
     where: { AND: [{ id: actorId }, viewableActorsWhere(requester)] },
     select: { id: true },
   });
-  if (!actor) throw new ForbiddenException('이 아티스트의 소속사 스태프 또는 본인만 접근할 수 있어요.');
+  if (!actor) throw new ForbiddenException(appError('ACTOR_STAFF_OR_SELF_ONLY'));
 }

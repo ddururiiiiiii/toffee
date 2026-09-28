@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateBannedWordDto } from './dto/create-banned-word.dto.js';
+import { appError } from '../common/i18n/app-error.js';
 
 @Injectable()
 export class BannedWordsService {
@@ -14,7 +15,7 @@ export class BannedWordsService {
     const existing = await this.prisma.bannedWord.findUnique({
       where: { term_language: { term: dto.term, language: dto.language } },
     });
-    if (existing) throw new BadRequestException('이미 등록된 금칙어예요.');
+    if (existing) throw new BadRequestException(appError('BANNED_WORD_EXISTS'));
     return this.prisma.bannedWord.create({ data: dto });
   }
 

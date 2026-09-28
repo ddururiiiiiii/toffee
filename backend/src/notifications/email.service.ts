@@ -1,5 +1,6 @@
 import { Injectable, InternalServerErrorException, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { appError } from '../common/i18n/app-error.js';
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
@@ -18,7 +19,7 @@ export class EmailService {
       // 개발 환경: 메일 계정(Resend)은 인프라 작업 때 만들기로 해서(ops-infra-backlog) 그 전엔 서버 로그로 대신 —
       // 동의 링크를 로그에서 복사해 열면 흐름 끝까지 테스트 가능. 운영에서 설정이 빠졌으면 조용히 넘기지 않고 503.
       if (this.configService.get<string>('NODE_ENV') === 'production') {
-        throw new ServiceUnavailableException('메일 발송이 설정되지 않았어요(RESEND_API_KEY/EMAIL_FROM_ADDRESS).');
+        throw new ServiceUnavailableException(appError('EMAIL_NOT_CONFIGURED'));
       }
       this.logger.warn(`[메일 미설정 — 발송 대신 로그] to=${to} subject=${subject}\n${html}`);
       return;
@@ -32,7 +33,7 @@ export class EmailService {
 
     if (!res.ok) {
       this.logger.error(`이메일 발송 실패 (${res.status}): ${await res.text().catch(() => '')}`);
-      throw new InternalServerErrorException('이메일을 보내지 못했어요. 잠시 후 다시 시도해주세요.');
+      throw new InternalServerErrorException(appError('EMAIL_SEND_FAILED'));
     }
   }
 }

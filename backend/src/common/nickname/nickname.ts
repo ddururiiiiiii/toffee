@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { appError } from '../i18n/app-error.js';
 
 export const NICKNAME_MAX_LENGTH = 20;
 // 닉네임 변경 간격(잠정 7일, STATUS.md "출시 전 확정할 정책") — 인용된 뒤 바로 바꿔 숨는 걸 막는 정도
@@ -26,15 +27,15 @@ const RESERVED_WORDS = ['공식', '운영자', '관리자', 'official', 'admin',
 /** 앞뒤 공백 제거·연속 공백 하나로, 길이·줄바꿈·제어문자·예약어 검사. 통과하면 정리된 닉네임 반환 */
 export function normalizeNickname(raw: string): string {
   const nickname = raw.normalize('NFC').trim().replace(/\s+/g, ' ');
-  if (nickname.length === 0) throw new BadRequestException('닉네임을 입력해주세요.');
+  if (nickname.length === 0) throw new BadRequestException(appError('NICKNAME_REQUIRED'));
   if ([...nickname].length > NICKNAME_MAX_LENGTH) {
-    throw new BadRequestException(`닉네임은 ${NICKNAME_MAX_LENGTH}자까지 쓸 수 있어요.`);
+    throw new BadRequestException(appError('NICKNAME_TOO_LONG', { max: NICKNAME_MAX_LENGTH }));
   }
   // 제어문자·보이지 않는 문자(zero-width 등)로 다른 사람 닉네임을 흉내 내는 것 방지
-  if (/[\p{Cc}\p{Cf}]/u.test(nickname)) throw new BadRequestException('사용할 수 없는 문자가 있어요.');
+  if (/[\p{Cc}\p{Cf}]/u.test(nickname)) throw new BadRequestException(appError('NICKNAME_INVALID_CHARS'));
   const lower = nickname.toLowerCase();
   if (RESERVED_WORDS.some((word) => lower.includes(word.toLowerCase()))) {
-    throw new BadRequestException('사용할 수 없는 단어가 포함되어 있어요.');
+    throw new BadRequestException(appError('NICKNAME_BANNED_WORD'));
   }
   return nickname;
 }

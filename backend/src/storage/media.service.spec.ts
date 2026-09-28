@@ -39,14 +39,14 @@ describe('MediaService', () => {
 
   it('첨부 검증: 실제 내용이 형식과 다르면 거절하고 파일을 지운다', async () => {
     const { media, storage } = setup({ sizeBytes: 100, head: new TextEncoder().encode('not an image') });
-    await expect(media.verifyForAttach('a1', 'message', 'PHOTO', 'actors/a1/message/x.jpg')).rejects.toThrow('실제 파일 형식');
+    await expect(media.verifyForAttach('a1', 'message', 'PHOTO', 'actors/a1/message/x.jpg')).rejects.toThrow('형식과 달라요');
     expect(storage.delete).toHaveBeenCalledWith('actors/a1/message/x.jpg');
   });
 
   it('첨부 검증: 진짜 PNG면 통과, 영상으로 선언했으면 거절', async () => {
     const { media } = setup({ sizeBytes: 100, head: PNG_HEAD });
     await expect(media.verifyForAttach('a1', 'message', 'PHOTO', 'actors/a1/message/x.png')).resolves.toBeUndefined();
-    await expect(media.verifyForAttach('a1', 'message', 'VIDEO', 'actors/a1/message/x.png')).rejects.toThrow('VIDEO');
+    await expect(media.verifyForAttach('a1', 'message', 'VIDEO', 'actors/a1/message/x.png')).rejects.toThrow('형식과 달라요');
   });
 
   it('조회 응답: mediaKey는 빼고 서명 URL로, 외부 URL만 있으면 그대로', async () => {
@@ -65,7 +65,7 @@ describe('MediaService', () => {
 
   it('프로필 이미지: 다른 대상 경로의 키는 거절', async () => {
     const { media } = setup({ sizeBytes: 100, head: PNG_HEAD });
-    await expect(media.verifyAt('actors/a1/profile/', 'PHOTO', 'actors/a1/message/x.png', 'wrong')).rejects.toThrow('wrong');
-    await expect(media.verifyAt('actors/a1/profile/', 'PHOTO', 'actors/a1/profile/x.png', 'wrong')).resolves.toBeUndefined();
+    await expect(media.verifyAt('actors/a1/profile/', 'PHOTO', 'actors/a1/message/x.png')).rejects.toThrow('이 용도로 올린 파일이 아니에요');
+    await expect(media.verifyAt('actors/a1/profile/', 'PHOTO', 'actors/a1/profile/x.png')).resolves.toBeUndefined();
   });
 });

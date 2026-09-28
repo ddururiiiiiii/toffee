@@ -7,6 +7,7 @@ import { profileImagePrefix, type ProfileImageTarget } from '../storage/media-po
 import { Role } from '../generated/prisma/enums.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import type { CreateActorDto, UpdateActorDto, UpdateActorImagesDto } from './dto/upsert-actor.dto.js';
+import { appError } from '../common/i18n/app-error.js';
 
 const ADMIN_ACTOR_SELECT = {
   id: true,
@@ -56,7 +57,7 @@ export class AdminActorsService {
 
   async findOne(id: string) {
     const row = await this.prisma.actor.findUnique({ where: { id }, select: ADMIN_ACTOR_SELECT });
-    if (!row) throw new NotFoundException('배우를 찾을 수 없습니다.');
+    if (!row) throw new NotFoundException(appError('ACTOR_NOT_FOUND'));
     return this.toResponse(row);
   }
 
@@ -101,12 +102,12 @@ export class AdminActorsService {
     await this.ensureActor(id);
     if (userId) {
       const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
-      if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
+      if (!user) throw new NotFoundException(appError('USER_NOT_FOUND'));
       if (user.role !== Role.ACTOR) {
-        throw new BadRequestException('배우(ACTOR) 역할 계정만 연결할 수 있어요 — 회원 관리에서 역할을 먼저 바꿔 주세요.');
+        throw new BadRequestException(appError('ACTOR_LINK_ROLE_REQUIRED'));
       }
       const other = await this.prisma.actor.findUnique({ where: { selfUserId: userId }, select: { id: true } });
-      if (other && other.id !== id) throw new ConflictException('이미 다른 배우에 연결된 계정이에요.');
+      if (other && other.id !== id) throw new ConflictException(appError('ACCOUNT_ALREADY_LINKED'));
     }
     await this.prisma.actor.update({ where: { id }, data: { selfUserId: userId } });
     return this.findOne(id);
@@ -119,14 +120,14 @@ export class AdminActorsService {
       return this.actors.createProfileUpload(targetId, contentType, sizeBytes);
     }
     if (!(await this.prisma.agency.findUnique({ where: { id: targetId }, select: { id: true } }))) {
-      throw new NotFoundException('소속사를 찾을 수 없습니다.');
+      throw new NotFoundException(appError('AGENCY_NOT_FOUND'));
     }
     return this.media.createUploadAt(profileImagePrefix(target, targetId), 'PHOTO', contentType, sizeBytes);
   }
 
   private async ensureActor(id: string) {
     const actor = await this.prisma.actor.findUnique({ where: { id }, select: { id: true } });
-    if (!actor) throw new NotFoundException('배우를 찾을 수 없습니다.');
+    if (!actor) throw new NotFoundException(appError('ACTOR_NOT_FOUND'));
   }
 
   private async toResponse({ _count, ...row }: AdminActorRow) {

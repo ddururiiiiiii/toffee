@@ -29,11 +29,12 @@ export function usePushNotifications(): void {
   useEffect(() => {
     if (!token || !role) return;
     // 역할마다 같은 배우의 다른 화면으로 — 팬은 채팅방, 소속사는 모니터링, 배우 본인은 스튜디오
-    const open = ({ actorId }: PushData) => {
+    // 팬은 알림이 가리키는 메시지로 스크롤·강조(focus) — 인용 답장 알림이면 그 답장, 그 뒤에 새 메시지가 더 와도 찾아감
+    const open = ({ actorId, messageId }: PushData) => {
       if (!actorId) return;
       if (role === 'AGENCY_STAFF') router.push(`/console/${actorId}`);
       else if (role === 'ACTOR') router.push(`/studio/${actorId}`);
-      else if (role === 'USER') router.push(`/chat/${actorId}`);
+      else if (role === 'USER') router.push({ pathname: '/chat/[actorId]', params: { actorId, ...(messageId ? { focus: messageId } : {}) } });
     };
     const refresh = ({ actorId }: PushData) => {
       if (!actorId) return;

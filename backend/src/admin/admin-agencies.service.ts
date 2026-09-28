@@ -4,6 +4,7 @@ import { Role } from '../generated/prisma/enums.js';
 import type { CreateAgencyDto, UpdateAgencyDto } from './dto/upsert-agency.dto.js';
 import { MediaService } from '../storage/media.service.js';
 import { isStorageKey, profileImagePrefix } from '../storage/media-policy.js';
+import { appError } from '../common/i18n/app-error.js';
 
 const ADMIN_AGENCY_SELECT = {
   id: true,
@@ -28,7 +29,7 @@ export class AdminAgenciesService {
 
   // 로고는 소속사가 생긴 뒤에 올릴 수 있음(업로드 경로에 소속사 id가 들어감) — 만들 땐 외부 주소만
   async create(dto: CreateAgencyDto) {
-    if (isStorageKey(dto.logoUrl)) throw new BadRequestException('로고는 소속사를 만든 뒤에 올려 주세요.');
+    if (isStorageKey(dto.logoUrl)) throw new BadRequestException(appError('AGENCY_LOGO_AFTER_CREATE'));
     await this.ensureNameAvailable(dto.name.trim());
     const agency = await this.prisma.agency.create({
       data: { name: dto.name.trim(), logoUrl: dto.logoUrl ?? null },
@@ -40,11 +41,11 @@ export class AdminAgenciesService {
   // logoUrl: POST /admin/uploads(target AGENCY)로 받은 키, 외부 주소, 또는 null(삭제)
   async update(id: string, dto: UpdateAgencyDto) {
     const existing = await this.prisma.agency.findUnique({ where: { id }, select: { logoUrl: true } });
-    if (!existing) throw new NotFoundException('소속사를 찾을 수 없습니다.');
+    if (!existing) throw new NotFoundException(appError('AGENCY_NOT_FOUND'));
     const name = dto.name?.trim();
     if (name !== undefined) await this.ensureNameAvailable(name, id);
     if (isStorageKey(dto.logoUrl) && dto.logoUrl !== existing.logoUrl) {
-      await this.media.verifyAt(profileImagePrefix('AGENCY', id), 'PHOTO', dto.logoUrl, '이 소속사 로고용으로 올린 파일이 아니에요.');
+      await this.media.verifyAt(profileImagePrefix('AGENCY', id), 'PHOTO', dto.logoUrl);
     }
     const agency = await this.prisma.agency.update({ where: { id }, data: { name, logoUrl: dto.logoUrl }, select: ADMIN_AGENCY_SELECT });
     if (dto.logoUrl !== undefined && dto.logoUrl !== existing.logoUrl && isStorageKey(existing.logoUrl)) {
@@ -65,7 +66,7 @@ export class AdminAgenciesService {
 
     return this.prisma.$transaction(async (tx) => {
       const actor = await tx.actor.findUnique({ where: { id: actorId }, select: { agencyId: true } });
-      if (!actor) throw new NotFoundException('배우를 찾을 수 없습니다.');
+      if (!actor) throw new NotFoundException(appError('ACTOR_NOT_FOUND'));
       if (actor.agencyId === agencyId) return this.actorWithAgency(tx, actorId);
 
       const now = new Date();
@@ -78,7 +79,7 @@ export class AdminAgenciesService {
 
   async actorHistory(actorId: string) {
     const actor = await this.prisma.actor.findUnique({ where: { id: actorId }, select: { id: true } });
-    if (!actor) throw new NotFoundException('배우를 찾을 수 없습니다.');
+    if (!actor) throw new NotFoundException(appError('ACTOR_NOT_FOUND'));
     return this.prisma.actorAgencyHistory.findMany({
       where: { actorId },
       select: { id: true, startedAt: true, endedAt: true, agency: { select: { id: true, name: true } } },
@@ -90,9 +91,9 @@ export class AdminAgenciesService {
   async assignStaff(userId: string, agencyId: string | null) {
     if (agencyId) await this.findAgencyOrThrow(agencyId);
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
-    if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    if (!user) throw new NotFoundException(appError('USER_NOT_FOUND'));
     if (agencyId && user.role !== Role.AGENCY_STAFF) {
-      throw new BadRequestException('소속사 스태프(AGENCY_STAFF) 계정만 소속사에 배정할 수 있어요.');
+      throw new BadRequestException(appError('AGENCY_STAFF_ROLE_REQUIRED'));
     }
     return this.prisma.user.update({
       where: { id: userId },
@@ -110,12 +111,12 @@ export class AdminAgenciesService {
 
   private async findAgencyOrThrow(id: string) {
     const agency = await this.prisma.agency.findUnique({ where: { id }, select: { id: true } });
-    if (!agency) throw new NotFoundException('소속사를 찾을 수 없습니다.');
+    if (!agency) throw new NotFoundException(appError('AGENCY_NOT_FOUND'));
     return agency;
   }
 
   private async ensureNameAvailable(name: string, exceptId?: string) {
     const existing = await this.prisma.agency.findUnique({ where: { name }, select: { id: true } });
-    if (existing && existing.id !== exceptId) throw new ConflictException('같은 이름의 소속사가 이미 있어요.');
+    if (existing && existing.id !== exceptId) throw new ConflictException(appError('AGENCY_NAME_TAKEN'));
   }
 }

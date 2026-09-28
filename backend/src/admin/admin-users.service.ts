@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Role, UserStatus } from '../generated/prisma/enums.js';
 import type { Prisma } from '../generated/prisma/client.js';
+import { appError } from '../common/i18n/app-error.js';
 
 const LIST_SELECT = {
   id: true,
@@ -74,12 +75,12 @@ export class AdminUsersService {
       where: { id: userId },
       select: { role: true, deletedAt: true, _count: { select: { subscriptions: { where: { cancelledAt: null } } } } },
     });
-    if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
-    if (user.deletedAt) throw new BadRequestException('탈퇴한 계정이에요.');
-    if (user.role === Role.ADMIN) throw new BadRequestException('운영자 계정의 역할은 여기서 바꿀 수 없어요.');
+    if (!user) throw new NotFoundException(appError('USER_NOT_FOUND'));
+    if (user.deletedAt) throw new BadRequestException(appError('ACCOUNT_DELETED'));
+    if (user.role === Role.ADMIN) throw new BadRequestException(appError('ADMIN_ROLE_LOCKED'));
     if (user.role === role) return this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: LIST_SELECT });
     if (role !== Role.USER && user._count.subscriptions > 0) {
-      throw new BadRequestException('구독 중인 팬 계정은 배우·소속사 계정으로 바꿀 수 없어요.');
+      throw new BadRequestException(appError('SUBSCRIBED_FAN_ROLE_CHANGE'));
     }
     return this.prisma.$transaction(async (tx) => {
       if (user.role === Role.ACTOR) await tx.actor.updateMany({ where: { selfUserId: userId }, data: { selfUserId: null } });

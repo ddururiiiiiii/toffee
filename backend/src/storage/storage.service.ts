@@ -9,6 +9,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { appError } from '../common/i18n/app-error.js';
 
 const UPLOAD_URL_TTL_SECONDS = 10 * 60;
 // 조회용 서명 URL: 1시간 단위로 서명 시각을 맞춰서 같은 시간대엔 URL이 똑같게 함 — 채팅방이 폴링할
@@ -52,7 +53,7 @@ export class StorageService {
 
   private require(): { client: S3Client; bucket: string } {
     if (!this.client || !this.bucket) {
-      throw new ServiceUnavailableException('파일 저장소가 설정되지 않았어요(STORAGE_* 환경변수).');
+      throw new ServiceUnavailableException(appError('STORAGE_NOT_CONFIGURED'));
     }
     return { client: this.client, bucket: this.bucket };
   }

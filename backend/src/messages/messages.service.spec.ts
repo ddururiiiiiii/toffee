@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MessagesService, toQuote } from './messages.service.js';
-import { MessageMediaType, Role } from '../generated/prisma/enums.js';
+import { MessageMediaType, MessageSenderType, Role, UserStatus } from '../generated/prisma/enums.js';
 import type { ComposePush } from '../notifications/push.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { PushService } from '../notifications/push.service.js';
@@ -24,6 +24,7 @@ function setup() {
     actor: { findUniqueOrThrow: vi.fn().mockResolvedValue({ chatDisplayName: '캐러멜' }) },
   } as unknown as PrismaService;
   const push = {
+    sendToUser: vi.fn().mockResolvedValue(undefined),
     sendToUsers: vi.fn((_userIds: string[], compose: ComposePush) => {
       fanPushes.push(compose);
       return Promise.resolve();
@@ -38,7 +39,7 @@ function setup() {
     withReadUrl: vi.fn((item: object) => Promise.resolve(item)),
   } as unknown as MediaService;
   const service = new MessagesService(prisma, push, {} as ModerationService, media, config());
-  return { service, fanPushes, staffPushes, prisma };
+  return { service, fanPushes, staffPushes, prisma, push };
 }
 
 describe('MessagesService.sendBroadcast 푸시 문구', () => {
@@ -68,6 +69,65 @@ describe('MessagesService.sendBroadcast 푸시 문구', () => {
 
     expect(fanPushes[0]({ locale: 'th', displayName: 'fan' }).body).toBe('ส่งรูปภาพ');
     expect(fanPushes[0]({ locale: null, displayName: 'fan' }).body).toBe('Sent a photo');
+  });
+});
+
+describe('MessagesService.sendBroadcast 인용 답장 알림', () => {
+  // 인용된 팬 메시지(fan-1 작성) — hidden이면 가려진 인용
+  const quoted = (overrides: { status?: UserStatus; blocked?: boolean } = {}) => ({
+    id: 'fan-msg',
+    senderType: MessageSenderType.FAN,
+    body: '오빠 사랑해요',
+    mediaType: MessageMediaType.TEXT,
+    fanUserId: 'fan-1',
+    fanUser: {
+      nickname: '민지',
+      status: overrides.status ?? UserStatus.ACTIVE,
+      deletedAt: null,
+      blockedInChannels: overrides.blocked ? [{ id: 'b1' }] : [],
+    },
+    reports: [],
+  });
+
+  function setupQuote(replyTo: ReturnType<typeof quoted>, subscribers = ['fan-1', 'fan-2']) {
+    const ctx = setup();
+    const prisma = ctx.prisma as unknown as {
+      message: { create: ReturnType<typeof vi.fn>; findFirst: ReturnType<typeof vi.fn> };
+      subscription: { findMany: ReturnType<typeof vi.fn> };
+    };
+    prisma.message.create.mockResolvedValue({ id: 'm1', mediaKey: null, mediaUrl: null, replyTo });
+    prisma.message.findFirst = vi.fn().mockResolvedValue({ id: 'fan-msg' });
+    prisma.subscription.findMany.mockResolvedValue(subscribers.map((userId) => ({ userId })));
+    return ctx;
+  }
+
+  it('인용된 팬은 일반 알림 대신 "내 메시지에 답장했어요" 한 건만', async () => {
+    const { service, push } = setupQuote(quoted());
+    await service.sendBroadcast('admin', 'actor-1', { mediaType: MessageMediaType.TEXT, body: '고마워', replyToMessageId: 'fan-msg' });
+
+    expect(push.sendToUsers).toHaveBeenCalledWith(['fan-2'], expect.any(Function), expect.anything());
+    expect(push.sendToUser).toHaveBeenCalledWith(
+      'fan-1',
+      expect.any(Function),
+      expect.objectContaining({ type: 'QUOTED_REPLY', actorId: 'actor-1', messageId: 'm1' }),
+    );
+    const compose = vi.mocked(push.sendToUser).mock.calls[0][1];
+    expect(compose({ locale: 'ko', displayName: '민지' })).toEqual({ title: '캐러멜님이 내 메시지에 답장했어요', body: '고마워' });
+  });
+
+  it('알림을 끈(구독자 목록에 없는) 팬에겐 인용 알림도 안 감', async () => {
+    const { service, push } = setupQuote(quoted(), ['fan-2']);
+    await service.sendBroadcast('admin', 'actor-1', { mediaType: MessageMediaType.TEXT, body: '고마워', replyToMessageId: 'fan-msg' });
+    expect(push.sendToUser).not.toHaveBeenCalled();
+    expect(push.sendToUsers).toHaveBeenCalledWith(['fan-2'], expect.any(Function), expect.anything());
+  });
+
+  it('정지·차단돼서 인용이 가려진 팬에겐 따로 알리지 않음', async () => {
+    for (const replyTo of [quoted({ status: UserStatus.SUSPENDED }), quoted({ blocked: true })]) {
+      const { service, push } = setupQuote(replyTo);
+      await service.sendBroadcast('admin', 'actor-1', { mediaType: MessageMediaType.TEXT, body: '고마워', replyToMessageId: 'fan-msg' });
+      expect(push.sendToUser).not.toHaveBeenCalled();
+    }
   });
 });
 

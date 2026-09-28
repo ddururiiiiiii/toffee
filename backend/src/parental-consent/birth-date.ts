@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { appError } from '../common/i18n/app-error.js';
 
 /**
  * "YYYY-MM-DD" → UTC 자정 Date. 달력에 없는 날짜(2월 31일 등)·미래·1900년 이전은 거절 —
@@ -6,7 +7,7 @@ import { BadRequestException } from '@nestjs/common';
  */
 export function parseBirthDate(value: string, now = new Date()): Date {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  const invalid = new BadRequestException('생년월일을 다시 확인해 주세요.');
+  const invalid = new BadRequestException(appError('BIRTH_DATE_INVALID'));
   if (!match) throw invalid;
   const [year, month, day] = match.slice(1).map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));

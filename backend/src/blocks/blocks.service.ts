@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { ensureCanViewActor } from '../common/authorization/actor-access.js';
 import { fanTag } from '../common/nickname/nickname.js';
 import { Role } from '../generated/prisma/enums.js';
+import { appError } from '../common/i18n/app-error.js';
 
 /**
  * 배우 채널 단위 차단(잠정 정책) — 배우 본인·소속사·운영자가 운영자 승인 없이 바로. 차단된 팬은 이 배우에게
@@ -16,8 +17,8 @@ export class BlocksService {
   async block(requesterId: string, actorId: string, fanUserId: string, reason?: string) {
     await ensureCanViewActor(this.prisma, requesterId, actorId);
     const fan = await this.prisma.user.findUnique({ where: { id: fanUserId }, select: { role: true } });
-    if (!fan) throw new NotFoundException('사용자를 찾을 수 없습니다.');
-    if (fan.role !== Role.USER) throw new BadRequestException('팬 계정만 차단할 수 있어요.');
+    if (!fan) throw new NotFoundException(appError('USER_NOT_FOUND'));
+    if (fan.role !== Role.USER) throw new BadRequestException(appError('BLOCK_FANS_ONLY'));
     await this.prisma.actorFanBlock.upsert({
       where: { actorId_fanUserId: { actorId, fanUserId } },
       create: { actorId, fanUserId, blockedById: requesterId, reason: reason?.trim() || null },

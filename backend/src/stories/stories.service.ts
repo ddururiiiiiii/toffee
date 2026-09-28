@@ -9,6 +9,7 @@ import { MediaService } from '../storage/media.service.js';
 import { fanTag } from '../common/nickname/nickname.js';
 import type { UploadableMediaType } from '../storage/media-policy.js';
 import type { CreateStoryDto } from './dto/create-story.dto.js';
+import { appError } from '../common/i18n/app-error.js';
 
 const STORY_LIFETIME_MS = 24 * 60 * 60 * 1000;
 const CAN_MONITOR_ROLES = new Set<Role>([Role.AGENCY_STAFF, Role.ACTOR, Role.ADMIN]);
@@ -63,7 +64,7 @@ export class StoriesService {
   // 팬이 스토리를 열람했음을 기록 (같은 스토리 재조회는 upsert로 무시)
   async markViewed(userId: string, actorId: string, storyId: string) {
     const story = await this.prisma.story.findFirst({ where: { id: storyId, actorId } });
-    if (!story) throw new NotFoundException('스토리를 찾을 수 없습니다.');
+    if (!story) throw new NotFoundException(appError('STORY_NOT_FOUND'));
     await ensureActiveSubscription(this.prisma, userId, actorId);
 
     return this.prisma.storyView.upsert({
@@ -77,7 +78,7 @@ export class StoriesService {
   async listViews(requesterId: string, actorId: string, storyId: string) {
     await ensureCanViewActor(this.prisma, requesterId, actorId);
     const story = await this.prisma.story.findFirst({ where: { id: storyId, actorId } });
-    if (!story) throw new NotFoundException('스토리를 찾을 수 없습니다.');
+    if (!story) throw new NotFoundException(appError('STORY_NOT_FOUND'));
 
     const views = await this.prisma.storyView.findMany({
       where: { storyId },

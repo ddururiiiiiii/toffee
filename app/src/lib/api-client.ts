@@ -6,6 +6,8 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** 서버 오류 코드(예: REPLY_LIMIT) — 문구 대신 이걸로 분기할 것(문구는 언어마다 다름) */
+    public code?: string,
   ) {
     super(message);
   }
@@ -21,6 +23,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await loadToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    // 서버가 오류 문구를 지금 앱 언어로 번역해서 줌(backend LocalizedExceptionFilter)
+    'Accept-Language': i18n.language,
     ...(options.headers as Record<string, string> | undefined),
   };
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -28,9 +32,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
 
   if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { message?: string | string[] };
+    const body = (await res.json().catch(() => ({}))) as { message?: string | string[]; code?: string };
     const message = Array.isArray(body.message) ? body.message.join(', ') : body.message;
-    const error = new ApiError(res.status, message ?? i18n.t('common.requestFailed', { status: res.status }));
+    const error = new ApiError(res.status, message ?? i18n.t('common.requestFailed', { status: res.status }), body.code);
     if (res.status === 401 && token) unauthorizedHandler?.(error.message);
     throw error;
   }
