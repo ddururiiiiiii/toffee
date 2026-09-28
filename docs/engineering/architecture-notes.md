@@ -82,6 +82,21 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
 
+## 약관 동의·회원 탈퇴·문의하기 (2026-09-28)
+
+- 스키마(`20260928120000_add_terms_consent_and_account_deletion`): `User.termsVersion`, `termsAcceptedAt`, `deletedAt`.
+- 약관 동의: `CURRENT_TERMS_VERSION`(`backend/src/common/legal/terms.ts`, 앱 `TERMS_VERSION`과 같이 올릴 것).
+  `GET /me/onboarding-status`에 `needsTerms`(모든 역할), `POST /me/terms-agreement { version, agreeTerms: true,
+  agreePrivacy: true }`. 소셜 로그인의 `agreedToTerms` 파라미터는 제거(기록도 안 하던 값) — 동의는 로그인 방식과
+  무관하게 온보딩 첫 단계에서. AuthGate는 온보딩 중에도 `/terms`·`/privacy`는 열 수 있게 허용.
+- 탈퇴: `DELETE /auth/me`(USER만) — 구독 해지 처리, 푸시 기기·부모 동의 삭제, 개인정보 필드 null, `deletedAt`.
+  BANNED가 아니면 `AuthIdentity` 삭제(같은 소셜로 새 가입 가능), BANNED면 남겨서 재가입 차단. JWT 검증에서
+  `deletedAt`이면 401("탈퇴한 계정"). 팬 답장 목록·인용에서 탈퇴한 팬은 `fanUser: null`/가림. 운영자 회원 목록에 탈퇴 표시,
+  탈퇴 계정 역할 변경 불가.
+- 문의하기: 앱 `EXPO_PUBLIC_SUPPORT_EMAIL`(없으면 "준비 중"), `lib/support.ts`가 회원번호·앱 버전을 본문에 넣어 mailto.
+- 시드 데모 계정은 동의 완료 상태로 생성(`AGREED`).
+- 마이페이지를 ScrollView로 바꿈(항목이 늘어서 작은 화면에서 잘림 방지).
+
 ## 배우 닉네임·대화방 사진 (2026-09-28)
 
 - `Actor.chatDisplayName` = 배우가 직접 정하는 닉네임(컬럼명은 그대로). `PATCH /actors/:id/nickname`(ACTOR 본인·

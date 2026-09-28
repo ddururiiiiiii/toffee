@@ -3,6 +3,10 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client.js';
 import { MessageSenderType, MessageMediaType, Role } from '../src/generated/prisma/enums.js';
+import { CURRENT_TERMS_VERSION } from '../src/common/legal/terms.js';
+
+// 데모 계정은 약관 동의를 마친 상태로(새로 가입하는 계정은 앱 온보딩에서 동의)
+const AGREED = { termsVersion: CURRENT_TERMS_VERSION, termsAcceptedAt: new Date() };
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
@@ -74,6 +78,7 @@ async function main() {
   // 데모 엔터 스태프 1명 — 같은 소속사라 두 배우 모두 모니터링 가능
   const staff = await prisma.user.create({
     data: {
+      ...AGREED,
       role: Role.AGENCY_STAFF,
       displayName: '데모 소속사 스태프',
       email: 'staff@toffee.demo',
@@ -83,6 +88,7 @@ async function main() {
   // 이전 소속사 스태프 — 누가가 이적했으므로 누가의 콘솔/메시지에 접근하면 403이어야 함
   await prisma.user.create({
     data: {
+      ...AGREED,
       role: Role.AGENCY_STAFF,
       displayName: '이전 소속사 스태프',
       email: 'former-staff@toffee.demo',
@@ -91,12 +97,14 @@ async function main() {
   });
 
   const admin = await prisma.user.create({
-    data: { role: Role.ADMIN, displayName: '데모 운영자', email: 'admin@toffee.demo' },
+    data: {
+      ...AGREED, role: Role.ADMIN, displayName: '데모 운영자', email: 'admin@toffee.demo' },
   });
 
   // 배우 본인 계정 — 메시지·스토리 발송은 이제 이 계정만 할 수 있음(소속사는 열람 전용)
   await prisma.user.create({
-    data: { role: Role.ACTOR, displayName: '캐러멜(본인)', email: 'caramel-self@toffee.demo' },
+    data: {
+      ...AGREED, role: Role.ACTOR, displayName: '캐러멜(본인)', email: 'caramel-self@toffee.demo' },
   });
   await prisma.actor.update({
     where: { id: caramel.id },
@@ -105,10 +113,12 @@ async function main() {
 
   // 팬 2명 — fan1은 caramel만, fan2는 둘 다 구독(CP 할인 시나리오)
   const fan1 = await prisma.user.create({
-    data: { role: Role.USER, displayName: '민지', nickname: '캐러멜바라기', email: 'fan1@toffee.demo' },
+    data: {
+      ...AGREED, role: Role.USER, displayName: '민지', nickname: '캐러멜바라기', email: 'fan1@toffee.demo' },
   });
   const fan2 = await prisma.user.create({
-    data: { role: Role.USER, displayName: '수아', nickname: '누가누가', email: 'fan2@toffee.demo' },
+    data: {
+      ...AGREED, role: Role.USER, displayName: '수아', nickname: '누가누가', email: 'fan2@toffee.demo' },
   });
 
   const fan1Sub = await prisma.subscription.create({

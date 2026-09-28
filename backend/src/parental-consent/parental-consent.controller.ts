@@ -3,6 +3,7 @@ import type { Response } from 'express';
 import { ParentalConsentService } from './parental-consent.service.js';
 import { SetBirthDateDto } from './dto/set-birth-date.dto.js';
 import { RequestParentalConsentDto } from './dto/request-parental-consent.dto.js';
+import { AcceptTermsDto } from './dto/accept-terms.dto.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Public } from '../common/decorators/public.decorator.js';
 import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
@@ -14,6 +15,11 @@ export class ParentalConsentController {
   @Get('me/onboarding-status')
   getOnboardingStatus(@CurrentUser() user: AuthenticatedUser) {
     return this.parentalConsentService.getOnboardingStatus(user.id);
+  }
+
+  @Post('me/terms-agreement')
+  acceptTerms(@CurrentUser() user: AuthenticatedUser, @Body() dto: AcceptTermsDto) {
+    return this.parentalConsentService.acceptTerms(user.id, dto.version);
   }
 
   @Patch('me/birth-date')

@@ -31,6 +31,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (user.status === UserStatus.BANNED) {
       throw new UnauthorizedException('이용이 제한된 계정이에요.');
     }
+    if (user.deletedAt) throw new UnauthorizedException('탈퇴한 계정이에요.');
     // 정지 기간이 지났으면 상태값은 그대로여도(별도 재활성화 없이) 다시 이용 가능하게 취급
     if (user.status === UserStatus.SUSPENDED && user.suspendedUntil && user.suspendedUntil > new Date()) {
       // 언제 풀리는지 같이 알려줌(태국 시간 기준 날짜·시각 — 서버 오류 문구 다국어화는 2차)

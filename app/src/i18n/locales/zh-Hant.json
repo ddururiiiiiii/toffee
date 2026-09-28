@@ -226,5 +226,28 @@
     "saved": "已儲存。",
     "saveFailed": "儲存失敗，請重試。",
     "officialNote": "搜尋頁面上的官方照片和官方名稱（{{name}}）由營運團隊管理。如需修改，請聯絡營運團隊。"
+  },
+  "termsConsent": {
+    "title": "請同意條款",
+    "hint": "使用 Toffee 需要同意以下內容。",
+    "all": "全部同意",
+    "terms": "（必選）同意服務條款",
+    "privacy": "（必選）同意個人資料的蒐集與使用",
+    "view": "查看",
+    "submit": "同意並開始"
+  },
+  "support": {
+    "contact": "聯絡我們",
+    "notReady": "客服管道正在準備中。",
+    "openFailed": "無法開啟郵件 App，請直接寄信至 {{email}}。",
+    "subject": "[Toffee 詢問]",
+    "accountId": "會員編號",
+    "appVersion": "App 版本"
+  },
+  "deleteAccount": {
+    "title": "刪除帳號",
+    "body": "刪除帳號後，暱稱、出生日期等資料將被刪除且無法復原。\n\n• 如有正在訂閱的明星，請先在 App Store 或 Google Play 取消訂閱。刪除帳號不會自動停止商店扣款。\n• 將無法再查看先前的聊天。想保留的照片、語音、影片請提前儲存。\n• 你傳送的回覆將向明星顯示為「已刪除帳號的粉絲」。",
+    "confirm": "刪除",
+    "failed": "刪除失敗，請重試。"
   }
 }

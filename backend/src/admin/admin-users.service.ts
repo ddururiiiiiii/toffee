@@ -13,6 +13,7 @@ const LIST_SELECT = {
   suspendedUntil: true,
   bannedAt: true,
   createdAt: true,
+  deletedAt: true,
   agency: { select: { id: true, name: true } },
   actorSelf: { select: { id: true, legalName: true } },
 } as const;
@@ -71,9 +72,10 @@ export class AdminUsersService {
   async changeRole(userId: string, role: Role) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true, _count: { select: { subscriptions: { where: { cancelledAt: null } } } } },
+      select: { role: true, deletedAt: true, _count: { select: { subscriptions: { where: { cancelledAt: null } } } } },
     });
     if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    if (user.deletedAt) throw new BadRequestException('탈퇴한 계정이에요.');
     if (user.role === Role.ADMIN) throw new BadRequestException('운영자 계정의 역할은 여기서 바꿀 수 없어요.');
     if (user.role === role) return this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: LIST_SELECT });
     if (role !== Role.USER && user._count.subscriptions > 0) {

@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "deletedAt" TIMESTAMP(3),
+ADD COLUMN     "termsAcceptedAt" TIMESTAMP(3),
+ADD COLUMN     "termsVersion" TEXT;
+

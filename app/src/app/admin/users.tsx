@@ -119,8 +119,8 @@ function UserRow({ user }: { user: AdminUser }) {
           {user.displayName}
           {user.nickname ? ` (${user.nickname})` : ''}
         </ThemedText>
-        <ThemedText type="small" themeColor={user.status === 'ACTIVE' ? 'textSecondary' : 'danger'}>
-          {statusLabel(user.status)}
+        <ThemedText type="small" themeColor={user.status === 'ACTIVE' && !user.deletedAt ? 'textSecondary' : 'danger'}>
+          {user.deletedAt ? `탈퇴 (${new Date(user.deletedAt).toLocaleDateString('ko-KR')})` : statusLabel(user.status)}
         </ThemedText>
       </ThemedView>
       <ThemedText type="small" themeColor="textSecondary">
@@ -128,7 +128,7 @@ function UserRow({ user }: { user: AdminUser }) {
         {user.agency ? ` · ${user.agency.name}` : ''}
         {user.actorSelf ? ` · ${user.actorSelf.legalName} 본인` : ''}
       </ThemedText>
-      {user.role !== 'ADMIN' && <RoleControls user={user} />}
+      {user.role !== 'ADMIN' && !user.deletedAt && <RoleControls user={user} />}
       {user.status === 'SUSPENDED' && user.suspendedUntil && (
         <ThemedText type="small" themeColor="textSecondary">
           해제: {new Date(user.suspendedUntil).toLocaleString('ko-KR')}

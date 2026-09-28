@@ -27,7 +27,7 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
-// 토큰 없이 진입 시 /login으로. 로그인 후엔 온보딩(생년월일 → 필요시 법정대리인 동의)부터
+// 토큰 없이 진입 시 /login으로. 로그인 후엔 온보딩(약관 동의 → 생년월일 → 필요시 법정대리인 동의 → 닉네임)부터
 // 끝내야 하고(팬만 해당), 그다음 role 따라 운영자는 /admin, 소속사 스태프는 /console, 나머지(팬)는
 // 기본 탭으로 — 전부 로딩(토큰+role+온보딩 상태 조회) 끝난 뒤에만 판단.
 // 배우 본인(ACTOR)은 /studio(발송 화면)로.
@@ -49,15 +49,20 @@ function AuthGate({ children }: { children: ReactNode }) {
     // 온보딩은 단계별로 정확한 화면에 있어야 함 — 예전엔 "온보딩 화면 중 아무 데나"면 그대로 둬서, 생년월일을
     // 저장해도 부모 동의·닉네임 단계로 안 넘어가고 생년월일 화면에 멈춰 있었음(새 팬 가입이 막히던 버그)
     const onOnboardingScreen = segments[0] === 'onboarding';
-    const onboardingStep = onboarding?.needsBirthDate
-      ? 'birth-date'
-      : onboarding?.parentalConsentStatus === 'PENDING'
-        ? 'parental-consent'
-        : onboarding?.needsNickname
-          ? 'nickname'
-          : null;
+    // 약관 동의 화면에서 "보기"로 약관·개인정보처리방침을 열 수 있어야 해서 온보딩 중에도 이 두 화면은 허용
+    const onLegalScreen = segments[0] === 'terms' || segments[0] === 'privacy';
+    const onboardingStep = onboarding?.needsTerms
+      ? 'terms'
+      : onboarding?.needsBirthDate
+        ? 'birth-date'
+        : onboarding?.parentalConsentStatus === 'PENDING'
+          ? 'parental-consent'
+          : onboarding?.needsNickname
+            ? 'nickname'
+            : null;
     if (onboardingStep) {
-      if (!onOnboardingScreen || segments[1] !== onboardingStep) router.replace(`/onboarding/${onboardingStep}`);
+      if (onLegalScreen) return;
+      if (!onOnboardingScreen || (segments as string[])[1] !== onboardingStep) router.replace(`/onboarding/${onboardingStep}`);
       return;
     }
 
@@ -133,6 +138,7 @@ function RootLayout() {
               <Stack.Screen name="admin/actors/new" options={{ headerShown: true, title: '배우 등록' }} />
               <Stack.Screen name="admin/actors/[id]" options={{ headerShown: true, title: '배우' }} />
               <Stack.Screen name="admin/agencies" options={{ headerShown: true, title: '소속사 관리' }} />
+              <Stack.Screen name="onboarding/terms" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/birth-date" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/nickname" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/parental-consent" options={{ headerShown: true, title: '' }} />

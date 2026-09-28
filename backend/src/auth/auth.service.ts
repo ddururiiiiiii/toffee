@@ -1,10 +1,10 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { OAuth2Client } from 'google-auth-library';
 import appleSignin from 'apple-signin-auth';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { AuthProvider, Role } from '../generated/prisma/enums.js';
+import { AuthProvider, Role, UserStatus } from '../generated/prisma/enums.js';
 import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
 import { ModerationService } from '../moderation/moderation.service.js';
 import { NICKNAME_CHANGE_COOLDOWN_MS, normalizeNickname } from '../common/nickname/nickname.js';
@@ -151,7 +151,6 @@ export class AuthService {
   async findOrCreateUser(
     provider: AuthProvider,
     identity: ExternalIdentity,
-    agreedToTerms?: boolean,
   ): Promise<AuthenticatedUser> {
     const existingIdentity = await this.prisma.authIdentity.findUnique({
       where: { provider_providerId: { provider, providerId: identity.providerId } },
@@ -166,9 +165,7 @@ export class AuthService {
       ? await this.prisma.user.findUnique({ where: { email: identity.email } })
       : null;
 
-    if (!existingUserByEmail && !agreedToTerms) {
-      throw new BadRequestException('이용약관 동의가 필요합니다.');
-    }
+    // 약관 동의는 로그인 방식과 상관없이 앱 온보딩 첫 단계에서 받고 기록함(POST /me/terms-agreement)
 
     const user =
       existingUserByEmail ??
@@ -184,6 +181,43 @@ export class AuthService {
     });
 
     return { id: user.id, role: user.role };
+  }
+
+  /**
+   * 회원 탈퇴(팬 본인) — 개인정보는 지우고 기록만 남김(잠정 정책, STATUS.md 출시 전 확정 정책):
+   * - 이메일·이름·닉네임·생년월일·부모 이메일·언어는 삭제, 탈퇴 시각만 남김
+   * - 구독은 해지 처리(결제·구독 기록 자체는 전자상거래 법정 보관 기간 동안 유지). 실제 스토어 구독은 앱이 끊을 수
+   *   없어서 앱 화면에서 "스토어에서 해지"를 먼저 안내함
+   * - 푸시 기기·부모 동의 기록 삭제. 팬 답장 본문은 남기고 작성자는 "탈퇴한 팬"으로 표시
+   * - 소셜 로그인 연결을 끊어서 같은 계정으로 새로 가입 가능. 단 영구차단된 계정은 연결을 남겨서 탈퇴→재가입으로
+   *   차단을 피하지 못하게 함(다시 로그인하면 계속 "이용이 제한된 계정")
+   * 배우·소속사·운영자 계정은 앱에서 탈퇴하지 않고 운영자가 처리(배우 채널·소속사 연결이 걸려 있어서).
+   */
+  async deleteAccount(userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { role: true, status: true } });
+    if (user.role !== Role.USER) {
+      throw new ForbiddenException('배우·소속사 계정은 앱에서 탈퇴할 수 없어요. 운영자에게 요청해 주세요.');
+    }
+    const now = new Date();
+    await this.prisma.$transaction([
+      this.prisma.subscription.updateMany({ where: { userId, cancelledAt: null }, data: { cancelledAt: now } }),
+      this.prisma.pushDevice.deleteMany({ where: { userId } }),
+      this.prisma.parentalConsent.deleteMany({ where: { userId } }),
+      ...(user.status === UserStatus.BANNED ? [] : [this.prisma.authIdentity.deleteMany({ where: { userId } })]),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          email: null,
+          displayName: '탈퇴한 회원',
+          nickname: null,
+          nicknameChangedAt: null,
+          birthDate: null,
+          parentEmail: null,
+          locale: null,
+          deletedAt: now,
+        },
+      }),
+    ]);
   }
 
   private generateFallbackName(): string {

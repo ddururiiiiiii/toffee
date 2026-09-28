@@ -27,6 +27,7 @@ function quoteInclude(actorId: string) {
           select: {
             nickname: true,
             status: true,
+            deletedAt: true,
             blockedInChannels: { where: { actorId }, select: { id: true }, take: 1 },
           },
         },
@@ -41,7 +42,7 @@ interface QuotedSource {
   senderType: MessageSenderType;
   body: string | null;
   mediaType: MessageMediaType;
-  fanUser: { nickname: string | null; status: UserStatus; blockedInChannels?: { id: string }[] } | null;
+  fanUser: { nickname: string | null; status: UserStatus; deletedAt?: Date | null; blockedInChannels?: { id: string }[] } | null;
   reports: { id: string }[];
 }
 
@@ -55,6 +56,7 @@ export function toQuote(source: QuotedSource | null) {
   const hidden =
     !source.fanUser ||
     source.fanUser.status !== UserStatus.ACTIVE ||
+    !!source.fanUser.deletedAt ||
     (source.fanUser.blockedInChannels?.length ?? 0) > 0 ||
     source.reports.length > 0;
   return {
@@ -234,13 +236,14 @@ export class MessagesService {
         fanUser: notBlockedIn(actorId),
         ...(messageId ? { replyToMessageId: messageId } : {}),
       },
-      include: { fanUser: { select: { id: true, nickname: true } } },
+      include: { fanUser: { select: { id: true, nickname: true, deletedAt: true } } },
       orderBy: { createdAt: 'desc' },
     });
-    // 스타·소속사에겐 실명일 수 있는 로그인 이름 대신 닉네임 + 같은 닉네임 구분용 태그만
-    return replies.map((reply) => ({
+    // 스타·소속사에겐 실명일 수 있는 로그인 이름 대신 닉네임 + 같은 닉네임 구분용 태그만. 탈퇴한 팬은 null
+    // (앱이 "탈퇴한 팬"으로 표시)
+    return replies.map(({ fanUser, ...reply }) => ({
       ...reply,
-      fanUser: reply.fanUser && { id: reply.fanUser.id, nickname: reply.fanUser.nickname, tag: fanTag(reply.fanUser.id) },
+      fanUser: fanUser && !fanUser.deletedAt ? { id: fanUser.id, nickname: fanUser.nickname, tag: fanTag(fanUser.id) } : null,
     }));
   }
 

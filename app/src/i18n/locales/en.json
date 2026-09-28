@@ -226,5 +226,28 @@
     "saved": "Saved.",
     "saveFailed": "Couldn't save. Please try again.",
     "officialNote": "Your official photo and official name ({{name}}) on the discover screen are managed by the Toffee team. Contact us to change them."
+  },
+  "termsConsent": {
+    "title": "Please agree to the terms",
+    "hint": "You need to agree to the following to use Toffee.",
+    "all": "Agree to all",
+    "terms": "(Required) Terms of Service",
+    "privacy": "(Required) Collection and use of personal information",
+    "view": "View",
+    "submit": "Agree and start"
+  },
+  "support": {
+    "contact": "Contact us",
+    "notReady": "Our support channel is being prepared.",
+    "openFailed": "Couldn't open your mail app. Please email {{email}} directly.",
+    "subject": "[Toffee inquiry]",
+    "accountId": "Account ID",
+    "appVersion": "App version"
+  },
+  "deleteAccount": {
+    "title": "Delete account",
+    "body": "Deleting your account removes your information such as nickname and date of birth, and it can't be undone.\n\n• If you have active subscriptions, cancel them in the App Store or Google Play first. Deleting your account does not stop store billing.\n• You won't be able to see your chats again. Save any photos, voice or videos you want to keep beforehand.\n• Replies you sent will be shown to stars as \"Deleted fan\".",
+    "confirm": "Delete",
+    "failed": "Couldn't delete your account. Please try again."
   }
 }

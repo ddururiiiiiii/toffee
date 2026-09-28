@@ -2,6 +2,7 @@ import { ConflictException, BadRequestException, Injectable } from '@nestjs/comm
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'node:crypto';
 import { calculateAge, parseBirthDate } from './birth-date.js';
+import { CURRENT_TERMS_VERSION } from '../common/legal/terms.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailService } from '../notifications/email.service.js';
 import { ParentalConsentStatus, Role } from '../generated/prisma/enums.js';
@@ -19,21 +20,35 @@ export class ParentalConsentService {
     private readonly configService: ConfigService,
   ) {}
 
-  // 앱이 로그인 직후 온보딩(생년월일 입력, 부모 동의 대기, 닉네임)을 보여줘야 하는지 판단하는 데 씀
+  // 앱이 로그인 직후 온보딩(약관 동의 → 생년월일 → 부모 동의 대기 → 닉네임)을 보여줘야 하는지 판단하는 데 씀
   async getOnboardingStatus(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { birthDate: true, parentalConsentStatus: true, role: true, nickname: true },
+      select: { birthDate: true, parentalConsentStatus: true, role: true, nickname: true, termsVersion: true },
     });
-    // 연령 확인·닉네임은 구독하는 팬(USER)에게만 필요 — 배우 본인/소속사/운영자 계정은 온보딩 없이 바로 진입
+    // 약관 동의는 모든 계정, 연령 확인·닉네임은 구독하는 팬(USER)에게만 — 배우 본인/소속사/운영자 계정은 그 뒤 온보딩 없이 진입
+    const needsTerms = user.termsVersion !== CURRENT_TERMS_VERSION;
     if (user.role !== Role.USER) {
-      return { needsBirthDate: false, needsNickname: false, parentalConsentStatus: user.parentalConsentStatus };
+      return { needsTerms, needsBirthDate: false, needsNickname: false, parentalConsentStatus: user.parentalConsentStatus };
     }
     return {
+      needsTerms,
       needsBirthDate: !user.birthDate,
       needsNickname: !user.nickname,
       parentalConsentStatus: user.parentalConsentStatus,
     };
+  }
+
+  // 약관·개인정보 수집 동의 기록 — 버전과 시각을 남김(유료 서비스라 "언제 어떤 약관에 동의했는지" 증빙용)
+  async acceptTerms(userId: string, version: string) {
+    if (version !== CURRENT_TERMS_VERSION) {
+      throw new BadRequestException('약관이 새로 바뀌었어요. 앱을 다시 열어 최신 약관을 확인해 주세요.');
+    }
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { termsVersion: version, termsAcceptedAt: new Date() },
+    });
+    return this.getOnboardingStatus(userId);
   }
 
   // 온보딩에서 생년월일을 받으면 여기서 만 14세 미만인지 판정 — 미만이면 부모 동의 대기 상태로 전환.

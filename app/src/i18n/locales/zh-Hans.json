@@ -226,5 +226,28 @@
     "saved": "已保存。",
     "saveFailed": "保存失败，请重试。",
     "officialNote": "搜索页面上的官方照片和官方名称（{{name}}）由运营团队管理。如需修改，请联系运营团队。"
+  },
+  "termsConsent": {
+    "title": "请同意条款",
+    "hint": "使用 Toffee 需要同意以下内容。",
+    "all": "全部同意",
+    "terms": "（必选）同意服务条款",
+    "privacy": "（必选）同意个人信息的收集与使用",
+    "view": "查看",
+    "submit": "同意并开始"
+  },
+  "support": {
+    "contact": "联系我们",
+    "notReady": "客服渠道正在准备中。",
+    "openFailed": "无法打开邮件应用，请直接发送邮件至 {{email}}。",
+    "subject": "[Toffee 咨询]",
+    "accountId": "会员编号",
+    "appVersion": "应用版本"
+  },
+  "deleteAccount": {
+    "title": "注销账号",
+    "body": "注销后，昵称、出生日期等信息将被删除且无法恢复。\n\n• 如有正在订阅的明星，请先在 App Store 或 Google Play 取消订阅。注销账号不会自动停止商店扣费。\n• 将无法再查看之前的聊天。想保留的照片、语音、视频请提前保存。\n• 你发送的回复将向明星显示为“已注销的粉丝”。",
+    "confirm": "注销",
+    "failed": "注销失败，请重试。"
   }
 }

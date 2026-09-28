@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 export type ParentalConsentStatus = 'NOT_REQUIRED' | 'PENDING' | 'APPROVED';
 
 export interface OnboardingStatus {
+  needsTerms: boolean;
   needsBirthDate: boolean;
   needsNickname: boolean;
   parentalConsentStatus: ParentalConsentStatus;
@@ -16,6 +17,18 @@ export function useOnboardingStatus() {
     queryKey: ['onboarding-status'],
     queryFn: () => apiClient.get<OnboardingStatus>('/me/onboarding-status'),
     enabled: !!token,
+  });
+}
+
+// 약관 버전 — 서버 CURRENT_TERMS_VERSION(backend/src/common/legal/terms.ts)과 같게. 약관 화면 내용을 바꾸면 둘 다 올릴 것
+export const TERMS_VERSION = '2026-09-28';
+
+export function useAcceptTerms() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiClient.post<OnboardingStatus>('/me/terms-agreement', { version: TERMS_VERSION, agreeTerms: true, agreePrivacy: true }),
+    onSuccess: (status) => queryClient.setQueryData(['onboarding-status'], status),
   });
 }
 
@@ -60,4 +73,9 @@ export function useUpdateNickname() {
       void queryClient.invalidateQueries({ queryKey: ['messages'] });
     },
   });
+}
+
+// 회원 탈퇴 — 성공하면 호출한 쪽에서 로그아웃
+export function useDeleteAccount() {
+  return useMutation({ mutationFn: () => apiClient.delete('/auth/me') });
 }

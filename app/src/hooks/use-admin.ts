@@ -89,6 +89,7 @@ export interface AdminUser {
   suspendedUntil: string | null;
   bannedAt: string | null;
   createdAt: string;
+  deletedAt: string | null;
   agency: { id: string; name: string } | null;
   actorSelf: { id: string; legalName: string } | null;
 }

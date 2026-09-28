@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ChatPhotoEditor } from '@/components/chat-photo-editor';
+import { SupportLink } from '@/components/support-link';
 import { useActor, type Actor } from '@/hooks/use-actors';
 import { useTheme } from '@/hooks/use-theme';
 import { apiClient, ApiError } from '@/lib/api-client';
@@ -88,6 +89,7 @@ export default function StudioProfileScreen() {
           <ThemedText type="small" themeColor="textSecondary">
             {t('studioProfile.officialNote', { name: actor.legalName })}
           </ThemedText>
+          <SupportLink />
           <Pressable onPress={logout} style={[styles.logout, { borderColor: theme.backgroundSelected }]}>
             <ThemedText type="smallBold" themeColor="danger">
               {t('common.logout')}

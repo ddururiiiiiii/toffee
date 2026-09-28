@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { GoogleLoginDto } from './dto/google-login.dto.js';
@@ -27,7 +27,7 @@ export class AuthController {
   @Post('google')
   async loginWithGoogle(@Body() dto: GoogleLoginDto) {
     const identity = await this.authService.verifyGoogleToken(dto.idToken);
-    const user = await this.authService.findOrCreateUser(AuthProvider.GOOGLE, identity, dto.agreedToTerms);
+    const user = await this.authService.findOrCreateUser(AuthProvider.GOOGLE, identity);
     return this.authService.issueAccessToken(user);
   }
 
@@ -40,7 +40,6 @@ export class AuthController {
     const user = await this.authService.findOrCreateUser(
       AuthProvider.APPLE,
       { ...identity, name: dto.name },
-      dto.agreedToTerms,
     );
     return this.authService.issueAccessToken(user);
   }
@@ -50,7 +49,7 @@ export class AuthController {
   @Post('naver')
   async loginWithNaver(@Body() dto: NaverLoginDto) {
     const identity = await this.authService.verifyNaverToken(dto.accessToken);
-    const user = await this.authService.findOrCreateUser(AuthProvider.NAVER, identity, dto.agreedToTerms);
+    const user = await this.authService.findOrCreateUser(AuthProvider.NAVER, identity);
     return this.authService.issueAccessToken(user);
   }
 
@@ -59,7 +58,7 @@ export class AuthController {
   @Post('kakao')
   async loginWithKakao(@Body() dto: KakaoLoginDto) {
     const identity = await this.authService.verifyKakaoToken(dto.accessToken);
-    const user = await this.authService.findOrCreateUser(AuthProvider.KAKAO, identity, dto.agreedToTerms);
+    const user = await this.authService.findOrCreateUser(AuthProvider.KAKAO, identity);
     return this.authService.issueAccessToken(user);
   }
 
@@ -68,7 +67,7 @@ export class AuthController {
   @Post('line')
   async loginWithLine(@Body() dto: LineLoginDto) {
     const identity = await this.authService.verifyLineToken(dto.idToken);
-    const user = await this.authService.findOrCreateUser(AuthProvider.LINE, identity, dto.agreedToTerms);
+    const user = await this.authService.findOrCreateUser(AuthProvider.LINE, identity);
     return this.authService.issueAccessToken(user);
   }
 
@@ -103,6 +102,13 @@ export class AuthController {
   @Patch('me/nickname')
   updateNickname(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateNicknameDto) {
     return this.authService.updateNickname(user.id, dto.nickname);
+  }
+
+  // 회원 탈퇴(팬 본인) — 성공하면 앱이 로그아웃
+  @Delete('me')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteAccount(@CurrentUser() user: AuthenticatedUser) {
+    await this.authService.deleteAccount(user.id);
   }
 
   // 앱 표시 언어 동기화 — 푸시 등 서버가 만드는 문구의 언어를 정하는 데 씀
