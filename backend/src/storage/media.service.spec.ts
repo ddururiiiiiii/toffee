@@ -54,4 +54,18 @@ describe('MediaService', () => {
     expect(await media.withReadUrl({ id: 'm', mediaKey: 'k', mediaUrl: null })).toEqual({ id: 'm', mediaUrl: 'https://signed' });
     expect(await media.withReadUrl({ id: 'm', mediaKey: null, mediaUrl: 'https://x' })).toEqual({ id: 'm', mediaUrl: 'https://x' });
   });
+
+  it('프로필 이미지: 외부 주소는 그대로, 저장소 키는 서명 URL, 없으면 null', async () => {
+    const { media, storage } = setup(null);
+    await expect(media.resolveImageUrl(null)).resolves.toBeNull();
+    await expect(media.resolveImageUrl('https://placehold.co/a.png')).resolves.toBe('https://placehold.co/a.png');
+    await expect(media.resolveImageUrl('actors/a1/profile/x.png')).resolves.toBe('https://signed');
+    expect(storage.createReadUrl).toHaveBeenCalledWith('actors/a1/profile/x.png');
+  });
+
+  it('프로필 이미지: 다른 대상 경로의 키는 거절', async () => {
+    const { media } = setup({ sizeBytes: 100, head: PNG_HEAD });
+    await expect(media.verifyAt('actors/a1/profile/', 'PHOTO', 'actors/a1/message/x.png', 'wrong')).rejects.toThrow('wrong');
+    await expect(media.verifyAt('actors/a1/profile/', 'PHOTO', 'actors/a1/profile/x.png', 'wrong')).resolves.toBeUndefined();
+  });
 });

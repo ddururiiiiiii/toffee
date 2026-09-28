@@ -62,3 +62,18 @@ export type UploadPurpose = (typeof UPLOAD_PURPOSES)[number];
 export function keyPrefix(actorId: string, purpose: UploadPurpose): string {
   return `actors/${actorId}/${purpose}/`;
 }
+
+// 운영자가 올리는 프로필 이미지(배우 공식·대화방 프로필, 소속사 로고) — 메시지 파일과 경로를 나눠서
+// 첨부 시 "이 대상의 프로필용으로 올린 파일"인지 확인
+export const PROFILE_IMAGE_TARGETS = ['ACTOR', 'AGENCY'] as const;
+export type ProfileImageTarget = (typeof PROFILE_IMAGE_TARGETS)[number];
+
+export function profileImagePrefix(target: ProfileImageTarget, id: string): string {
+  return target === 'ACTOR' ? `actors/${id}/profile/` : `agencies/${id}/logo/`;
+}
+
+// 이미지 필드(Actor.*ProfileImageUrl, Agency.logoUrl)엔 외부 주소(http…, 데모 데이터) 또는 저장소 키가
+// 들어감 — 저장소 키면 조회할 때 임시 서명 URL로 바꿔서 내려줌(버킷은 계속 비공개)
+export function isStorageKey(value: string | null | undefined): value is string {
+  return !!value && !/^https?:\/\//i.test(value);
+}

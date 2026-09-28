@@ -5,11 +5,15 @@ import { AssignAgencyDto } from './dto/assign-agency.dto.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { Role } from '../generated/prisma/enums.js';
 
-// 소속사 목록 조회는 팬 공개 API(GET /agencies)를 그대로 씀 — 여기엔 쓰기/이력만
 @Roles(Role.ADMIN)
 @Controller('admin')
 export class AdminAgenciesController {
   constructor(private readonly adminAgenciesService: AdminAgenciesService) {}
+
+  @Get('agencies')
+  findAll() {
+    return this.adminAgenciesService.findAll();
+  }
 
   @Post('agencies')
   create(@Body() dto: CreateAgencyDto) {

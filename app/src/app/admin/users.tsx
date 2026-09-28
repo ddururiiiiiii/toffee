@@ -5,12 +5,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import {
+  useAdminAgencies,
   useAdminUsers,
+  useAssignStaffAgency,
+  useChangeUserRole,
   useSuspendUser,
   useBanUser,
   useReactivateUser,
   type AdminUser,
+  type AssignableRole,
 } from '@/hooks/use-admin';
+import { AdminChip, AdminMessage } from '@/components/admin-ui';
+import { ApiError } from '@/lib/api-client';
+import { confirm } from '@/lib/confirm';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
@@ -31,6 +38,69 @@ function statusLabel(status: AdminUser['status']) {
   }
 }
 
+const ROLE_LABELS: Record<AdminUser['role'], string> = {
+  USER: '팬',
+  ACTOR: '배우',
+  AGENCY_STAFF: '소속사 직원',
+  ADMIN: '운영자',
+};
+const ASSIGNABLE: AssignableRole[] = ['USER', 'ACTOR', 'AGENCY_STAFF'];
+
+// 스타·소속사 직원도 일반 가입(소셜 로그인)으로 들어온 뒤 여기서 역할을 바꿈. 운영자 계정은 대상 아님(서버에서도 막음)
+function RoleControls({ user }: { user: AdminUser }) {
+  const changeRole = useChangeUserRole();
+  const assignAgency = useAssignStaffAgency();
+  const { data: agencies } = useAdminAgencies();
+  const [message, setMessage] = useState<string | null>(null);
+  const busy = changeRole.isPending || assignAgency.isPending;
+  const onError = (e: unknown) => setMessage(e instanceof ApiError ? e.message : '바꾸지 못했어요.');
+
+  const pickRole = async (role: AssignableRole) => {
+    if (role === user.role) return;
+    const detail =
+      user.role === 'ACTOR' && user.actorSelf
+        ? `\n${user.actorSelf.legalName} 배우 본인 계정 연결이 해제돼요.`
+        : user.role === 'AGENCY_STAFF' && user.agency
+          ? `\n${user.agency.name} 소속사 배정이 해제돼요.`
+          : '';
+    const ok = await confirm('역할 변경', `${user.displayName} 계정을 "${ROLE_LABELS[role]}"(으)로 바꿀까요?${detail}`, '변경', '취소');
+    if (ok) {
+      setMessage(null);
+      changeRole.mutate({ id: user.id, role }, { onError });
+    }
+  };
+
+  return (
+    <ThemedView style={styles.roleBox}>
+      <ThemedView style={styles.actions}>
+        {ASSIGNABLE.map((role) => (
+          <AdminChip key={role} label={ROLE_LABELS[role]} selected={user.role === role} disabled={busy} onPress={() => pickRole(role)} />
+        ))}
+      </ThemedView>
+      {user.role === 'AGENCY_STAFF' && (
+        <ThemedView style={styles.actions}>
+          <AdminChip
+            label="소속사 없음"
+            selected={!user.agency}
+            disabled={busy}
+            onPress={() => assignAgency.mutate({ id: user.id, agencyId: null }, { onError })}
+          />
+          {agencies?.map((agency) => (
+            <AdminChip
+              key={agency.id}
+              label={agency.name}
+              selected={user.agency?.id === agency.id}
+              disabled={busy}
+              onPress={() => assignAgency.mutate({ id: user.id, agencyId: agency.id }, { onError })}
+            />
+          ))}
+        </ThemedView>
+      )}
+      <AdminMessage text={message} error />
+    </ThemedView>
+  );
+}
+
 function UserRow({ user }: { user: AdminUser }) {
   const theme = useTheme();
   const suspend = useSuspendUser();
@@ -45,14 +115,20 @@ function UserRow({ user }: { user: AdminUser }) {
   return (
     <ThemedView style={[styles.row, { backgroundColor: theme.backgroundElement }]}>
       <ThemedView style={styles.rowHeader}>
-        <ThemedText type="smallBold">{user.displayName}</ThemedText>
+        <ThemedText type="smallBold">
+          {user.displayName}
+          {user.nickname ? ` (${user.nickname})` : ''}
+        </ThemedText>
         <ThemedText type="small" themeColor={user.status === 'ACTIVE' ? 'textSecondary' : 'danger'}>
           {statusLabel(user.status)}
         </ThemedText>
       </ThemedView>
       <ThemedText type="small" themeColor="textSecondary">
-        {user.email ?? '이메일 없음'} · {user.role}
+        {user.email ?? '이메일 없음'} · {ROLE_LABELS[user.role]}
+        {user.agency ? ` · ${user.agency.name}` : ''}
+        {user.actorSelf ? ` · ${user.actorSelf.legalName} 본인` : ''}
       </ThemedText>
+      {user.role !== 'ADMIN' && <RoleControls user={user} />}
       {user.status === 'SUSPENDED' && user.suspendedUntil && (
         <ThemedText type="small" themeColor="textSecondary">
           해제: {new Date(user.suspendedUntil).toLocaleString('ko-KR')}
@@ -103,7 +179,7 @@ export default function AdminUsersScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="이름 또는 이메일로 검색"
+          placeholder="이름·닉네임·이메일로 검색"
           placeholderTextColor={theme.textSecondary}
           style={[styles.search, { color: theme.text, backgroundColor: theme.backgroundElement }]}
         />
@@ -134,8 +210,9 @@ const styles = StyleSheet.create({
   search: { borderRadius: 10, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, fontSize: 16 },
   list: { padding: Spacing.four, gap: Spacing.three },
   row: { borderRadius: 14, padding: Spacing.three, gap: 4 },
-  rowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginTop: Spacing.two },
+  rowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'transparent' },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginTop: Spacing.two, backgroundColor: 'transparent' },
+  roleBox: { backgroundColor: 'transparent' },
   actionChip: { borderWidth: 1, borderRadius: 8, paddingHorizontal: Spacing.two, paddingVertical: 6 },
   reactivateChipText: { color: '#fff' },
   emptyMessage: { textAlign: 'center', marginTop: Spacing.six },

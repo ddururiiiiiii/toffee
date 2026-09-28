@@ -43,19 +43,28 @@ function resolveContentType(explicit: string | undefined, blob: Blob, uri: strin
   return type.split(';')[0].trim();
 }
 
-export async function uploadMedia(
-  actorId: string,
-  params: { purpose: UploadPurpose; mediaType: UploadMediaType; uri: string; contentType?: string },
-): Promise<string> {
-  const file = await (await fetch(params.uri)).blob();
-  const contentType = resolveContentType(params.contentType, file, params.uri);
-  const ticket = await apiClient.post<UploadTicket>(`/actors/${actorId}/uploads`, {
-    purpose: params.purpose,
-    mediaType: params.mediaType,
-    contentType,
-    sizeBytes: file.size,
-  });
+async function putToStorage(path: string, body: Record<string, unknown>, uri: string, explicitType?: string): Promise<string> {
+  const file = await (await fetch(uri)).blob();
+  const contentType = resolveContentType(explicitType, file, uri);
+  const ticket = await apiClient.post<UploadTicket>(path, { ...body, contentType, sizeBytes: file.size });
   const res = await fetch(ticket.uploadUrl, { method: ticket.method, headers: ticket.headers, body: file });
   if (!res.ok) throw new UploadError(`upload failed (${res.status})`);
   return ticket.objectKey;
+}
+
+export function uploadMedia(
+  actorId: string,
+  params: { purpose: UploadPurpose; mediaType: UploadMediaType; uri: string; contentType?: string },
+): Promise<string> {
+  return putToStorage(
+    `/actors/${actorId}/uploads`,
+    { purpose: params.purpose, mediaType: params.mediaType },
+    params.uri,
+    params.contentType,
+  );
+}
+
+/** 운영자용 — 배우 프로필 사진·소속사 로고. 받은 키를 배우 이미지/소속사 수정 API에 넘김 */
+export function uploadProfileImage(target: 'ACTOR' | 'AGENCY', targetId: string, uri: string, contentType?: string): Promise<string> {
+  return putToStorage('/admin/uploads', { target, targetId }, uri, contentType);
 }

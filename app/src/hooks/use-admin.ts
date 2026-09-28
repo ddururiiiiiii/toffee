@@ -77,22 +77,181 @@ export function useDeleteBannedWord() {
 
 export type AdminUserStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED';
 
+export type AssignableRole = 'USER' | 'ACTOR' | 'AGENCY_STAFF';
+
 export interface AdminUser {
   id: string;
   displayName: string;
+  nickname: string | null;
   email: string | null;
-  role: string;
+  role: AssignableRole | 'ADMIN';
   status: AdminUserStatus;
   suspendedUntil: string | null;
   bannedAt: string | null;
   createdAt: string;
+  agency: { id: string; name: string } | null;
+  actorSelf: { id: string; legalName: string } | null;
 }
 
-export function useAdminUsers(query: string) {
+export function useAdminUsers(query: string, role?: AdminUser['role']) {
   return useQuery({
-    queryKey: ['admin', 'users', query],
-    queryFn: () => apiClient.get<AdminUser[]>(`/admin/users${query ? `?q=${encodeURIComponent(query)}` : ''}`),
+    queryKey: ['admin', 'users', query, role ?? null],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (query) params.set('q', query);
+      if (role) params.set('role', role);
+      const qs = params.toString();
+      return apiClient.get<AdminUser[]>(`/admin/users${qs ? `?${qs}` : ''}`);
+    },
   });
+}
+
+// 역할이 바뀌면 배우 본인 연결·소속사 배정이 끊길 수 있어서 배우/소속사 목록도 같이 새로고침
+function invalidateAdminAccounts(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+  void queryClient.invalidateQueries({ queryKey: ['admin', 'actors'] });
+  void queryClient.invalidateQueries({ queryKey: ['admin', 'agencies'] });
+}
+
+export function useChangeUserRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, role }: { id: string; role: AssignableRole }) => apiClient.patch<AdminUser>(`/admin/users/${id}/role`, { role }),
+    onSuccess: () => invalidateAdminAccounts(queryClient),
+  });
+}
+
+export function useAssignStaffAgency() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, agencyId }: { id: string; agencyId: string | null }) =>
+      apiClient.patch(`/admin/users/${id}/agency`, { agencyId }),
+    onSuccess: () => invalidateAdminAccounts(queryClient),
+  });
+}
+
+// ── 소속사 ──────────────────────────────────────────────
+
+export interface AdminAgency {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+  createdAt: string;
+  actorCount: number;
+  staffCount: number;
+}
+
+export function useAdminAgencies() {
+  return useQuery({
+    queryKey: ['admin', 'agencies'],
+    queryFn: () => apiClient.get<AdminAgency[]>('/admin/agencies'),
+  });
+}
+
+export function useCreateAgency() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) => apiClient.post<AdminAgency>('/admin/agencies', { name }),
+    onSuccess: () => invalidateAdminAccounts(queryClient),
+  });
+}
+
+export function useUpdateAgency() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...input }: { id: string; name?: string; logoUrl?: string | null }) =>
+      apiClient.patch<AdminAgency>(`/admin/agencies/${id}`, input),
+    onSuccess: () => {
+      invalidateAdminAccounts(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ['agencies'] });
+      void queryClient.invalidateQueries({ queryKey: ['actors'] });
+    },
+  });
+}
+
+// ── 배우 ──────────────────────────────────────────────
+
+export interface AdminActor {
+  id: string;
+  legalName: string;
+  officialProfileImageUrl: string | null;
+  chatDisplayName: string;
+  chatProfileImageUrl: string | null;
+  monthlyPriceCents: number;
+  verified: boolean;
+  createdAt: string;
+  agency: { id: string; name: string; logoUrl: string | null } | null;
+  selfUser: { id: string; displayName: string; email: string | null } | null;
+  activeSubscriberCount: number;
+}
+
+export interface AgencyHistoryEntry {
+  id: string;
+  startedAt: string;
+  endedAt: string | null;
+  agency: { id: string; name: string };
+}
+
+export function useAdminActors(query: string) {
+  return useQuery({
+    queryKey: ['admin', 'actors', 'list', query],
+    queryFn: () => apiClient.get<AdminActor[]>(`/admin/actors${query ? `?q=${encodeURIComponent(query)}` : ''}`),
+  });
+}
+
+export function useAdminActor(id: string) {
+  return useQuery({
+    queryKey: ['admin', 'actors', id],
+    queryFn: () => apiClient.get<AdminActor>(`/admin/actors/${id}`),
+  });
+}
+
+export function useActorAgencyHistory(id: string) {
+  return useQuery({
+    queryKey: ['admin', 'actors', id, 'history'],
+    queryFn: () => apiClient.get<AgencyHistoryEntry[]>(`/admin/actors/${id}/agency-history`),
+  });
+}
+
+// 배우 정보가 바뀌면 팬 쪽 목록(['actors'])·운영자 목록 둘 다 새로고침
+function useActorMutation<TInput>(request: (input: TInput) => Promise<unknown>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: request,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'actors'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'agencies'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      void queryClient.invalidateQueries({ queryKey: ['actors'] });
+    },
+  });
+}
+
+export function useCreateActor() {
+  return useActorMutation((input: { legalName: string; chatDisplayName: string; monthlyPriceCents: number; agencyId?: string }) =>
+    apiClient.post<AdminActor>('/admin/actors', input),
+  );
+}
+
+export function useUpdateActor(id: string) {
+  return useActorMutation(
+    (input: { legalName?: string; chatDisplayName?: string; monthlyPriceCents?: number; verified?: boolean }) =>
+      apiClient.patch<AdminActor>(`/admin/actors/${id}`, input),
+  );
+}
+
+export function useUpdateActorImages(id: string) {
+  return useActorMutation((input: { officialProfileImageKey?: string | null; chatProfileImageKey?: string | null }) =>
+    apiClient.patch<AdminActor>(`/admin/actors/${id}/images`, input),
+  );
+}
+
+export function useAssignActorAgency(id: string) {
+  return useActorMutation((agencyId: string | null) => apiClient.patch(`/admin/actors/${id}/agency`, { agencyId }));
+}
+
+export function useLinkActorUser(id: string) {
+  return useActorMutation((userId: string | null) => apiClient.patch<AdminActor>(`/admin/actors/${id}/self-user`, { userId }));
 }
 
 export function useSuspendUser() {

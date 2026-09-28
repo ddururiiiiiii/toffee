@@ -2,23 +2,59 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Role } from '../generated/prisma/enums.js';
 import type { CreateAgencyDto, UpdateAgencyDto } from './dto/upsert-agency.dto.js';
+import { MediaService } from '../storage/media.service.js';
+import { isStorageKey, profileImagePrefix } from '../storage/media-policy.js';
+
+const ADMIN_AGENCY_SELECT = {
+  id: true,
+  name: true,
+  logoUrl: true,
+  createdAt: true,
+  _count: { select: { actors: true, staff: true } },
+} as const;
 
 @Injectable()
 export class AdminAgenciesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly media: MediaService,
+  ) {}
 
-  async create(dto: CreateAgencyDto) {
-    await this.ensureNameAvailable(dto.name);
-    return this.prisma.agency.create({ data: { name: dto.name, logoUrl: dto.logoUrl ?? null } });
+  // 운영자용 목록 — 팬 공개 목록(GET /agencies)과 달리 스태프 수까지
+  async findAll() {
+    const agencies = await this.prisma.agency.findMany({ select: ADMIN_AGENCY_SELECT, orderBy: { name: 'asc' } });
+    return Promise.all(agencies.map((agency) => this.toResponse(agency)));
   }
 
-  async update(id: string, dto: UpdateAgencyDto) {
-    await this.findAgencyOrThrow(id);
-    if (dto.name !== undefined) await this.ensureNameAvailable(dto.name, id);
-    return this.prisma.agency.update({
-      where: { id },
-      data: { name: dto.name, logoUrl: dto.logoUrl },
+  // 로고는 소속사가 생긴 뒤에 올릴 수 있음(업로드 경로에 소속사 id가 들어감) — 만들 땐 외부 주소만
+  async create(dto: CreateAgencyDto) {
+    if (isStorageKey(dto.logoUrl)) throw new BadRequestException('로고는 소속사를 만든 뒤에 올려 주세요.');
+    await this.ensureNameAvailable(dto.name.trim());
+    const agency = await this.prisma.agency.create({
+      data: { name: dto.name.trim(), logoUrl: dto.logoUrl ?? null },
+      select: ADMIN_AGENCY_SELECT,
     });
+    return this.toResponse(agency);
+  }
+
+  // logoUrl: POST /admin/uploads(target AGENCY)로 받은 키, 외부 주소, 또는 null(삭제)
+  async update(id: string, dto: UpdateAgencyDto) {
+    const existing = await this.prisma.agency.findUnique({ where: { id }, select: { logoUrl: true } });
+    if (!existing) throw new NotFoundException('소속사를 찾을 수 없습니다.');
+    const name = dto.name?.trim();
+    if (name !== undefined) await this.ensureNameAvailable(name, id);
+    if (isStorageKey(dto.logoUrl) && dto.logoUrl !== existing.logoUrl) {
+      await this.media.verifyAt(profileImagePrefix('AGENCY', id), 'PHOTO', dto.logoUrl, '이 소속사 로고용으로 올린 파일이 아니에요.');
+    }
+    const agency = await this.prisma.agency.update({ where: { id }, data: { name, logoUrl: dto.logoUrl }, select: ADMIN_AGENCY_SELECT });
+    if (dto.logoUrl !== undefined && dto.logoUrl !== existing.logoUrl && isStorageKey(existing.logoUrl)) {
+      await this.media.deleteQuietly(existing.logoUrl);
+    }
+    return this.toResponse(agency);
+  }
+
+  private async toResponse({ _count, ...agency }: { id: string; name: string; logoUrl: string | null; createdAt: Date; _count: { actors: number; staff: number } }) {
+    return { ...agency, logoUrl: await this.media.resolveImageUrl(agency.logoUrl), actorCount: _count.actors, staffCount: _count.staff };
   }
 
   // 배우 소속 변경(이적/무소속 전환) — Actor.agencyId와 ActorAgencyHistory를 반드시 한 트랜잭션에서

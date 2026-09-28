@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { AdminUsersService } from './admin-users.service.js';
 import { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import { SuspendUserDto } from './dto/suspend-user.dto.js';
+import { ChangeRoleDto } from './dto/change-role.dto.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { Role } from '../generated/prisma/enums.js';
 
@@ -12,7 +13,12 @@ export class AdminUsersController {
 
   @Get()
   findAll(@Query() query: ListUsersQueryDto) {
-    return this.adminUsersService.findAll(query.q);
+    return this.adminUsersService.findAll(query.q, query.role);
+  }
+
+  @Patch(':id/role')
+  changeRole(@Param('id') id: string, @Body() dto: ChangeRoleDto) {
+    return this.adminUsersService.changeRole(id, dto.role);
   }
 
   @Patch(':id/suspend')

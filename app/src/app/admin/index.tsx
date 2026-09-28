@@ -8,10 +8,16 @@ import { useAuth } from '@/lib/auth-context';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
-const MENU: { href: '/admin/reports' | '/admin/banned-words' | '/admin/users'; label: string; description: string }[] = [
-  { href: '/admin/reports', label: '신고 처리', description: '팬이 신고한 메시지를 검토하고 승인/기각해요' },
+const MENU: {
+  href: '/admin/reports' | '/admin/banned-words' | '/admin/users' | '/admin/actors' | '/admin/agencies';
+  label: string;
+  description: string;
+}[] = [
+  { href: '/admin/reports', label: '신고 처리', description: '신고된 메시지를 검토하고 승인/기각해요' },
   { href: '/admin/banned-words', label: '금칙어 관리', description: '팬 답장에서 자동으로 차단할 단어를 관리해요' },
-  { href: '/admin/users', label: '회원 관리', description: '문제 있는 회원을 정지하거나 영구차단해요' },
+  { href: '/admin/users', label: '회원 관리', description: '회원 정지·영구차단, 배우·소속사 직원 계정 지정' },
+  { href: '/admin/actors', label: '배우 관리', description: '배우 등록, 프로필 사진, 소속사 이적, 본인 계정 연결' },
+  { href: '/admin/agencies', label: '소속사 관리', description: '소속사 등록, 이름·로고 변경' },
 ];
 
 export default function AdminHomeScreen() {

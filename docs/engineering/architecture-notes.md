@@ -82,6 +82,31 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
 
+## 운영자 배우·소속사·계정 관리 (2026-09-28)
+
+- API(`@Roles(ADMIN)`): `GET/POST /admin/actors`, `GET/PATCH /admin/actors/:id`(이름·대화방 이름·구독료(사타앙)·`verified`),
+  `PATCH /admin/actors/:id/images { officialProfileImageKey?, chatProfileImageKey? }`(null=삭제), `PATCH
+  /admin/actors/:id/self-user { userId|null }`(ACTOR 역할 계정만, 한 계정은 배우 한 명), `POST /admin/uploads
+  { target: ACTOR|AGENCY, targetId, contentType, sizeBytes }`(사진만), `GET /admin/agencies`(배우·직원 수),
+  `PATCH /admin/users/:id/role { role: USER|ACTOR|AGENCY_STAFF }`, `GET /admin/users?role=`. 소속사 이적은 기존
+  `PATCH /admin/actors/:id/agency`(이력 트랜잭션) 그대로 — 배우 등록 시 `agencyId`를 주면 같은 경로로 이력 생성.
+- **프로필 이미지 저장 방식**: `Actor.officialProfileImageUrl`/`chatProfileImageUrl`/`Agency.logoUrl` 컬럼은 그대로 두고
+  값으로 외부 주소(http…, 시드 데이터) **또는 저장소 키**를 받음(`isStorageKey`). 응답 시 `MediaService.resolveImageUrl`로
+  키 → 서명 URL(1시간 단위로 같은 URL이라 캐시 유지) — 버킷은 계속 비공개, 스키마 변경 없음. 적용 지점:
+  `ActorsService.withImageUrls`(목록·상세·mine), `AgenciesService`, `SubscriptionsService.listMine`, 운영자 응답.
+  새로 이미지 필드를 내려주는 API를 만들면 반드시 여기를 거칠 것(키가 그대로 나가면 앱에서 이미지가 깨짐).
+- 경로: 배우 사진 `actors/{id}/profile/`, 소속사 로고 `agencies/{id}/logo/`(`profileImagePrefix`). 첨부 시
+  `MediaService.verifyAt`(경로·매직 넘버·크기). 사진을 바꾸면 이전 파일은 다른 필드에서 안 쓰일 때만 삭제.
+  `MediaService.createUpload/verifyForAttach`는 `createUploadAt/verifyAt`의 배우 메시지용 래퍼가 됨.
+- 역할 변경 규칙(`AdminUsersService.changeRole`): ADMIN 계정 대상·ADMIN으로 승격 불가, 활성 구독이 있으면 ACTOR/
+  AGENCY_STAFF로 변경 불가, ACTOR에서 바뀌면 `Actor.selfUserId` 해제, AGENCY_STAFF가 아니게 되면 `agencyId` null.
+- 소속사 로고는 소속사 생성 후에만(업로드 경로에 id 필요) — 생성 시 저장소 키를 주면 400.
+- 앱: `admin/actors/index|new|[id].tsx`, `admin/agencies.tsx`, `admin/users.tsx`(역할·직원 소속사), 공용 조각
+  `components/admin-ui.tsx`, 업로드 `uploadProfileImage`(`lib/upload-media.ts`).
+- 검증: 실서버(등록·없는 소속사로 등록 시 롤백, 이력, 업로드→서명 URL 200, 다른 경로 키 거절, 사진 공유 시 삭제 안 함,
+  역할 변경 제한 3종, 계정 연결 제한 2종, 로고 업로드/거절, 이적 이력) + 브라우저(등록→상세, 사진 올리기, 이적 확인창,
+  구독 중인 팬 역할 변경 거절 표시). 단위 테스트 2개 추가(24개).
+
 ## 신고·차단 (2026-09-28, 잠정 정책)
 
 - 스키마(마이그레이션 `20260928080000_add_report_category_and_channel_blocks`): `ReportCategory` enum +
@@ -224,7 +249,7 @@ S3 호환 오브젝트 스토리지(운영: Cloudflare R2 예정) + **비공개 
   지우는 cron 필요(버킷 수명주기 규칙은 "첨부된 파일"과 구분 못 해서 부적합).
 - **웹 업로드용 버킷 CORS**: Expo web에서 브라우저가 저장소로 직접 PUT하려면 버킷에 CORS
   허용 필요(R2 설정) — 운영 보류 목록에 추가. 네이티브 앱은 CORS 무관.
-- 배우 프로필 사진·소속사 로고 업로드는 운영자 관리 화면 만들 때 같은 구조로 purpose 추가.
+- 배우 프로필 사진·소속사 로고 업로드는 운영자 전용 `POST /admin/uploads`로 분리(2026-09-28, 아래 "운영자 배우·소속사·계정 관리").
 - 게시판/CP방이 생기면 `UPLOAD_PURPOSES`에 추가.
 - 대화기록 1년 보존 cron이 생기면 메시지 파일도 같이 삭제.
 

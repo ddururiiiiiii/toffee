@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { fileTypeFromBuffer } from 'file-type';
 import { StorageService } from './storage.service.js';
-import { extensionFor, keyPrefix, MEDIA_RULES, type UploadableMediaType, type UploadPurpose } from './media-policy.js';
+import { extensionFor, isStorageKey, keyPrefix, MEDIA_RULES, type UploadableMediaType, type UploadPurpose } from './media-policy.js';
 
 // file-type이 형식을 판별하는 데 필요한 앞부분 크기(라이브러리 권장값)
 const SNIFF_BYTES = 4100;
@@ -21,7 +21,15 @@ interface HasMedia {
 export class MediaService {
   constructor(private readonly storage: StorageService) {}
 
-  async createUpload(actorId: string, purpose: UploadPurpose, mediaType: UploadableMediaType, contentType: string, sizeBytes: number) {
+  createUpload(actorId: string, purpose: UploadPurpose, mediaType: UploadableMediaType, contentType: string, sizeBytes: number) {
+    return this.createUploadAt(keyPrefix(actorId, purpose), mediaType, contentType, sizeBytes);
+  }
+
+  verifyForAttach(actorId: string, purpose: UploadPurpose, mediaType: UploadableMediaType, objectKey: string): Promise<void> {
+    return this.verifyAt(keyPrefix(actorId, purpose), mediaType, objectKey, '이 배우가 이 용도로 올린 파일이 아니에요.');
+  }
+
+  async createUploadAt(prefix: string, mediaType: UploadableMediaType, contentType: string, sizeBytes: number) {
     const rule = MEDIA_RULES[mediaType];
     if (!rule.declared.has(contentType)) {
       throw new BadRequestException(`${mediaType}로 올릴 수 없는 파일 형식이에요: ${contentType}`);
@@ -29,14 +37,14 @@ export class MediaService {
     if (sizeBytes > rule.maxBytes) {
       throw new BadRequestException(`파일이 너무 커요(최대 ${Math.floor(rule.maxBytes / 1024 / 1024)}MB).`);
     }
-    const objectKey = `${keyPrefix(actorId, purpose)}${randomUUID()}.${extensionFor(contentType)}`;
+    const objectKey = `${prefix}${randomUUID()}.${extensionFor(contentType)}`;
     const { url, expiresInSeconds } = await this.storage.createUploadUrl(objectKey, contentType, sizeBytes);
     return { objectKey, uploadUrl: url, method: 'PUT' as const, headers: { 'Content-Type': contentType }, expiresInSeconds };
   }
 
-  async verifyForAttach(actorId: string, purpose: UploadPurpose, mediaType: UploadableMediaType, objectKey: string): Promise<void> {
-    if (!objectKey.startsWith(keyPrefix(actorId, purpose)) || objectKey.includes('..')) {
-      throw new BadRequestException('이 배우가 이 용도로 올린 파일이 아니에요.');
+  async verifyAt(prefix: string, mediaType: UploadableMediaType, objectKey: string, wrongPlaceMessage: string): Promise<void> {
+    if (!objectKey.startsWith(prefix) || objectKey.includes('..')) {
+      throw new BadRequestException(wrongPlaceMessage);
     }
     const head = await this.storage.head(objectKey);
     if (!head) throw new BadRequestException('파일이 아직 업로드되지 않았어요.');
@@ -65,6 +73,16 @@ export class MediaService {
 
   withReadUrls<T extends HasMedia>(items: T[]): Promise<Omit<T, 'mediaKey'>[]> {
     return Promise.all(items.map((item) => this.withReadUrl(item)));
+  }
+
+  /**
+   * 프로필 이미지 필드 값 → 앱이 바로 쓸 수 있는 주소. 외부 주소는 그대로, 저장소 키는 임시 서명 URL
+   * (1시간 단위로 같은 URL이라 목록을 다시 불러도 이미지 캐시가 유지됨). 저장소 미설정이면 null.
+   */
+  async resolveImageUrl(value: string | null): Promise<string | null> {
+    if (!isStorageKey(value)) return value;
+    if (!this.storage.isConfigured) return null;
+    return this.storage.createReadUrl(value);
   }
 
   /** 삭제 실패는 호출한 쪽 흐름을 막지 않음(고아 파일은 나중에 정리) */

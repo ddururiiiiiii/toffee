@@ -3,16 +3,18 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { IapVerificationService } from './iap-verification.service.js';
 import { ParentalConsentStatus } from '../generated/prisma/enums.js';
 import type { VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
+import { MediaService } from '../storage/media.service.js';
 
 @Injectable()
 export class SubscriptionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly iapVerificationService: IapVerificationService,
+    private readonly media: MediaService,
   ) {}
 
   async listMine(userId: string) {
-    return this.prisma.subscription.findMany({
+    const subscriptions = await this.prisma.subscription.findMany({
       where: { userId, cancelledAt: null },
       include: {
         actor: {
@@ -21,6 +23,12 @@ export class SubscriptionsService {
       },
       orderBy: { startedAt: 'desc' },
     });
+    return Promise.all(
+      subscriptions.map(async (subscription) => ({
+        ...subscription,
+        actor: { ...subscription.actor, chatProfileImageUrl: await this.media.resolveImageUrl(subscription.actor.chatProfileImageUrl) },
+      })),
+    );
   }
 
   // 결제(IAP)는 계약 성사 후에 붙임 — 지금은 결제 없이 구독 레코드만 만드는 샌드박스 플로우
