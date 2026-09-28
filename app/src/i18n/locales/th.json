@@ -172,7 +172,14 @@
     "deleteFailed": "ลบไม่สำเร็จ โปรดลองอีกครั้ง",
     "hiddenByAdmin": "ข้อความนี้ถูกซ่อนตามนโยบาย (แฟนมองไม่เห็น)",
     "waitingReplies": "กำลังรอข้อความตอบกลับจากแฟนๆ…",
-    "newReplies": "ข้อความใหม่ {{count}} รายการ ↓"
+    "newReplies": "ข้อความใหม่ {{count}} รายการ ↓",
+    "uploading": "กำลังอัปโหลด {{percent}}%",
+    "cancelUpload": "ยกเลิกการอัปโหลด",
+    "uploadCancelled": "ยกเลิกการอัปโหลดแล้ว",
+    "profileButton": "โปรไฟล์ของฉัน",
+    "stopRecordingShort": "หยุดบันทึก",
+    "cancelQuote": "ยกเลิกการอ้างอิง",
+    "emptyTitle": "ส่งข้อความแรกของคุณ"
   },
   "media": {
     "save": "บันทึก",

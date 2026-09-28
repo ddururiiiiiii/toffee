@@ -172,7 +172,14 @@
     "deleteFailed": "削除できませんでした。もう一度お試しください。",
     "hiddenByAdmin": "運営ポリシーにより非表示になったメッセージです（ファンには見えません）。",
     "waitingReplies": "ファンからの返信を待っています…",
-    "newReplies": "新しい返信 {{count}}件 ↓"
+    "newReplies": "新しい返信 {{count}}件 ↓",
+    "uploading": "アップロード中 {{percent}}%",
+    "cancelUpload": "アップロードを中止",
+    "uploadCancelled": "アップロードを中止しました。",
+    "profileButton": "マイプロフィール",
+    "stopRecordingShort": "録音を終了",
+    "cancelQuote": "引用を取り消す",
+    "emptyTitle": "最初のメッセージを送りましょう"
   },
   "media": {
     "save": "保存",

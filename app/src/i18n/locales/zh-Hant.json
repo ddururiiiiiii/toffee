@@ -172,7 +172,14 @@
     "deleteFailed": "刪除失敗，請重試。",
     "hiddenByAdmin": "依營運政策已隱藏（粉絲看不到）。",
     "waitingReplies": "正在等待粉絲回覆…",
-    "newReplies": "{{count}} 則新回覆 ↓"
+    "newReplies": "{{count}} 則新回覆 ↓",
+    "uploading": "上傳中 {{percent}}%",
+    "cancelUpload": "取消上傳",
+    "uploadCancelled": "已取消上傳。",
+    "profileButton": "我的資料",
+    "stopRecordingShort": "結束錄音",
+    "cancelQuote": "取消引用",
+    "emptyTitle": "傳送第一則訊息吧"
   },
   "media": {
     "save": "儲存",

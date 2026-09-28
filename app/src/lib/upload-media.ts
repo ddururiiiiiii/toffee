@@ -43,24 +43,59 @@ function resolveContentType(explicit: string | undefined, blob: Blob, uri: strin
   return type.split(';')[0].trim();
 }
 
-async function putToStorage(path: string, body: Record<string, unknown>, uri: string, explicitType?: string): Promise<string> {
+export interface UploadOptions {
+  /** 0~1 — 큰 영상도 얼마나 올라갔는지 보이게 */
+  onProgress?: (ratio: number) => void;
+  /** 올리는 중 취소 */
+  signal?: AbortSignal;
+}
+
+export class UploadCancelledError extends Error {}
+
+// 저장소 PUT — fetch는 올리는 진행률을 못 알려줘서 XMLHttpRequest로(웹·네이티브 둘 다 upload.onprogress 지원)
+function putWithProgress(ticket: UploadTicket, file: Blob, options: UploadOptions): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(ticket.method, ticket.uploadUrl);
+    Object.entries(ticket.headers).forEach(([key, value]) => xhr.setRequestHeader(key, value));
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) options.onProgress?.(event.loaded / event.total);
+    };
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new UploadError(`upload failed (${xhr.status})`)));
+    xhr.onerror = () => reject(new UploadError('upload failed (network)'));
+    xhr.onabort = () => reject(new UploadCancelledError('upload cancelled'));
+    if (options.signal?.aborted) return xhr.abort();
+    options.signal?.addEventListener('abort', () => xhr.abort());
+    xhr.send(file);
+  });
+}
+
+async function putToStorage(
+  path: string,
+  body: Record<string, unknown>,
+  uri: string,
+  explicitType?: string,
+  options: UploadOptions = {},
+): Promise<string> {
   const file = await (await fetch(uri)).blob();
   const contentType = resolveContentType(explicitType, file, uri);
   const ticket = await apiClient.post<UploadTicket>(path, { ...body, contentType, sizeBytes: file.size });
-  const res = await fetch(ticket.uploadUrl, { method: ticket.method, headers: ticket.headers, body: file });
-  if (!res.ok) throw new UploadError(`upload failed (${res.status})`);
+  if (options.signal?.aborted) throw new UploadCancelledError('upload cancelled');
+  await putWithProgress(ticket, file, options);
   return ticket.objectKey;
 }
 
 export function uploadMedia(
   actorId: string,
   params: { purpose: UploadPurpose; mediaType: UploadMediaType; uri: string; contentType?: string },
+  options?: UploadOptions,
 ): Promise<string> {
   return putToStorage(
     `/actors/${actorId}/uploads`,
     { purpose: params.purpose, mediaType: params.mediaType },
     params.uri,
     params.contentType,
+    options,
   );
 }
 

@@ -172,7 +172,14 @@
     "deleteFailed": "삭제하지 못했어요. 다시 시도해 주세요.",
     "hiddenByAdmin": "운영 정책에 따라 가려진 메시지예요(팬에게 보이지 않아요).",
     "waitingReplies": "팬 답장을 기다리는 중…",
-    "newReplies": "새 답장 {{count}}개 ↓"
+    "newReplies": "새 답장 {{count}}개 ↓",
+    "uploading": "올리는 중 {{percent}}%",
+    "cancelUpload": "업로드 취소",
+    "uploadCancelled": "업로드를 취소했어요.",
+    "profileButton": "내 프로필",
+    "stopRecordingShort": "녹음 끝내기",
+    "cancelQuote": "인용 취소",
+    "emptyTitle": "첫 메시지를 보내 보세요"
   },
   "media": {
     "save": "저장",

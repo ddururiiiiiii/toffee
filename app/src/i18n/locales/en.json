@@ -172,7 +172,14 @@
     "deleteFailed": "Couldn't delete. Please try again.",
     "hiddenByAdmin": "Hidden under our policy (not visible to fans).",
     "waitingReplies": "Waiting for fan replies…",
-    "newReplies": "{{count}} new ↓"
+    "newReplies": "{{count}} new ↓",
+    "uploading": "Uploading {{percent}}%",
+    "cancelUpload": "Cancel upload",
+    "uploadCancelled": "Upload cancelled.",
+    "profileButton": "My profile",
+    "stopRecordingShort": "Stop recording",
+    "cancelQuote": "Cancel quote",
+    "emptyTitle": "Send your first message"
   },
   "media": {
     "save": "Save",
