@@ -268,6 +268,14 @@ export const ERROR_MESSAGES = {
     'zh-Hans': '你未订阅该演员。',
     'zh-Hant': '你未訂閱該演員。',
   },
+  ONBOARDING_REQUIRED: {
+    ko: '가입 절차(약관 동의·생년월일)를 먼저 마쳐 주세요.',
+    en: 'Please finish signing up (terms and date of birth) first.',
+    th: 'กรุณาทำขั้นตอนสมัครสมาชิกให้เสร็จก่อน (ยอมรับข้อกำหนดและกรอกวันเกิด)',
+    ja: '先に登録手続き（規約への同意・生年月日の入力）を完了してください。',
+    'zh-Hans': '请先完成注册流程（同意条款并填写出生日期）。',
+    'zh-Hant': '請先完成註冊流程（同意條款並填寫出生日期）。',
+  },
   CONSENT_REQUIRED_TO_SUBSCRIBE: {
     ko: '법정대리인 동의가 완료된 후 구독할 수 있어요.',
     en: 'You can subscribe once your parent or guardian has given consent.',

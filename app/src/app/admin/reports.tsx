@@ -50,8 +50,8 @@ function ReportRow({ report }: { report: PendingReport }) {
           onPress={() => resolve.mutate(report.id)}
           style={[styles.actionButton, { backgroundColor: theme.tint }]}>
           <ThemedText type="small" style={styles.actionButtonText}>
-            {/* 승인하면 메시지를 가림 — 스타 메시지는 팬 화면에서 사라지고, 팬 답장은 인용 부분이 가려짐 */}
-            {report.message.senderType === 'ARTIST' ? '승인(팬 화면에서 가리기)' : '승인(처리함)'}
+            {/* 승인하면 메시지를 가림 — 스타 메시지는 팬 화면에서 사라지고, 팬 답장은 스타·소속사 답장 목록에서 빠지고 인용 부분이 가려짐 */}
+            {report.message.senderType === 'ARTIST' ? '승인(팬 화면에서 가리기)' : '승인(스타·소속사 화면에서 가리기)'}
           </ThemedText>
         </Pressable>
         <Pressable

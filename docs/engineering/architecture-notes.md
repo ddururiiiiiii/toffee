@@ -935,3 +935,14 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   no-referrer`(URL에 토큰).
 - `POST /parental-consent/confirm`(form: token, lang): 실제 동의. 이미 동의했으면 시각을 덮어쓰지 않음.
 - 이유: 예전엔 GET 자체가 동의 처리라 Gmail/Outlook 링크 보안 검사(미리 열기)만으로 부모가 누르지 않아도 동의될 수 있었음.
+
+## 2026-09-28 점검 후 서버 보안 수정
+
+- `SandboxSubscribeGuard`: 결제 없는 `POST /actors/:id/subscribe`는 `ENABLE_SANDBOX_SUBSCRIBE=true`일 때만(기본 404).
+  예전엔 항상 열려 있어 운영에서도 API로 무료 구독 가능했음.
+- 소셜 로그인 계정 합치기: `ExternalIdentity.emailVerified`(구글 `email_verified`, 애플 `email_verified`, 카카오
+  `is_email_valid && is_email_verified`, 네이버·라인은 보증 없음 → false). 확인된 이메일만 기존 계정 합치기·`User.email` 저장.
+- `ensureCanSubscribe`: 약관 버전·생년월일 필수(`ONBOARDING_REQUIRED`) + 부모 동의 대기 차단 — 앱 온보딩을 API로 우회 못 하게.
+- `PushService.sendToUsers`: 탈퇴·영구차단·정지(기간 중) 계정 기기 제외.
+- 신고 승인(RESOLVED)된 팬 답장은 `listReplies`·`replyCount`에서 제외(스타·소속사 화면에서 가림).
+- 네이버·카카오 토큰 오류도 `SOCIAL_TOKEN_INVALID`(번역)로.

@@ -291,6 +291,8 @@ export class MessagesService {
         actorId,
         senderType: MessageSenderType.FAN,
         fanUser: notBlockedIn(actorId),
+        // 신고가 승인된(운영자가 문제 있다고 판단한) 답장은 스타·소속사 화면에서 뺌 — 예전엔 신고 처리만 되고 그대로 보였음
+        reports: { none: { status: ReportStatus.RESOLVED } },
         ...(messageId ? { replyToMessageId: messageId } : {}),
       },
       include: { fanUser: { select: { id: true, nickname: true, deletedAt: true } } },
@@ -316,7 +318,17 @@ export class MessagesService {
       include: {
         ...quoteInclude(actorId),
         // 이 채널에서 차단된 팬의 답장은 세지 않음
-        _count: { select: { replies: { where: { senderType: MessageSenderType.FAN, fanUser: notBlockedIn(actorId) } } } },
+        _count: {
+          select: {
+            replies: {
+              where: {
+                senderType: MessageSenderType.FAN,
+                fanUser: notBlockedIn(actorId),
+                reports: { none: { status: ReportStatus.RESOLVED } },
+              },
+            },
+          },
+        },
       },
     });
     // 미리보기 줄은 최근 메시지(삭제 안 된 것) 몇 개에만 — 답장이 아직 없어도 빈 배열로 줘서 앱이 "기다리는 중" 줄을 그림.

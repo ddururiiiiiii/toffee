@@ -13,6 +13,8 @@ import { appError } from '../common/i18n/app-error.js';
 interface ExternalIdentity {
   providerId: string;
   email: string | null;
+  /** 제공자가 "이 이메일은 본인 확인된 것"이라고 보증했는지 — 확인된 이메일만 계정 합치기·저장에 씀 */
+  emailVerified: boolean;
   name?: string;
   profileImageUrl?: string;
 }
@@ -60,6 +62,7 @@ export class AuthService {
     return {
       providerId: payload.sub,
       email: payload.email ?? null,
+      emailVerified: payload.email_verified === true,
       name: payload.name,
       profileImageUrl: payload.picture,
     };
@@ -70,20 +73,24 @@ export class AuthService {
       audience: this.configService.getOrThrow<string>('APPLE_CLIENT_ID'),
     });
     if (!payload?.sub) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'Apple' }));
-    return { providerId: payload.sub, email: payload.email ?? null };
+    // 애플은 email_verified를 boolean 또는 "true" 문자열로 줌
+    const verified = (payload as { email_verified?: boolean | string }).email_verified;
+    return { providerId: payload.sub, email: payload.email ?? null, emailVerified: verified === true || verified === 'true' };
   }
 
   async verifyNaverToken(accessToken: string): Promise<ExternalIdentity> {
     const body = await this.fetchJson<{
       resultcode: string;
       response?: { id: string; email?: string; name?: string; nickname?: string; profile_image?: string };
-    }>('https://openapi.naver.com/v1/nid/me', accessToken, '유효하지 않은 네이버 토큰입니다.');
+    }>('https://openapi.naver.com/v1/nid/me', accessToken, 'Naver');
     if (body.resultcode !== '00' || !body.response?.id) {
       throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'Naver' }));
     }
     return {
       providerId: body.response.id,
       email: body.response.email ?? null,
+      // 네이버는 이메일 확인 여부를 따로 주지 않아서 확인 안 된 것으로 취급(계정 합치기에 안 씀)
+      emailVerified: false,
       name: body.response.nickname ?? body.response.name,
       profileImageUrl: body.response.profile_image,
     };
@@ -92,12 +99,18 @@ export class AuthService {
   async verifyKakaoToken(accessToken: string): Promise<ExternalIdentity> {
     const body = await this.fetchJson<{
       id?: number;
-      kakao_account?: { email?: string; profile?: { nickname?: string; profile_image_url?: string } };
-    }>('https://kapi.kakao.com/v2/user/me', accessToken, '유효하지 않은 카카오 토큰입니다.');
+      kakao_account?: {
+        email?: string;
+        is_email_valid?: boolean;
+        is_email_verified?: boolean;
+        profile?: { nickname?: string; profile_image_url?: string };
+      };
+    }>('https://kapi.kakao.com/v2/user/me', accessToken, 'Kakao');
     if (body.id === undefined) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'Kakao' }));
     return {
       providerId: String(body.id),
       email: body.kakao_account?.email ?? null,
+      emailVerified: body.kakao_account?.is_email_valid === true && body.kakao_account?.is_email_verified === true,
       name: body.kakao_account?.profile?.nickname,
       profileImageUrl: body.kakao_account?.profile?.profile_image_url,
     };
@@ -126,12 +139,14 @@ export class AuthService {
     return {
       providerId: body.sub,
       email: body.email ?? null,
+      // 라인도 이메일 확인 여부를 보증하지 않음
+      emailVerified: false,
       name: body.name,
       profileImageUrl: body.picture,
     };
   }
 
-  private async fetchJson<T>(url: string, accessToken: string, invalidMessage: string): Promise<T> {
+  private async fetchJson<T>(url: string, accessToken: string, provider: string): Promise<T> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     let res: Response;
@@ -143,7 +158,7 @@ export class AuthService {
     } finally {
       clearTimeout(timeout);
     }
-    if (!res.ok) throw new UnauthorizedException(invalidMessage);
+    if (!res.ok) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider }));
     return (await res.json()) as T;
   }
 
@@ -161,10 +176,11 @@ export class AuthService {
       return { id: existingIdentity.user.id, role: existingIdentity.user.role };
     }
 
-    // 같은 이메일로 이미 가입된 계정이 있으면(다른 제공자로 먼저 가입) 그 계정에 합침
-    const existingUserByEmail = identity.email
-      ? await this.prisma.user.findUnique({ where: { email: identity.email } })
-      : null;
+    // 같은 이메일로 이미 가입된 계정이 있으면(다른 제공자로 먼저 가입) 그 계정에 합침 — 단 제공자가 본인 확인한
+    // 이메일일 때만. 확인 안 된 이메일로 합치면 남의 이메일을 적어 둔 소셜 계정으로 그 사람 계정에 들어갈 수 있음
+    // (2026-09-28 점검). 같은 이유로 확인 안 된 이메일은 저장도 안 함(나중에 진짜 주인이 로그인하면 합쳐질 수 있어서).
+    const verifiedEmail = identity.emailVerified ? identity.email : null;
+    const existingUserByEmail = verifiedEmail ? await this.prisma.user.findUnique({ where: { email: verifiedEmail } }) : null;
 
     // 약관 동의는 로그인 방식과 상관없이 앱 온보딩 첫 단계에서 받고 기록함(POST /me/terms-agreement)
 
@@ -172,7 +188,7 @@ export class AuthService {
       existingUserByEmail ??
       (await this.prisma.user.create({
         data: {
-          email: identity.email ?? undefined,
+          email: verifiedEmail ?? undefined,
           displayName: identity.name ?? this.generateFallbackName(),
         },
       }));

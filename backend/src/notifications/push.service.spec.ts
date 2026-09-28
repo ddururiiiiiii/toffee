@@ -61,3 +61,16 @@ describe('PushService', () => {
     await expect(service.sendToUsers(['u1'], () => ({ title: 't', body: 'b' }))).resolves.toBeUndefined();
   });
 });
+
+describe('PushService 받는 사람 거르기', () => {
+  it('정지(기간 중)·영구차단·탈퇴한 계정의 기기는 조회에서 제외', async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    const prisma = { pushDevice: { findMany, deleteMany: vi.fn() } } as unknown as PrismaService;
+    const service = new PushService({ get: () => '{}' } as unknown as ConfigService, prisma);
+    service.onModuleInit();
+    await service.sendToUsers(['u1'], () => ({ title: 't', body: 'b' }));
+    const where = findMany.mock.calls[0][0].where;
+    expect(where.user.deletedAt).toBeNull();
+    expect(where.user.OR).toEqual([{ status: 'ACTIVE' }, { status: 'SUSPENDED', suspendedUntil: { lte: expect.any(Date) } }]);
+  });
+});

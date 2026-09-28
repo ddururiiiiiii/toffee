@@ -5,6 +5,7 @@ import { ParentalConsentStatus, SubscriptionEventType } from '../generated/prism
 import type { VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
 import { MediaService } from '../storage/media.service.js';
 import { appError } from '../common/i18n/app-error.js';
+import { CURRENT_TERMS_VERSION } from '../common/legal/terms.js';
 
 @Injectable()
 export class SubscriptionsService {
@@ -124,9 +125,16 @@ export class SubscriptionsService {
     return this.prisma.subscriptionEvent.create({ data: { userId, actorId, type, priceCents } });
   }
 
-  // 미성년자(국가별 기준)인데 법정대리인 동의를 아직 못 받은 계정은 구독(결제) 자체를 막음
+  // 구독(결제) 전 가입 절차를 서버에서도 강제 — 예전엔 앱 화면에서만 막아서, API를 직접 부르면 약관 동의·생년월일을
+  // 건너뛰고(= 미성년자 부모 동의 우회) 구독할 수 있었음(2026-09-28 점검). 미성년자(국가별 기준)인데 법정대리인 동의를
+  // 아직 못 받은 계정도 막음.
   private async ensureCanSubscribe(userId: string): Promise<void> {
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { termsVersion: true, birthDate: true, parentalConsentStatus: true },
+    });
+    if (user.termsVersion !== CURRENT_TERMS_VERSION) throw new ForbiddenException(appError('ONBOARDING_REQUIRED'));
+    if (!user.birthDate) throw new ForbiddenException(appError('ONBOARDING_REQUIRED'));
     if (user.parentalConsentStatus === ParentalConsentStatus.PENDING) {
       throw new ForbiddenException(appError('CONSENT_REQUIRED_TO_SUBSCRIBE'));
     }

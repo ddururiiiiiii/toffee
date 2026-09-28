@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { cert, getApps, initializeApp, type App, type ServiceAccount } from 'firebase-admin/app';
 import { getMessaging, type Message } from 'firebase-admin/messaging';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { Role } from '../generated/prisma/enums.js';
+import { Role, UserStatus } from '../generated/prisma/enums.js';
 
 export interface PushRecipient {
   locale: string | null;
@@ -78,8 +78,17 @@ export class PushService implements OnModuleInit {
    */
   async sendToUsers(userIds: string[], compose: ComposePush, data?: Record<string, string>): Promise<void> {
     if (!this.app || userIds.length === 0) return;
+    // 정지·영구차단·탈퇴한 계정엔 보내지 않음(예전엔 구독만 보고 보내서 제재 중인 팬도 알림을 계속 받았음, 2026-09-28 점검).
+    // 정지는 기간이 지났으면 다시 받음(로그인 판단과 같은 기준)
+    const now = new Date();
     const devices = await this.prisma.pushDevice.findMany({
-      where: { userId: { in: userIds } },
+      where: {
+        userId: { in: userIds },
+        user: {
+          deletedAt: null,
+          OR: [{ status: UserStatus.ACTIVE }, { status: UserStatus.SUSPENDED, suspendedUntil: { lte: now } }],
+        },
+      },
       select: { token: true, user: { select: { locale: true, displayName: true, nickname: true } } },
     });
     if (devices.length === 0) return;
