@@ -17,10 +17,12 @@ interface Props {
   waveform?: number[] | null;
   /** 말풍선 배경이 진한 색(내가 보낸 쪽)이면 'light' — 막대·글자를 흰색 계열로 */
   tone: 'light' | 'dark';
+  /** 있으면 끝에 ⤓(저장) 버튼 — 음성은 크게 보기 화면이 없어서 말풍선에서 바로 저장 */
+  onSave?: () => void;
 }
 
 /** 카톡식 음성 메시지 — ▶ 버튼 + 음파 막대(재생된 부분은 진하게) + 길이 */
-export function VoiceMessage({ id, url, durationMs, waveform, tone }: Props) {
+export function VoiceMessage({ id, url, durationMs, waveform, tone, onSave }: Props) {
   // 목록에 음성이 많아도 누르기 전엔 파일을 받지 않도록 빈 플레이어로 시작해서 처음 재생할 때 연결
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
@@ -69,38 +71,63 @@ export function VoiceMessage({ id, url, durationMs, waveform, tone }: Props) {
   const weak = tone === 'light' ? 'rgba(255,255,255,0.45)' : 'rgba(58,61,74,0.3)';
   const loading = status.playing && !status.isLoaded;
 
+  // 재생 영역과 저장 버튼은 형제로 둠 — 버튼 안에 버튼을 넣으면 웹에서 <button> 중첩 오류
   return (
-    <Pressable onPress={toggle} style={styles.row} accessibilityRole="button" disabled={!url}>
-      <View style={[styles.playButton, { borderColor: strong }]}>
-        {loading ? (
-          <ActivityIndicator size="small" color={strong} />
-        ) : (
-          <ThemedText style={[styles.playIcon, { color: strong }]}>{status.playing ? '❚❚' : '▶'}</ThemedText>
-        )}
-      </View>
-      <View style={styles.bars}>
-        {bars.map((level, index) => (
-          <View
-            key={index}
-            style={[
-              styles.bar,
-              { height: 4 + level * 20, backgroundColor: index / BAR_COUNT < progress ? strong : weak },
-            ]}
-          />
-        ))}
-      </View>
-      <ThemedText type="small" style={[styles.time, { color: strong }]}>
-        {formatDuration(status.playing || status.currentTime > 0 ? total - status.currentTime : total)}
-      </ThemedText>
-    </Pressable>
+    <View style={styles.container}>
+      <Pressable onPress={toggle} style={styles.row} accessibilityRole="button" disabled={!url}>
+        <View style={[styles.playButton, { borderColor: strong }]}>
+          {loading ? (
+            <ActivityIndicator size="small" color={strong} />
+          ) : (
+            <ThemedText style={[styles.playIcon, { color: strong }]}>{status.playing ? '❚❚' : '▶'}</ThemedText>
+          )}
+        </View>
+        <View style={styles.bars}>
+          {bars.map((level, index) => (
+            <View
+              key={index}
+              style={[
+                styles.bar,
+                {
+                  height: 4 + level * 20,
+                  backgroundColor: index / BAR_COUNT < progress ? strong : weak,
+                },
+              ]}
+            />
+          ))}
+        </View>
+        <ThemedText type="small" style={[styles.time, { color: strong }]}>
+          {formatDuration(status.playing || status.currentTime > 0 ? total - status.currentTime : total)}
+        </ThemedText>
+      </Pressable>
+      {onSave && url ? (
+        <Pressable onPress={onSave} hitSlop={10} accessibilityRole="button" accessibilityLabel="save">
+          <ThemedText style={[styles.saveIcon, { color: strong }]}>⤓</ThemedText>
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 2 },
-  playButton: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  container: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 2,
+  },
+  playButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   playIcon: { fontSize: 11, lineHeight: 14 },
   bars: { flexDirection: 'row', alignItems: 'center', gap: 2, height: 26 },
   bar: { width: 3, borderRadius: 2 },
   time: { minWidth: 34, fontVariant: ['tabular-nums'] },
+  saveIcon: { fontSize: 18, paddingHorizontal: 2 },
 });

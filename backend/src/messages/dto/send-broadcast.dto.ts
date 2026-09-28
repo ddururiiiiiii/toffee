@@ -31,7 +31,7 @@ export class SendBroadcastDto {
   @IsNotEmpty()
   mediaKey?: string;
 
-  // 음성 메시지 부가 정보(선택) — 음성일 때만 저장, 그 외 형식이면 무시
+  // 부가 정보(선택) — 길이는 음성·영상, 음파는 음성일 때만 저장, 그 외엔 무시
   @IsOptional()
   @IsInt()
   @Min(0)

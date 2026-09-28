@@ -138,5 +138,13 @@
       "AUDIO": "🎧 Voice message",
       "VIDEO": "🎬 Video"
     }
+  },
+  "media": {
+    "save": "Save",
+    "saved": "Saved",
+    "saveFailed": "Couldn't save",
+    "permissionDenied": "Permission is needed to save to your photos. Please allow it in Settings.",
+    "close": "Close",
+    "open": "Open"
   }
 }

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,13 +14,15 @@ import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { MediaTile } from '@/components/media-tile';
 import { VoiceMessage } from '@/components/voice-message';
+import { saveMedia } from '@/lib/save-media';
 import { useActor } from '@/hooks/use-actors';
 import { useActorMessages, useSendReply, type ChatMessage } from '@/hooks/use-messages';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({ message, onSaveVoice }: { message: ChatMessage; onSaveVoice: () => void }) {
   const theme = useTheme();
   const isArtist = message.senderType === 'ARTIST';
   const bubbleColor = isArtist ? theme.backgroundElement : theme.tint;
@@ -30,8 +31,8 @@ function MessageBubble({ message }: { message: ChatMessage }) {
   return (
     <ThemedView style={[styles.bubbleRow, isArtist ? styles.bubbleRowLeft : styles.bubbleRowRight]}>
       <ThemedView style={[styles.bubble, { backgroundColor: bubbleColor }]}>
-        {message.mediaType === 'PHOTO' && message.mediaUrl ? (
-          <Image source={{ uri: message.mediaUrl }} style={styles.bubbleImage} />
+        {message.mediaType === 'PHOTO' || message.mediaType === 'VIDEO' ? (
+          <MediaTile id={message.id} url={message.mediaUrl} mediaType={message.mediaType} durationMs={message.mediaDurationMs} />
         ) : message.mediaType === 'AUDIO' ? (
           <VoiceMessage
             id={message.id}
@@ -39,6 +40,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             durationMs={message.mediaDurationMs}
             waveform={message.waveform}
             tone={isArtist ? 'dark' : 'light'}
+            onSave={onSaveVoice}
           />
         ) : null}
         {message.body && <ThemedText style={{ color: textColor }}>{message.body}</ThemedText>}
@@ -56,11 +58,20 @@ export default function ChatRoomScreen() {
   const { data: messages, isLoading, isError } = useActorMessages(actorId);
   const sendReply = useSendReply(actorId);
   const [draft, setDraft] = useState('');
+  const [notice, setNotice] = useState<string | null>(null);
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
   useEffect(() => {
     if (actor) navigation.setOptions({ title: actor.chatDisplayName });
   }, [actor, navigation]);
+
+  const saveVoice = (message: ChatMessage) => {
+    if (!message.mediaUrl) return;
+    setNotice(null);
+    saveMedia({ id: message.id, url: message.mediaUrl, mediaType: 'AUDIO' })
+      .then((result) => setNotice(result === 'saved' ? t('media.saved') : null))
+      .catch(() => setNotice(t('media.saveFailed')));
+  };
 
   const handleSend = () => {
     const body = draft.trim();
@@ -88,8 +99,14 @@ export default function ChatRoomScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
             onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
-            renderItem={({ item }) => <MessageBubble message={item} />}
+            renderItem={({ item }) => <MessageBubble message={item} onSaveVoice={() => saveVoice(item)} />}
           />
+        )}
+
+        {notice && (
+          <ThemedText type="small" themeColor="textSecondary" style={styles.notice} onPress={() => setNotice(null)}>
+            {notice}
+          </ThemedText>
         )}
 
         <ThemedView style={[styles.inputRow, { borderTopColor: theme.backgroundElement }]}>
@@ -121,7 +138,7 @@ const styles = StyleSheet.create({
   bubbleRowLeft: { justifyContent: 'flex-start' },
   bubbleRowRight: { justifyContent: 'flex-end' },
   bubble: { maxWidth: '78%', borderRadius: 16, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: 4 },
-  bubbleImage: { width: 200, height: 200, borderRadius: 10 },
+  notice: { textAlign: 'center', paddingVertical: Spacing.one },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',

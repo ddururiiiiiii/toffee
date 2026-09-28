@@ -23,6 +23,7 @@ import {
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { MediaTile } from '@/components/media-tile';
 import { VoiceMessage } from '@/components/voice-message';
 import { useActor } from '@/hooks/use-actors';
 import { useStudioMessages, useStudioSend, type Attachment, type StudioMessage } from '@/hooks/use-studio';
@@ -45,7 +46,12 @@ const PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
 function toAttachment(result: ImagePicker.ImagePickerResult): Attachment | null {
   const asset = result.canceled ? null : result.assets[0];
   if (!asset) return null;
-  return { mediaType: asset.type === 'video' ? 'VIDEO' : 'PHOTO', uri: asset.uri, contentType: asset.mimeType };
+  return {
+    mediaType: asset.type === 'video' ? 'VIDEO' : 'PHOTO',
+    uri: asset.uri,
+    contentType: asset.mimeType,
+    durationMs: asset.type === 'video' && asset.duration ? Math.round(asset.duration) : undefined,
+  };
 }
 
 function MyMessage({ message, onOpenReplies }: { message: StudioMessage; onOpenReplies: () => void }) {
@@ -54,8 +60,8 @@ function MyMessage({ message, onOpenReplies }: { message: StudioMessage; onOpenR
   return (
     <ThemedView style={styles.messageRow}>
       <ThemedView style={[styles.bubble, { backgroundColor: theme.tint }]}>
-        {message.mediaType === 'PHOTO' && message.mediaUrl ? (
-          <Image source={{ uri: message.mediaUrl }} style={styles.bubbleImage} />
+        {message.mediaType === 'PHOTO' || message.mediaType === 'VIDEO' ? (
+          <MediaTile id={message.id} url={message.mediaUrl} mediaType={message.mediaType} durationMs={message.mediaDurationMs} />
         ) : message.mediaType === 'AUDIO' ? (
           <VoiceMessage
             id={message.id}
@@ -64,8 +70,6 @@ function MyMessage({ message, onOpenReplies }: { message: StudioMessage; onOpenR
             waveform={message.waveform}
             tone="light"
           />
-        ) : message.mediaType !== 'TEXT' ? (
-          <ThemedText style={styles.bubbleText}>{t(`studio.media.${message.mediaType}`)}</ThemedText>
         ) : null}
         {message.body && <ThemedText style={styles.bubbleText}>{message.body}</ThemedText>}
       </ThemedView>
@@ -277,7 +281,6 @@ const styles = StyleSheet.create({
   messageRow: { alignItems: 'flex-end', gap: 4, backgroundColor: 'transparent' },
   bubble: { maxWidth: '80%', borderRadius: 16, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: 4 },
   bubbleText: { color: '#fff' },
-  bubbleImage: { width: 200, height: 200, borderRadius: 10 },
   messageMeta: { flexDirection: 'row', gap: Spacing.three, alignItems: 'center', backgroundColor: 'transparent' },
   notice: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one, textAlign: 'center' },
   attachmentBar: {

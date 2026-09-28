@@ -138,5 +138,13 @@
       "AUDIO": "🎧 语音消息",
       "VIDEO": "🎬 视频"
     }
+  },
+  "media": {
+    "save": "保存",
+    "saved": "已保存",
+    "saveFailed": "保存失败",
+    "permissionDenied": "需要权限才能保存到相册，请在设置中允许。",
+    "close": "关闭",
+    "open": "查看"
   }
 }

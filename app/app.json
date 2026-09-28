@@ -40,7 +40,33 @@
           "organization": "ddururiiiiiii",
           "project": "toffee-app"
         }
-      ]
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Toffee needs access to your photos so you can send photos and videos to your fans.",
+          "cameraPermission": "Toffee needs camera access so you can take photos and videos for your fans.",
+          "microphonePermission": "Toffee needs microphone access to record video with sound."
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Toffee needs microphone access so you can send voice messages."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "savePhotosPermission": "Toffee needs permission to save photos and videos you received to your library.",
+          "photosPermission": false,
+          "granularPermissions": [
+            "photo",
+            "video"
+          ]
+        }
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

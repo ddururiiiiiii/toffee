@@ -90,9 +90,11 @@ export class MessagesService {
         mediaType: dto.mediaType,
         body: dto.body,
         mediaKey,
-        ...(dto.mediaType === MessageMediaType.AUDIO
-          ? { mediaDurationMs: dto.durationMs ?? null, waveform: dto.waveform ?? undefined }
+        // 길이는 음성·영상 모두(말풍선에 표시), 음파는 음성만
+        ...(dto.mediaType === MessageMediaType.AUDIO || dto.mediaType === MessageMediaType.VIDEO
+          ? { mediaDurationMs: dto.durationMs ?? null }
           : {}),
+        ...(dto.mediaType === MessageMediaType.AUDIO ? { waveform: dto.waveform ?? undefined } : {}),
       },
     });
     const message = await this.mediaService.withReadUrl(created);
