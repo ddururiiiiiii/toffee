@@ -105,10 +105,10 @@ async function main() {
 
   // 팬 2명 — fan1은 caramel만, fan2는 둘 다 구독(CP 할인 시나리오)
   const fan1 = await prisma.user.create({
-    data: { role: Role.USER, displayName: '민지', email: 'fan1@toffee.demo' },
+    data: { role: Role.USER, displayName: '민지', nickname: '캐러멜바라기', email: 'fan1@toffee.demo' },
   });
   const fan2 = await prisma.user.create({
-    data: { role: Role.USER, displayName: '수아', email: 'fan2@toffee.demo' },
+    data: { role: Role.USER, displayName: '수아', nickname: '누가누가', email: 'fan2@toffee.demo' },
   });
 
   const fan1Sub = await prisma.subscription.create({

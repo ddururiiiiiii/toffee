@@ -82,6 +82,25 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
 
+## 닉네임 (2026-09-28)
+
+- `User.nickname String?`, `User.nicknameChangedAt DateTime?`(마이그레이션 `20260928070000_add_user_nickname`).
+- 규칙은 `common/nickname/nickname.ts`: `normalizeNickname`(NFC, 공백 정리, 1~20자, `\p{Cc}\p{Cf}` 제어·보이지
+  않는 문자 거부, 예약어 포함 거부), `fanTag(userId)` = `#` + id 끝 4자리 대문자, 변경 주기 상수 7일.
+  `AuthService.updateNickname`이 추가로 금칙어(`ModerationService`, AuthModule이 ModerationModule import)·배우
+  이름 완전일치(`chatDisplayName`/`legalName`, 대소문자 무시)를 검사. 같은 값 재저장은 no-op.
+- API: `PATCH /auth/me/nickname`, `GET /auth/me`에 `nickname`·`nicknameChangeAvailableAt`,
+  온보딩 상태에 `needsNickname`(USER만).
+- 사용처: `{{name}}` 치환과 푸시 `PushRecipient.displayName`은 `nickname ?? displayName`(닉네임 없는 옛
+  계정만 로그인 이름으로 폴백), 팬 답장 목록·스토리 열람자 목록은 `fanUser: { id, nickname, tag }`로
+  **displayName 제거**(스태프에게 실명 노출 방지). 운영자 신고 목록은 둘 다.
+- 앱: `onboarding/nickname.tsx`(AuthGate: 생년월일 → 부모 동의 → 닉네임), `components/nickname-form.tsx`
+  (온보딩·마이페이지 공용), `useMe`/`useUpdateNickname`.
+- 검증: 단위 테스트 3개 + 실서버(예약어·배우 이름·보이지 않는 문자·금칙어 거절, 중복 허용, 7일 제한,
+  `{{name}}`이 닉네임으로, 스태프 답장 목록에 닉네임+태그만) + 브라우저(새 팬 → 닉네임 단계 → 예약어 오류
+  표시 → 저장 후 홈 → 마이페이지에 닉네임·변경 가능 날짜).
+- 남은 것: 서버 오류 문구가 한국어라 다른 언어 사용자에겐 한국어로 보임(기존 과제와 동일).
+
 ## 푸시 알림 — 기기 등록·발송 (2026-09-28)
 
 젤리 방식(@react-native-firebase로 iOS도 FCM 토큰, 서버는 firebase-admin)을 출발점으로 하되 **유료

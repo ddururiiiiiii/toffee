@@ -87,7 +87,8 @@
     "deletedFan": "탈퇴한 팬",
     "activeSubscribers": "활성 구독자 수",
     "lastBroadcast": "마지막 발송일",
-    "noBroadcast": "발송 이력 없음"
+    "noBroadcast": "발송 이력 없음",
+    "noNickname": "(닉네임 없음)"
   },
   "onboarding": {
     "birthDateTitle": "생년월일을 알려주세요",
@@ -101,7 +102,9 @@
     "consentResend": "메일 다시 보내기",
     "parentEmailPlaceholder": "부모님 이메일",
     "consentSend": "동의 메일 보내기",
-    "consentSendFailed": "메일을 보내지 못했어요."
+    "consentSendFailed": "메일을 보내지 못했어요.",
+    "nicknameTitle": "닉네임을 정해주세요",
+    "nicknameHint": "배우 메시지에서 이 닉네임으로 불려요. 배우가 내 답장을 인용하면 다른 구독자에게도 보이니 실명은 피해주세요."
   },
   "legal": {
     "draftTitle": "이 문서는 초안입니다",
@@ -152,5 +155,14 @@
   },
   "push": {
     "channelMessages": "새 메시지"
+  },
+  "nickname": {
+    "label": "닉네임",
+    "placeholder": "닉네임 (최대 {{max}}자)",
+    "save": "저장",
+    "saveFailed": "저장하지 못했어요.",
+    "change": "변경",
+    "nextChange": "{{date}} 이후에 바꿀 수 있어요",
+    "rule": "다른 사람과 같아도 괜찮아요. 한 번 바꾸면 7일 뒤에 다시 바꿀 수 있어요."
   }
 }

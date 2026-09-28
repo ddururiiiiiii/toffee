@@ -69,6 +69,11 @@ model User {
   id                    String                @id @default(uuid())
   role                  Role                  @default(USER)
   displayName           String
+  // 팬끼리·스타에게 보이는 이름(앱 전체 하나, 중복 허용 — 버블 방식). displayName은 소셜 로그인에서 받은
+  // 이름이라 실명일 수 있어서 화면·푸시·인용에는 쓰지 않음. 같은 닉네임 구분은 스타·소속사·운영자 화면에서만
+  // id 끝 4자리 태그(#A1B2)로. 변경은 7일에 한 번(잠정, STATUS.md 출시 전 확정 정책).
+  nickname              String?
+  nicknameChangedAt     DateTime?
   email                 String?               @unique
   // 앱 표시 언어(ko/th/en/ja/zh-Hans/zh-Hant) — 푸시 알림처럼 서버가 만드는 문구의 언어를 고르는 데 씀.
   // 앱이 기기 언어/설정 변경 시 PATCH /auth/me/locale로 동기화. null이면 기본 언어(en).

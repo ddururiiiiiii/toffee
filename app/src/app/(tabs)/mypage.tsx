@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -11,6 +12,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 import { LANGUAGE_NATIVE_NAMES, SUPPORTED_LANGUAGES, type SupportedLanguage } from '@/i18n/languages';
 import { useLocalePreference } from '@/i18n/locale-preference-context';
+import { NicknameForm } from '@/components/nickname-form';
+import { useMe } from '@/hooks/use-onboarding';
 
 function SubscriptionRow({ subscription }: { subscription: Subscription }) {
   const theme = useTheme();
@@ -78,6 +81,43 @@ function LanguagePicker() {
   );
 }
 
+// 닉네임 보기/바꾸기 — 7일에 한 번이라 바꿀 수 없는 기간엔 다음 가능 날짜만 보여줌
+function NicknameSection() {
+  const theme = useTheme();
+  const { t, i18n } = useTranslation();
+  const { data: me } = useMe();
+  const [editing, setEditing] = useState(false);
+  const availableAt = me?.nicknameChangeAvailableAt ? new Date(me.nicknameChangeAvailableAt) : null;
+  const locked = !!availableAt && availableAt > new Date();
+
+  return (
+    <ThemedView style={styles.languageSection}>
+      <ThemedText type="smallBold">{t('nickname.label')}</ThemedText>
+      {editing ? (
+        <NicknameForm initial={me?.nickname} onSaved={() => setEditing(false)} />
+      ) : (
+        <ThemedView style={styles.nicknameRow}>
+          <ThemedText>{me?.nickname ?? '-'}</ThemedText>
+          {locked ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              {t('nickname.nextChange', { date: availableAt.toLocaleDateString(i18n.language) })}
+            </ThemedText>
+          ) : (
+            <Pressable onPress={() => setEditing(true)} hitSlop={8}>
+              <ThemedText type="smallBold" style={{ color: theme.tint }}>
+                {t('nickname.change')}
+              </ThemedText>
+            </Pressable>
+          )}
+        </ThemedView>
+      )}
+      <ThemedText type="small" themeColor="textSecondary">
+        {t('nickname.rule')}
+      </ThemedText>
+    </ThemedView>
+  );
+}
+
 export default function MyPageScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -114,6 +154,7 @@ export default function MyPageScreen() {
         />
       )}
 
+      <NicknameSection />
       <LanguagePicker />
 
       <ThemedView style={styles.legalLinks}>
@@ -140,11 +181,12 @@ export default function MyPageScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  languageSection: { paddingHorizontal: Spacing.four, gap: Spacing.two, marginTop: Spacing.two },
-  languageOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  languageSection: { paddingHorizontal: Spacing.four, gap: Spacing.two, marginTop: Spacing.two, backgroundColor: 'transparent' },
+  nicknameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, backgroundColor: 'transparent' },
+  languageOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, backgroundColor: 'transparent' },
   languageChip: { borderRadius: 999, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
   languageChipTextSelected: { color: '#fff' },
-  legalLinks: { flexDirection: 'row', gap: Spacing.four, paddingHorizontal: Spacing.four, marginTop: Spacing.two },
+  legalLinks: { flexDirection: 'row', gap: Spacing.four, paddingHorizontal: Spacing.four, marginTop: Spacing.two, backgroundColor: 'transparent' },
   title: { fontSize: 32, lineHeight: 40, paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
   sectionLabel: { paddingHorizontal: Spacing.four, marginTop: Spacing.four },
   sectionHint: { paddingHorizontal: Spacing.four, marginTop: 2 },

@@ -87,7 +87,8 @@
     "deletedFan": "退会したファン",
     "activeSubscribers": "アクティブな購読者数",
     "lastBroadcast": "最終送信日",
-    "noBroadcast": "送信履歴なし"
+    "noBroadcast": "送信履歴なし",
+    "noNickname": "（ニックネームなし）"
   },
   "onboarding": {
     "birthDateTitle": "生年月日を入力してください",
@@ -101,7 +102,9 @@
     "consentResend": "メールを再送信",
     "parentEmailPlaceholder": "保護者のメールアドレス",
     "consentSend": "同意メールを送信",
-    "consentSendFailed": "メールを送信できませんでした。"
+    "consentSendFailed": "メールを送信できませんでした。",
+    "nicknameTitle": "ニックネームを決めてください",
+    "nicknameHint": "俳優からのメッセージでこのニックネームで呼ばれます。俳優があなたの返信を引用すると他の購読者にも表示されるため、本名は避けてください。"
   },
   "legal": {
     "draftTitle": "この文書は草案です",
@@ -152,5 +155,14 @@
   },
   "push": {
     "channelMessages": "新着メッセージ"
+  },
+  "nickname": {
+    "label": "ニックネーム",
+    "placeholder": "ニックネーム（最大{{max}}文字）",
+    "save": "保存",
+    "saveFailed": "保存できませんでした。",
+    "change": "変更",
+    "nextChange": "{{date}}以降に変更できます",
+    "rule": "他の人と同じでも大丈夫です。変更後、次に変更できるのは7日後です。"
   }
 }

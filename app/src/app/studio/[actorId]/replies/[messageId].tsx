@@ -43,7 +43,7 @@ export default function MessageRepliesScreen() {
           }
           renderItem={({ item }) => (
             <ThemedView style={[styles.reply, { backgroundColor: theme.backgroundElement }]}>
-              <ThemedText type="smallBold">{item.fanUser?.displayName ?? t('console.deletedFan')}</ThemedText>
+              <ThemedText type="smallBold">{item.fanUser ? `${item.fanUser.nickname ?? t('console.noNickname')} ${item.fanUser.tag}` : t('console.deletedFan')}</ThemedText>
               <ThemedText type="small">{item.body}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
                 {new Date(item.createdAt).toLocaleString(i18n.language)}

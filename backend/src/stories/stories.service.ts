@@ -6,6 +6,7 @@ import { ensureCanViewActor, ensureIsActorSelf } from '../common/authorization/a
 import { ensureActiveSubscription } from '../common/authorization/ensure-active-subscription.js';
 import { Role } from '../generated/prisma/enums.js';
 import { MediaService } from '../storage/media.service.js';
+import { fanTag } from '../common/nickname/nickname.js';
 import type { UploadableMediaType } from '../storage/media-policy.js';
 import type { CreateStoryDto } from './dto/create-story.dto.js';
 
@@ -78,10 +79,14 @@ export class StoriesService {
     const story = await this.prisma.story.findFirst({ where: { id: storyId, actorId } });
     if (!story) throw new NotFoundException('스토리를 찾을 수 없습니다.');
 
-    return this.prisma.storyView.findMany({
+    const views = await this.prisma.storyView.findMany({
       where: { storyId },
-      include: { fanUser: { select: { id: true, displayName: true } } },
+      include: { fanUser: { select: { id: true, nickname: true } } },
       orderBy: { viewedAt: 'desc' },
     });
+    return views.map((view) => ({
+      ...view,
+      fanUser: { id: view.fanUser.id, nickname: view.fanUser.nickname, tag: fanTag(view.fanUser.id) },
+    }));
   }
 }

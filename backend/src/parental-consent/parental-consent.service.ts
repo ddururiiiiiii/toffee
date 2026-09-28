@@ -26,15 +26,21 @@ export class ParentalConsentService {
     private readonly configService: ConfigService,
   ) {}
 
-  // 앱이 로그인 직후 온보딩(생년월일 입력, 부모 동의 대기 화면)을 보여줘야 하는지 판단하는 데 씀
+  // 앱이 로그인 직후 온보딩(생년월일 입력, 부모 동의 대기, 닉네임)을 보여줘야 하는지 판단하는 데 씀
   async getOnboardingStatus(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { birthDate: true, parentalConsentStatus: true, role: true },
+      select: { birthDate: true, parentalConsentStatus: true, role: true, nickname: true },
     });
-    // 연령 확인은 구독하는 팬(USER)에게만 필요 — 배우 본인/소속사/운영자 계정은 온보딩 없이 바로 진입
-    if (user.role !== Role.USER) return { needsBirthDate: false, parentalConsentStatus: user.parentalConsentStatus };
-    return { needsBirthDate: !user.birthDate, parentalConsentStatus: user.parentalConsentStatus };
+    // 연령 확인·닉네임은 구독하는 팬(USER)에게만 필요 — 배우 본인/소속사/운영자 계정은 온보딩 없이 바로 진입
+    if (user.role !== Role.USER) {
+      return { needsBirthDate: false, needsNickname: false, parentalConsentStatus: user.parentalConsentStatus };
+    }
+    return {
+      needsBirthDate: !user.birthDate,
+      needsNickname: !user.nickname,
+      parentalConsentStatus: user.parentalConsentStatus,
+    };
   }
 
   // 온보딩에서 생년월일을 받으면 여기서 만 14세 미만인지 판정 — 미만이면 부모 동의 대기 상태로 전환

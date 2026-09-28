@@ -7,6 +7,7 @@ import { Role } from '../generated/prisma/enums.js';
 
 export interface PushRecipient {
   locale: string | null;
+  /** 받는 사람 이름 — 닉네임(없으면 로그인 이름). {{name}} 치환용 */
   displayName: string;
 }
 export type ComposePush = (recipient: PushRecipient) => { title: string; body: string };
@@ -79,13 +80,17 @@ export class PushService implements OnModuleInit {
     if (!this.app || userIds.length === 0) return;
     const devices = await this.prisma.pushDevice.findMany({
       where: { userId: { in: userIds } },
-      select: { token: true, user: { select: { locale: true, displayName: true } } },
+      select: { token: true, user: { select: { locale: true, displayName: true, nickname: true } } },
     });
     if (devices.length === 0) return;
 
     const messaging = getMessaging(this.app);
     const deadTokens: string[] = [];
-    for (const batch of chunk(buildPushMessages(devices, compose, data), FCM_BATCH_SIZE)) {
+    const targets = devices.map(({ token, user }) => ({
+      token,
+      user: { locale: user.locale, displayName: user.nickname ?? user.displayName },
+    }));
+    for (const batch of chunk(buildPushMessages(targets, compose, data), FCM_BATCH_SIZE)) {
       try {
         const result = await messaging.sendEach(batch);
         result.responses.forEach((response, index) => {

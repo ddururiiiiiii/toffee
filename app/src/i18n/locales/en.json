@@ -87,7 +87,8 @@
     "deletedFan": "Deleted user",
     "activeSubscribers": "Active subscribers",
     "lastBroadcast": "Last sent",
-    "noBroadcast": "Nothing sent yet"
+    "noBroadcast": "Nothing sent yet",
+    "noNickname": "(no nickname)"
   },
   "onboarding": {
     "birthDateTitle": "What's your date of birth?",
@@ -101,7 +102,9 @@
     "consentResend": "Resend email",
     "parentEmailPlaceholder": "Parent's email",
     "consentSend": "Send consent email",
-    "consentSendFailed": "Couldn't send the email."
+    "consentSendFailed": "Couldn't send the email.",
+    "nicknameTitle": "Choose a nickname",
+    "nicknameHint": "The actor's messages will call you by this nickname. If the actor quotes your reply, other subscribers can see it too, so please avoid using your real name."
   },
   "legal": {
     "draftTitle": "This document is a draft",
@@ -152,5 +155,14 @@
   },
   "push": {
     "channelMessages": "New messages"
+  },
+  "nickname": {
+    "label": "Nickname",
+    "placeholder": "Nickname (up to {{max}} characters)",
+    "save": "Save",
+    "saveFailed": "Couldn't save.",
+    "change": "Change",
+    "nextChange": "You can change it after {{date}}",
+    "rule": "It's fine if someone else has the same one. After changing it, you can change it again in 7 days."
   }
 }

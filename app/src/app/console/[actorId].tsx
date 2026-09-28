@@ -104,7 +104,7 @@ function ReplyRow({ reply }: { reply: FanReply }) {
   const { t, i18n } = useTranslation();
   return (
     <ThemedView style={[styles.replyRow, { backgroundColor: theme.backgroundElement }]}>
-      <ThemedText type="smallBold">{reply.fanUser?.displayName ?? t('console.deletedFan')}</ThemedText>
+      <ThemedText type="smallBold">{reply.fanUser ? `${reply.fanUser.nickname ?? t('console.noNickname')} ${reply.fanUser.tag}` : t('console.deletedFan')}</ThemedText>
       <ThemedText type="small">{reply.body}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
         {new Date(reply.createdAt).toLocaleString(i18n.language)}

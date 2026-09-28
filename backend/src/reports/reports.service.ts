@@ -15,7 +15,7 @@ export class ReportsService {
   findPending() {
     return this.prisma.report.findMany({
       where: { status: ReportStatus.PENDING },
-      include: { message: true, reportedBy: { select: { id: true, displayName: true } } },
+      include: { message: true, reportedBy: { select: { id: true, displayName: true, nickname: true } } },
       orderBy: { createdAt: 'asc' },
     });
   }

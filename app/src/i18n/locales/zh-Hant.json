@@ -87,7 +87,8 @@
     "deletedFan": "已刪除帳號的粉絲",
     "activeSubscribers": "有效訂閱人數",
     "lastBroadcast": "最近傳送日期",
-    "noBroadcast": "尚無傳送紀錄"
+    "noBroadcast": "尚無傳送紀錄",
+    "noNickname": "（無暱稱）"
   },
   "onboarding": {
     "birthDateTitle": "請填寫你的出生日期",
@@ -101,7 +102,9 @@
     "consentResend": "重新寄送",
     "parentEmailPlaceholder": "父母的電子郵件",
     "consentSend": "寄送同意信",
-    "consentSendFailed": "電子郵件寄送失敗。"
+    "consentSendFailed": "電子郵件寄送失敗。",
+    "nicknameTitle": "請設定暱稱",
+    "nicknameHint": "演員的訊息會用這個暱稱稱呼你。演員引用你的回覆時，其他訂閱者也看得到，所以請避免使用真實姓名。"
   },
   "legal": {
     "draftTitle": "本文件為草案",
@@ -152,5 +155,14 @@
   },
   "push": {
     "channelMessages": "新訊息"
+  },
+  "nickname": {
+    "label": "暱稱",
+    "placeholder": "暱稱（最多 {{max}} 個字）",
+    "save": "儲存",
+    "saveFailed": "儲存失敗。",
+    "change": "修改",
+    "nextChange": "{{date}} 之後可以修改",
+    "rule": "和別人重複也沒關係。修改後需等 7 天才能再次修改。"
   }
 }

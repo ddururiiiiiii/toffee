@@ -9,6 +9,7 @@ import { LineLoginDto } from './dto/line-login.dto.js';
 import { DevLoginDto } from './dto/dev-login.dto.js';
 import { UpdateLocaleDto } from './dto/update-locale.dto.js';
 import { PushDeviceDto } from './dto/push-device.dto.js';
+import { UpdateNicknameDto } from './dto/update-nickname.dto.js';
 import { AuthProvider, Role } from '../generated/prisma/enums.js';
 import { Public } from '../common/decorators/public.decorator.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
@@ -96,6 +97,12 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async unregisterPushDevice(@CurrentUser() user: AuthenticatedUser, @Body() dto: PushDeviceDto) {
     await this.authService.unregisterPushDevice(user.id, dto.token);
+  }
+
+  // 닉네임 정하기/바꾸기(온보딩, 마이페이지)
+  @Patch('me/nickname')
+  updateNickname(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateNicknameDto) {
+    return this.authService.updateNickname(user.id, dto.nickname);
   }
 
   // 앱 표시 언어 동기화 — 푸시 등 서버가 만드는 문구의 언어를 정하는 데 씀

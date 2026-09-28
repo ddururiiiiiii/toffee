@@ -87,7 +87,8 @@
     "deletedFan": "已注销的粉丝",
     "activeSubscribers": "活跃订阅人数",
     "lastBroadcast": "最近发送日期",
-    "noBroadcast": "暂无发送记录"
+    "noBroadcast": "暂无发送记录",
+    "noNickname": "（无昵称）"
   },
   "onboarding": {
     "birthDateTitle": "请填写你的出生日期",
@@ -101,7 +102,9 @@
     "consentResend": "重新发送邮件",
     "parentEmailPlaceholder": "父母的邮箱",
     "consentSend": "发送同意邮件",
-    "consentSendFailed": "邮件发送失败。"
+    "consentSendFailed": "邮件发送失败。",
+    "nicknameTitle": "请设置昵称",
+    "nicknameHint": "演员的消息会用这个昵称称呼你。演员引用你的回复时，其他订阅者也能看到，所以请避免使用真实姓名。"
   },
   "legal": {
     "draftTitle": "本文件为草案",
@@ -152,5 +155,14 @@
   },
   "push": {
     "channelMessages": "新消息"
+  },
+  "nickname": {
+    "label": "昵称",
+    "placeholder": "昵称（最多 {{max}} 个字）",
+    "save": "保存",
+    "saveFailed": "保存失败。",
+    "change": "修改",
+    "nextChange": "{{date}} 之后可以修改",
+    "rule": "和别人重复也没关系。修改后需等 7 天才能再次修改。"
   }
 }

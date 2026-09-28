@@ -55,6 +55,10 @@ function AuthGate({ children }: { children: ReactNode }) {
       if (!onOnboardingScreen) router.replace('/onboarding/parental-consent');
       return;
     }
+    if (onboarding?.needsNickname) {
+      if (!onOnboardingScreen) router.replace('/onboarding/nickname');
+      return;
+    }
 
     // 역할별 첫 화면 — 로그인/온보딩 직후뿐 아니라 저장된 로그인으로 앱을 다시 켰을 때 팬 탭으로
     // 떨어진 경우에도 제 화면으로 보냄(예전엔 로그인 직후에만 분기해서 재실행 시 팬 탭에 머물렀음)
@@ -112,6 +116,7 @@ function RootLayout() {
               <Stack.Screen name="admin/banned-words" options={{ headerShown: true, title: '금칙어 관리' }} />
               <Stack.Screen name="admin/users" options={{ headerShown: true, title: '회원 관리' }} />
               <Stack.Screen name="onboarding/birth-date" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding/nickname" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/parental-consent" options={{ headerShown: true, title: '' }} />
               <Stack.Screen name="terms" options={{ headerShown: true, title: t('screens.terms') }} />
               <Stack.Screen name="privacy" options={{ headerShown: true, title: t('screens.privacy') }} />

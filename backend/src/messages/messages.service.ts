@@ -7,6 +7,7 @@ import { MediaService } from '../storage/media.service.js';
 import { MessageMediaType, MessageSenderType } from '../generated/prisma/enums.js';
 import { ensureCanViewActor, ensureIsActorSelf } from '../common/authorization/actor-access.js';
 import { ensureActiveSubscription } from '../common/authorization/ensure-active-subscription.js';
+import { fanTag } from '../common/nickname/nickname.js';
 import type { SendReplyDto } from './dto/send-reply.dto.js';
 import type { SendBroadcastDto } from './dto/send-broadcast.dto.js';
 
@@ -44,7 +45,7 @@ export class MessagesService {
         ...message,
         body:
           message.senderType === MessageSenderType.ARTIST && message.body
-            ? personalize(message.body, fan.displayName)
+            ? personalize(message.body, fan.nickname ?? fan.displayName)
             : message.body,
       })),
     );
@@ -145,11 +146,16 @@ export class MessagesService {
   // (스타 화면의 "메시지별 팬 답장")
   async listReplies(requesterId: string, actorId: string, messageId?: string) {
     await ensureCanViewActor(this.prisma, requesterId, actorId);
-    return this.prisma.message.findMany({
+    const replies = await this.prisma.message.findMany({
       where: { actorId, senderType: MessageSenderType.FAN, ...(messageId ? { replyToMessageId: messageId } : {}) },
-      include: { fanUser: { select: { id: true, displayName: true } } },
+      include: { fanUser: { select: { id: true, nickname: true } } },
       orderBy: { createdAt: 'desc' },
     });
+    // 스타·소속사에겐 실명일 수 있는 로그인 이름 대신 닉네임 + 같은 닉네임 구분용 태그만
+    return replies.map((reply) => ({
+      ...reply,
+      fanUser: reply.fanUser && { id: reply.fanUser.id, nickname: reply.fanUser.nickname, tag: fanTag(reply.fanUser.id) },
+    }));
   }
 
   // 소속사 모니터링 — 배우가 실제로 보낸 메시지를 읽기 전용으로 확인(개인화 치환 없이 원문 그대로)

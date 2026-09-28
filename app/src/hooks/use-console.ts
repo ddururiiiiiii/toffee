@@ -24,7 +24,8 @@ export function useActorStats(actorId: string) {
 }
 
 export interface FanReply extends ChatMessage {
-  fanUser: { id: string; displayName: string } | null;
+  // 스타·소속사에겐 닉네임 + 같은 닉네임 구분용 태그(#A1B2)만 — 로그인 이름(실명일 수 있음)은 안 옴
+  fanUser: { id: string; nickname: string | null; tag: string } | null;
 }
 
 export function useActorReplies(actorId: string) {
