@@ -155,6 +155,11 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
    플레이어, `expo-file-system` 다운로드 → `expo-media-library`로 갤러리 저장(웹은
    `<a download>`). 저장 권한 요청 문구는 i18n과 같이.
 4. **인용 답장** — 공개 범위 **전체 공개로 확정(2026-09-28)**, 1:1 수신자 필드는 불필요.
+   팬 답장(`sendReply`)은 서버가 **그 시점 최신 ARTIST 메시지 id를 자동으로
+   `replyToMessageId`에 넣음**(팬이 대상을 고르는 API 없음, 버블 방식) — 스타 화면은
+   `GET replies?messageId=`처럼 스타 메시지별로 팬 답장을 묶어서 조회, 스타의 인용 답장만
+   명시적 `replyToMessageId`(팬 메시지 id)를 받음. 팬 채팅방 응답에서는 팬 자신의 답장에
+   `replyTo`를 굳이 렌더하지 않음.
    `Message.replyToMessageId String?`(self-relation, `onDelete: SetNull` — 원본이
    지워지면 "삭제된 메시지"로 표시) 추가, 응답에 인용 원문 요약(`replyTo { id, body 앞부분,
    mediaType, senderType, fanNickname }`) 포함. 인용된 팬 메시지가 신고 처리됐거나 작성자가
