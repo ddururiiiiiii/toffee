@@ -38,7 +38,8 @@ export function useActorReplies(actorId: string) {
 interface SendBroadcastInput {
   mediaType: 'TEXT' | 'PHOTO' | 'AUDIO' | 'VIDEO';
   body?: string;
-  mediaUrl?: string;
+  // uploadMedia(purpose: 'message')로 먼저 올리고 받은 objectKey
+  mediaKey?: string;
 }
 
 // 배우 본인 전용 — 소속사 콘솔에서는 안 씀(발송 권한 없음). 배우용 화면 만들 때 재사용
@@ -67,7 +68,8 @@ export interface ActorStory {
   id: string;
   actorId: string;
   mediaType: 'PHOTO' | 'AUDIO' | 'VIDEO';
-  mediaUrl: string;
+  // 서버가 발급한 임시 조회 URL(약 1~2시간 유효) — 오래 들고 있지 말고 다시 조회해서 쓸 것
+  mediaUrl: string | null;
   createdAt: string;
   expiresAt: string;
 }

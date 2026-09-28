@@ -82,6 +82,56 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
 
+## 파일 업로드(미디어 저장소) — 서버 구현 완료 (2026-09-28)
+
+S3 호환 오브젝트 스토리지(운영: Cloudflare R2 예정) + **비공개 버킷 + 서명 URL** 방식. 코드는
+`backend/src/storage/`, 앱 헬퍼는 `app/src/lib/upload-media.ts`.
+
+**흐름**
+1. `POST /actors/:actorId/uploads { purpose: 'message'|'story', mediaType, contentType, sizeBytes }`
+   — `@Roles(ACTOR, ADMIN)` + `ensureIsActorSelf`(발송 권한과 동일, 소속사 불가). 선언한
+   형식·크기를 `media-policy.ts` 규칙으로 1차 검사 → 키 `actors/{actorId}/{purpose}/{uuid}.{ext}` →
+   10분짜리 PUT 서명 URL(Content-Type·Content-Length 서명 포함) 반환.
+2. 앱이 저장소에 직접 PUT(서버를 거치지 않음 — 큰 영상도 백엔드 부담 없음).
+3. `POST .../messages/broadcast` / `POST .../stories`에 `mediaKey` 전달 → `MediaService.verifyForAttach`:
+   키 경로가 이 배우·이 용도인지(`..` 금지) → HEAD로 존재·크기 → 앞 4,100바이트를 읽어
+   `file-type`으로 **실제 형식(매직 넘버)** 판별 → 규칙에 안 맞으면 파일을 지우고 400.
+   **외부 URL(`mediaUrl`)은 더 이상 입력으로 받지 않음**(구독자 전용 보장, 핫링크/추적 픽셀 방지).
+4. 조회(`listForFan`, `listBroadcasts`, 스토리 `listActive`, 생성 응답)에서 `withReadUrl(s)`가
+   `mediaKey` → GET 서명 URL로 바꿔 `mediaUrl`에 넣고 `mediaKey`는 응답에서 제거. 권한 확인은
+   기존 조회 API가 이미 하므로(구독/모니터링 권한) URL은 권한 통과 후에만 발급됨.
+   서명 시각을 1시간 단위로 맞춰서 같은 시간대엔 URL이 동일 — 채팅방 폴링 때마다 URL이 바뀌어
+   이미지 캐시가 깨지는 걸 방지(유효 2시간, 최소 1시간 보장).
+5. 만료 스토리 cron이 저장소 파일을 먼저 지우고 DB 삭제(실패해도 DB는 지움).
+
+**스키마**: `Message.mediaKey`, `Story.mediaKey` 추가, `Story.mediaUrl` nullable로(마이그레이션
+`20260928030000_add_media_keys`). 둘 중 하나가 미디어 위치 — 시드 데이터는 외부 `mediaUrl` 그대로.
+
+**규칙(잠정)**: 사진 jpeg/png/webp/heic/heif 20MB, 음성 m4a/aac/mp3/webm/ogg 30MB(m4a는 mp4
+컨테이너라 판별 결과가 `video/mp4`여도 허용), 영상 mp4/mov/webm 200MB. 스타 앱에서 영상 압축을
+붙인 뒤 실제 크기를 보고 조정.
+
+**설정**: `STORAGE_ENDPOINT/REGION/BUCKET/ACCESS_KEY_ID/SECRET_ACCESS_KEY/FORCE_PATH_STYLE`
+(`.env.example` 참고). 없으면 업로드·첨부는 503(조용히 넘어가지 않음).
+
+**검증**: 로컬 S3 에뮬레이터(moto_server — 이 원격 환경에선 MinIO 바이너리/도커를 못 받아서
+대체)로 실서버 E2E: 업로드→발송→팬 조회 시 서명 URL로 받은 바이트가 원본과 동일, 폴링 간 URL 동일,
+텍스트 파일을 jpeg로 속이면 400 + 저장소에서 삭제, 형식/용량 초과 400, 다른 용도·없는 키·옛
+`mediaUrl` 필드 400, 다른 배우/소속사 스태프/팬의 업로드 요청 403, 스토리 생성·팬 조회, 소속사
+모니터링 조회에도 서명 URL, 만료 스토리 정리 시 저장소 파일까지 삭제. 단위 테스트
+`media.service.spec.ts`(6개).
+
+**남은 것**
+- 앱 화면(사진 고르기·녹음·영상 촬영 → `uploadMedia` → 발송)은 다음 작업 "스타 앱 화면"에서.
+- 팬 미디어 재생·다운로드 UI.
+- **고아 파일 정리**: 업로드만 하고 발송 안 한 파일은 남음 — DB에 참조 없는 1일 이상 된 객체를
+  지우는 cron 필요(버킷 수명주기 규칙은 "첨부된 파일"과 구분 못 해서 부적합).
+- **웹 업로드용 버킷 CORS**: Expo web에서 브라우저가 저장소로 직접 PUT하려면 버킷에 CORS
+  허용 필요(R2 설정) — 운영 보류 목록에 추가. 네이티브 앱은 CORS 무관.
+- 배우 프로필 사진·소속사 로고 업로드는 운영자 관리 화면 만들 때 같은 구조로 purpose 추가.
+- 게시판/CP방이 생기면 `UPLOAD_PURPOSES`에 추가.
+- 대화기록 1년 보존 cron이 생기면 메시지 파일도 같이 삭제.
+
 ## 다국어(i18n) 기반 — 구현 완료 (2026-09-28)
 
 **언어 목록**: `ko, th, en, ja, zh-Hans, zh-Hant` — 앱 `app/src/i18n/languages.ts`와 백엔드
@@ -595,8 +645,8 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
 - [ ] **관리자(ADMIN) 계정 추가 보호** — 지금은 일반 로그인과 동일한 인증 수준.
   민감한 권한(회원 정지/차단, 금칙어 관리)을 고려하면 2단계 인증(TOTP 등) 도입을
   검토할 것.
-- [ ] **업로드 파일 검증** — 배우가 올리는 사진/음성/영상의 MIME 타입·용량 제한이
-  아직 코드에 없음(업로드 화면 자체도 아직 없어서 같이 미착수).
+- [x] **업로드 파일 검증** — 선언 형식·용량 검사 + 첨부 시 실제 파일 내용(매직 넘버) 검사,
+  배우·용도별 경로 강제(2026-09-28, "파일 업로드" 절).
 - [ ] **CORS 허용 목록** — 지금 개발 단계 설정이 프로덕션 기준으로 좁혀졌는지 재점검
   필요.
 - [x] **민감정보 로깅 방지 (Sentry 쪽)** — `dataCollection` 제한 + `scrubEvent`

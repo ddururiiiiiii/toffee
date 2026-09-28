@@ -3,7 +3,8 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { PushService } from '../notifications/push.service.js';
 import { pushStrings } from '../notifications/push-messages.js';
 import { ModerationService } from '../moderation/moderation.service.js';
-import { MessageSenderType } from '../generated/prisma/enums.js';
+import { MediaService } from '../storage/media.service.js';
+import { MessageMediaType, MessageSenderType } from '../generated/prisma/enums.js';
 import { ensureCanViewActor, ensureIsActorSelf } from '../common/authorization/actor-access.js';
 import { ensureActiveSubscription } from '../common/authorization/ensure-active-subscription.js';
 import type { SendReplyDto } from './dto/send-reply.dto.js';
@@ -22,6 +23,7 @@ export class MessagesService {
     private readonly prisma: PrismaService,
     private readonly pushService: PushService,
     private readonly moderationService: ModerationService,
+    private readonly mediaService: MediaService,
   ) {}
 
   // 팬 본인의 대화방: 구독 시작일 이후의 방송 메시지 + 본인이 보낸 답장만, 시간순
@@ -37,13 +39,15 @@ export class MessagesService {
     });
 
     const fan = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    return messages.map((message) => ({
-      ...message,
-      body:
-        message.senderType === MessageSenderType.ARTIST && message.body
-          ? personalize(message.body, fan.displayName)
-          : message.body,
-    }));
+    return this.mediaService.withReadUrls(
+      messages.map((message) => ({
+        ...message,
+        body:
+          message.senderType === MessageSenderType.ARTIST && message.body
+            ? personalize(message.body, fan.displayName)
+            : message.body,
+      })),
+    );
   }
 
   async sendReply(userId: string, actorId: string, dto: SendReplyDto) {
@@ -63,10 +67,13 @@ export class MessagesService {
 
   async sendBroadcast(actorSelfUserId: string, actorId: string, dto: SendBroadcastDto) {
     await ensureIsActorSelf(this.prisma, actorSelfUserId, actorId);
+    const mediaKey = dto.mediaType === MessageMediaType.TEXT ? null : dto.mediaKey!;
+    if (mediaKey) await this.mediaService.verifyForAttach(actorId, 'message', dto.mediaType as Exclude<MessageMediaType, 'TEXT'>, mediaKey);
 
-    const message = await this.prisma.message.create({
-      data: { actorId, senderType: MessageSenderType.ARTIST, mediaType: dto.mediaType, body: dto.body, mediaUrl: dto.mediaUrl },
+    const created = await this.prisma.message.create({
+      data: { actorId, senderType: MessageSenderType.ARTIST, mediaType: dto.mediaType, body: dto.body, mediaKey },
     });
+    const message = await this.mediaService.withReadUrl(created);
 
     const activeSubscriptions = await this.prisma.subscription.findMany({
       where: { actorId, cancelledAt: null },
@@ -117,9 +124,10 @@ export class MessagesService {
   // 소속사 모니터링 — 배우가 실제로 보낸 메시지를 읽기 전용으로 확인(개인화 치환 없이 원문 그대로)
   async listBroadcasts(requesterId: string, actorId: string) {
     await ensureCanViewActor(this.prisma, requesterId, actorId);
-    return this.prisma.message.findMany({
+    const messages = await this.prisma.message.findMany({
       where: { actorId, senderType: MessageSenderType.ARTIST },
       orderBy: { createdAt: 'desc' },
     });
+    return this.mediaService.withReadUrls(messages);
   }
 }

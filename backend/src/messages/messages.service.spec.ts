@@ -5,6 +5,7 @@ import type { ComposePush } from '../notifications/push.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { PushService } from '../notifications/push.service.js';
 import type { ModerationService } from '../moderation/moderation.service.js';
+import type { MediaService } from '../storage/media.service.js';
 
 // sendBroadcast의 푸시 문구 조립만 검증 — DB/FCM은 가짜로 대체
 function setup() {
@@ -12,7 +13,7 @@ function setup() {
   const staffPushes: ComposePush[] = [];
   const prisma = {
     user: { findUniqueOrThrow: vi.fn().mockResolvedValue({ role: Role.ADMIN }) },
-    message: { create: vi.fn().mockResolvedValue({ id: 'm1' }) },
+    message: { create: vi.fn().mockResolvedValue({ id: 'm1', mediaKey: null, mediaUrl: null }) },
     subscription: {
       findMany: vi.fn().mockResolvedValue([{ userId: 'fan-1' }]),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -29,7 +30,11 @@ function setup() {
       return Promise.resolve();
     }),
   } as unknown as PushService;
-  const service = new MessagesService(prisma, push, {} as ModerationService);
+  const media = {
+    verifyForAttach: vi.fn().mockResolvedValue(undefined),
+    withReadUrl: vi.fn((item: object) => Promise.resolve(item)),
+  } as unknown as MediaService;
+  const service = new MessagesService(prisma, push, {} as ModerationService, media);
   return { service, fanPushes, staffPushes };
 }
 
@@ -48,7 +53,7 @@ describe('MessagesService.sendBroadcast 푸시 문구', () => {
 
   it('본문 없는 미디어는 받는 사람 언어의 안내 문구로', async () => {
     const { service, fanPushes } = setup();
-    await service.sendBroadcast('admin', 'actor-1', { mediaType: MessageMediaType.PHOTO, mediaUrl: 'https://x/y.jpg' });
+    await service.sendBroadcast('admin', 'actor-1', { mediaType: MessageMediaType.PHOTO, mediaKey: 'actors/actor-1/message/a.jpg' });
 
     expect(fanPushes[0]({ locale: 'th', displayName: 'fan' }).body).toBe('ส่งรูปภาพ');
     expect(fanPushes[0]({ locale: null, displayName: 'fan' }).body).toBe('Sent a photo');

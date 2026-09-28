@@ -231,7 +231,10 @@ model Message {
   fanUserId  String?
   mediaType  MessageMediaType  @default(TEXT)
   body       String?
+  // 미디어 위치: 우리 스토리지(R2 등)에 올린 파일이면 mediaKey(객체 키), 외부 주소(시드 데이터 등)면
+  // mediaUrl. 응답에서는 mediaKey를 그때그때 서명된 임시 URL로 바꿔 mediaUrl로 내려줌(MediaService).
   mediaUrl   String?
+  mediaKey   String?
   createdAt  DateTime          @default(now())
 
   actor        Actor                @relation(fields: [actorId], references: [id], onDelete: Cascade)
@@ -260,7 +263,9 @@ model Story {
   id        String           @id @default(uuid())
   actorId   String
   mediaType MessageMediaType
-  mediaUrl  String
+  // Message와 같은 규칙 — 둘 중 하나는 반드시 있음(업로드 API로 만든 스토리는 mediaKey)
+  mediaUrl  String?
+  mediaKey  String?
   createdAt DateTime         @default(now())
   expiresAt DateTime
 
