@@ -10,8 +10,8 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useRouter, useSegments }
 import { useFonts } from 'expo-font';
 import * as Sentry from '@sentry/react-native';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AppState, Platform, useColorScheme, type AppStateStatus } from 'react-native';
+import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import '@/i18n';
@@ -33,6 +33,13 @@ Sentry.init({
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+// 앱이 백그라운드로 가면 react-query가 "화면을 안 보고 있음"으로 알게 해서 5초 폴링 등을 멈추고, 다시 앞으로 오면 바로
+// 새로고침(refetchOnWindowFocus) — 예전엔 네이티브에서 이 연결이 없어 백그라운드에서도 계속 조회했고, 돌아와도 다음 폴링까지
+// 옛 화면이었음(2026-09-28 점검). 웹은 브라우저 탭 전환을 react-query가 원래 알아서 처리.
+if (Platform.OS !== 'web') {
+  AppState.addEventListener('change', (status: AppStateStatus) => focusManager.setFocused(status === 'active'));
+}
 
 // 토큰 없이 진입 시 /login으로. 로그인 후엔 온보딩(약관 동의 → 생년월일 → 필요시 법정대리인 동의 → 닉네임)부터
 // 끝내야 하고(팬만 해당), 그다음 role 따라 운영자는 /admin, 소속사 스태프는 /console, 나머지(팬)는

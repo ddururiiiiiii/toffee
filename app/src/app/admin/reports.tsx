@@ -26,7 +26,7 @@ function ReportRow({ report }: { report: PendingReport }) {
   return (
     <ThemedView style={[styles.row, { backgroundColor: theme.backgroundElement }]}>
       <ThemedText type="smallBold">
-        {report.reportCount > 1 ? `🔺 ${report.reportCount}명이 신고 · ` : ''}
+        {report.reportCount > 1 ? `${report.reportCount}명이 신고 · ` : ''}
         {report.categories.map((category) => CATEGORY_LABELS[category] ?? category).join(', ')}
       </ThemedText>
       <ThemedText type="small" themeColor="textSecondary">

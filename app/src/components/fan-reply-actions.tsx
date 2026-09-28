@@ -3,7 +3,10 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { CornerUpLeft, MoreHorizontal, X } from 'lucide-react-native';
+
 import { ThemedText } from '@/components/themed-text';
+import { IconButton } from '@/components/ui/icon-button';
 import { useBlockFan } from '@/hooks/use-safety';
 import { useTheme } from '@/hooks/use-theme';
 import { confirm } from '@/lib/confirm';
@@ -39,20 +42,19 @@ export function FanReplyActions({ actorId, messageId, fanUserId, nickname, onQuo
 
   if (!open) {
     return (
-      <Pressable onPress={() => setOpen(true)} hitSlop={10} accessibilityLabel={t('safety.more')}>
-        <ThemedText type="smallBold" themeColor="textSecondary">
-          ⋯
-        </ThemedText>
-      </Pressable>
+      <IconButton icon={MoreHorizontal} size={18} label={t('safety.more')} color={theme.textTertiary} onPress={() => setOpen(true)} style={styles.more} />
     );
   }
   return (
     <View style={styles.row}>
       {onQuote && (
         <Pressable onPress={onQuote} hitSlop={8}>
-          <ThemedText type="smallBold" style={{ color: theme.tint }}>
-            ↩ {t('quote.action')}
-          </ThemedText>
+          <View style={styles.item}>
+            <CornerUpLeft size={15} color={theme.tint} />
+            <ThemedText type="smallBold" style={{ color: theme.tint }}>
+              {t('quote.action')}
+            </ThemedText>
+          </View>
         </Pressable>
       )}
       <Pressable onPress={() => router.push({ pathname: '/report', params: { messageId } })} hitSlop={8}>
@@ -65,15 +67,13 @@ export function FanReplyActions({ actorId, messageId, fanUserId, nickname, onQuo
           {t('block.action')}
         </ThemedText>
       </Pressable>
-      <Pressable onPress={() => setOpen(false)} hitSlop={8}>
-        <ThemedText type="smallBold" style={{ color: theme.textSecondary }}>
-          ✕
-        </ThemedText>
-      </Pressable>
+      <IconButton icon={X} size={16} label={t('chat.closeMenu')} color={theme.textTertiary} onPress={() => setOpen(false)} style={styles.more} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 14, alignItems: 'center' },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  more: { width: 28, height: 28 },
 });

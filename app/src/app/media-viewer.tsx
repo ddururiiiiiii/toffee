@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useVideoPlayer, VideoView } from 'expo-video';
 
+import { Download, X } from 'lucide-react-native';
+import { IconButton } from '@/components/ui/icon-button';
 import { ThemedText } from '@/components/themed-text';
 import { SavePermissionError, saveMedia } from '@/lib/save-media';
 import { Spacing } from '@/constants/theme';
@@ -50,12 +52,12 @@ export default function MediaViewerScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topBar}>
-        <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} hitSlop={12}>
-          <ThemedText style={styles.topText}>✕ {t('media.close')}</ThemedText>
-        </Pressable>
-        <Pressable onPress={save} disabled={saving || !url} hitSlop={12}>
-          {saving ? <ActivityIndicator color="#fff" /> : <ThemedText style={styles.topText}>⤓ {t('media.save')}</ThemedText>}
-        </Pressable>
+        <IconButton icon={X} label={t('media.close')} color="#ffffff" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} style={styles.topButton} />
+        {saving ? (
+          <ActivityIndicator color="#fff" style={styles.topButton} />
+        ) : (
+          <IconButton icon={Download} label={t('media.save')} color="#ffffff" onPress={save} style={styles.topButton} />
+        )}
       </View>
       {url && type === 'VIDEO' ? (
         <VideoContent url={url} />
@@ -70,7 +72,7 @@ export default function MediaViewerScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: Spacing.four, paddingVertical: Spacing.three },
-  topText: { color: '#fff', fontWeight: '600' },
+  topButton: { backgroundColor: 'rgba(255,255,255,0.12)' },
   media: { flex: 1, width: '100%' },
   notice: { color: '#fff', textAlign: 'center', padding: Spacing.three },
 });
