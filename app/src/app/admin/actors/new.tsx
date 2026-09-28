@@ -22,7 +22,7 @@ export default function AdminNewActorScreen() {
 
   const submit = () => {
     const monthlyPriceCents = parseBahtToCents(price);
-    if (!legalName.trim() || !chatDisplayName.trim()) return setError('이름과 대화방 이름을 입력해 주세요.');
+    if (!legalName.trim() || !chatDisplayName.trim()) return setError('공식 이름과 닉네임을 입력해 주세요.');
     if (monthlyPriceCents === null) return setError('월 구독료를 숫자로 입력해 주세요(예: 99).');
     setError(null);
     createActor.mutate(
@@ -37,9 +37,9 @@ export default function AdminNewActorScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <AdminSection title="기본 정보" hint="공식 이름은 배우 찾기 화면에, 대화방 이름은 채팅방 안에서 보여요.">
+        <AdminSection title="기본 정보" hint="공식 이름은 배우 찾기 화면에, 닉네임은 채팅방 안에서 보여요. 닉네임과 대화방 사진은 배우가 나중에 직접 바꿀 수 있어요.">
           <AdminField label="공식 이름(실명·활동명)" value={legalName} onChangeText={setLegalName} maxLength={100} />
-          <AdminField label="대화방 이름" value={chatDisplayName} onChangeText={setChatDisplayName} maxLength={50} />
+          <AdminField label="닉네임(배우가 직접 바꿀 수 있음)" value={chatDisplayName} onChangeText={setChatDisplayName} maxLength={20} />
           <AdminField
             label="월 구독료(바트)"
             value={price}

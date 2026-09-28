@@ -24,7 +24,7 @@ function ActorRow({ actor }: { actor: AdminActor }) {
           {actor.verified ? ' ✓' : ''}
         </ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          대화방 이름 {actor.chatDisplayName} · {actor.agency?.name ?? '무소속'}
+          닉네임 {actor.chatDisplayName} · {actor.agency?.name ?? '무소속'}
         </ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
           {formatBaht(actor.monthlyPriceCents)}/월 · 구독자 {actor.activeSubscriberCount}명 ·{' '}
@@ -50,7 +50,7 @@ export default function AdminActorsScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="배우 이름·대화방 이름·소속사로 검색"
+          placeholder="배우 이름·닉네임·소속사로 검색"
           placeholderTextColor={theme.textSecondary}
           style={[styles.search, { color: theme.text, backgroundColor: theme.backgroundElement }]}
         />

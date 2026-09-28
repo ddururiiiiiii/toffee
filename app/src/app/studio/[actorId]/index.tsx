@@ -120,8 +120,17 @@ export default function StudioChannelScreen() {
 
   // 스토리 올리기는 후순위(3차)로 미뤄서 이 화면엔 없음 — 서버 API는 남아 있음(STATUS.md)
   useEffect(() => {
-    navigation.setOptions({ title: actor?.chatDisplayName ?? '' });
-  }, [actor, navigation]);
+    navigation.setOptions({
+      title: actor?.chatDisplayName ?? '',
+      headerRight: () => (
+        <Pressable accessibilityRole="button" onPress={() => router.push(`/studio/${actorId}/profile`)} style={styles.headerButton}>
+          <ThemedText type="small" themeColor="tint">
+            {t('studioProfile.headerButton')}
+          </ThemedText>
+        </Pressable>
+      ),
+    });
+  }, [actor, navigation, router, actorId, t]);
 
   const pickFromLibrary = async () => {
     const picked = toAttachment(await ImagePicker.launchImageLibraryAsync(PICKER_OPTIONS));
@@ -305,6 +314,7 @@ export default function StudioChannelScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerButton: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
   container: { flex: 1 },
   loading: { marginTop: Spacing.six },
   list: { padding: Spacing.three, gap: Spacing.three },

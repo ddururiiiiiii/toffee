@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
 import { ThemedText } from '@/components/themed-text';
+import { ChatPhotoEditor } from '@/components/chat-photo-editor';
 import { ThemedView } from '@/components/themed-view';
 import { FanReplyActions } from '@/components/fan-reply-actions';
 import { useActor } from '@/hooks/use-actors';
@@ -210,9 +211,12 @@ export default function ConsoleActorScreen() {
             source={{ uri: actor.chatProfileImageUrl ?? undefined }}
             style={styles.actorPreviewAvatar}
           />
-          <ThemedText type="small" themeColor="textSecondary">
-            {t('console.monitoring', { name: actor.legalName })}
-          </ThemedText>
+          <ThemedView style={styles.actorPreviewBody}>
+            <ThemedText type="small" themeColor="textSecondary">
+              {t('console.monitoring', { name: actor.legalName })}
+            </ThemedText>
+            <ChatPhotoEditor actorId={actor.id} hasPhoto={!!actor.chatProfileImageUrl} />
+          </ThemedView>
         </ThemedView>
       )}
       {section === 'monitor' && <MonitorSection actorId={actorId} />}
@@ -223,6 +227,7 @@ export default function ConsoleActorScreen() {
 }
 
 const styles = StyleSheet.create({
+  actorPreviewBody: { flex: 1, gap: 4, backgroundColor: 'transparent' },
   replyFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'transparent' },
   blocksLink: { alignSelf: 'flex-end' },
   container: { flex: 1 },

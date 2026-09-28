@@ -1,12 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { isStorageKey, profileImagePrefix } from '../storage/media-policy.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { ensureCanViewActor, viewableActorsWhere } from '../common/authorization/actor-access.js';
+import { ensureCanViewActor, ensureIsActorSelf, viewableActorsWhere } from '../common/authorization/actor-access.js';
+import { normalizeNickname } from '../common/nickname/nickname.js';
+import { ModerationService } from '../moderation/moderation.service.js';
 import { MessageSenderType, Role } from '../generated/prisma/enums.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { MediaService } from '../storage/media.service.js';
 
-// legalName/officialProfileImageUrl는 탐색 화면(공식 프로필)에, chatDisplayName/chatProfileImageUrl는
-// 채팅방 안에서(대화방 프로필)에 씀 — 어느 쪽을 보여줄지는 클라이언트가 화면 맥락에 맞게 고름
+// legalName/officialProfileImageUrl는 탐색 화면(공식 프로필, 운영자가 관리)에, chatDisplayName(배우가 직접 정하는
+// 닉네임)/chatProfileImageUrl는 채팅방 안에서 씀 — 어느 쪽을 보여줄지는 클라이언트가 화면 맥락에 맞게 고름
 const LIST_SELECT = {
   id: true,
   legalName: true,
@@ -23,6 +26,7 @@ export class ActorsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly media: MediaService,
+    private readonly moderation: ModerationService,
   ) {}
 
   // q는 배우 이름뿐 아니라 소속사 이름에도 매칭 — "GMMTV"로 검색하면 소속 배우가 다 나오게
@@ -92,5 +96,85 @@ export class ActorsService {
       chatProfileImageUrl,
       agency: actor.agency && { ...actor.agency, logoUrl },
     };
+  }
+
+  // ── 프로필 사진 ─────────────────────────────────────────
+  // 대화방 사진은 배우 본인·소속사 직원도 메신저 프로필처럼 바꿀 수 있음(스키마 주석 참고), 공식 사진은 운영자만
+  // (공식 사진·이름은 사칭 방지를 위해 운영자가 확인하는 값). 권한 확인은 호출하는 쪽에서.
+
+  createProfileUpload(actorId: string, contentType: string, sizeBytes: number) {
+    return this.media.createUploadAt(profileImagePrefix('ACTOR', actorId), 'PHOTO', contentType, sizeBytes);
+  }
+
+  /** 값: 업로드로 받은 키, null(삭제), undefined(그대로). 바뀐 이전 파일은 다른 칸에서 안 쓰면 지움 */
+  async updateImages(actorId: string, changes: { official?: string | null; chat?: string | null }) {
+    const actor = await this.prisma.actor.findUnique({
+      where: { id: actorId },
+      select: { officialProfileImageUrl: true, chatProfileImageUrl: true },
+    });
+    if (!actor) throw new NotFoundException('배우를 찾을 수 없습니다.');
+
+    const data: Prisma.ActorUpdateInput = {};
+    const replaced: (string | null)[] = [];
+    if (changes.official !== undefined) {
+      data.officialProfileImageUrl = await this.checkImageKey(actorId, changes.official);
+      replaced.push(actor.officialProfileImageUrl);
+    }
+    if (changes.chat !== undefined) {
+      data.chatProfileImageUrl = await this.checkImageKey(actorId, changes.chat);
+      replaced.push(actor.chatProfileImageUrl);
+    }
+    const updated = await this.prisma.actor.update({
+      where: { id: actorId },
+      data,
+      select: { officialProfileImageUrl: true, chatProfileImageUrl: true },
+    });
+    const stillUsed = new Set([updated.officialProfileImageUrl, updated.chatProfileImageUrl]);
+    for (const old of replaced) {
+      if (isStorageKey(old) && !stillUsed.has(old)) await this.media.deleteQuietly(old);
+    }
+  }
+
+  private async checkImageKey(actorId: string, key: string | null): Promise<string | null> {
+    if (key === null) return null;
+    await this.media.verifyAt(profileImagePrefix('ACTOR', actorId), 'PHOTO', key, '이 배우의 프로필용으로 올린 파일이 아니에요.');
+    return key;
+  }
+
+  /** 배우 본인·소속사 직원의 대화방 사진 변경 */
+  async createChatProfileUpload(userId: string, actorId: string, contentType: string, sizeBytes: number) {
+    await ensureCanViewActor(this.prisma, userId, actorId);
+    return this.createProfileUpload(actorId, contentType, sizeBytes);
+  }
+
+  async setChatProfileImage(userId: string, actorId: string, key: string | null) {
+    await ensureCanViewActor(this.prisma, userId, actorId);
+    await this.updateImages(actorId, { chat: key });
+    return this.findOne(actorId);
+  }
+
+  /**
+   * 배우 닉네임(= 채팅방에 보이는 이름, 컬럼명은 chatDisplayName) — 배우 본인이 자유롭게 바꿈(변경 주기 제한 없음).
+   * 팬 닉네임과 같은 기본 규칙(길이·보이지 않는 문자·예약어·금칙어) + 다른 배우와 같은 닉네임 금지(팬 혼동 방지).
+   */
+  async updateNickname(userId: string, actorId: string, raw: string) {
+    await ensureIsActorSelf(this.prisma, userId, actorId);
+    const nickname = normalizeNickname(raw);
+    await this.moderation.assertNoBannedWords(nickname).catch(() => {
+      throw new BadRequestException('부적절한 표현이 포함된 닉네임은 쓸 수 없어요.');
+    });
+    const clash = await this.prisma.actor.findFirst({
+      where: {
+        id: { not: actorId },
+        OR: [
+          { chatDisplayName: { equals: nickname, mode: 'insensitive' } },
+          { legalName: { equals: nickname, mode: 'insensitive' } },
+        ],
+      },
+      select: { id: true },
+    });
+    if (clash) throw new ConflictException('다른 배우가 쓰고 있는 이름이에요.');
+    await this.prisma.actor.update({ where: { id: actorId }, data: { chatDisplayName: nickname } });
+    return this.findOne(actorId);
   }
 }

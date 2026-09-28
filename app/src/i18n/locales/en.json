@@ -199,5 +199,23 @@
   },
   "safety": {
     "more": "More"
+  },
+  "chatPhoto": {
+    "change": "Change chat photo",
+    "remove": "Remove photo",
+    "removeTitle": "Remove chat photo",
+    "removeConfirm": "Fans will no longer see this photo in the chat room.",
+    "uploading": "Uploading…",
+    "failed": "Couldn't change the photo. Please try again."
+  },
+  "studioProfile": {
+    "title": "My profile",
+    "headerButton": "Profile",
+    "nickname": "Nickname",
+    "nicknameHint": "This is the name fans see in the chat room. You can change it anytime.",
+    "save": "Save",
+    "saved": "Saved.",
+    "saveFailed": "Couldn't save. Please try again.",
+    "officialNote": "Your official photo and official name ({{name}}) on the discover screen are managed by the Toffee team. Contact us to change them."
   }
 }

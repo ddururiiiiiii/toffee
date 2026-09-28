@@ -82,6 +82,20 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
 
+## 배우 닉네임·대화방 사진 (2026-09-28)
+
+- `Actor.chatDisplayName` = 배우가 직접 정하는 닉네임(컬럼명은 그대로). `PATCH /actors/:id/nickname`(ACTOR 본인·
+  ADMIN, `ensureIsActorSelf`): `normalizeNickname` + 금칙어 + 다른 배우의 chatDisplayName/legalName과 같으면 409.
+  쿨다운 없음. 소속사는 불가(발송 권한과 같은 선).
+- 대화방 사진: `POST /actors/:id/chat-profile-image/upload`, `PATCH /actors/:id/chat-profile-image { key|null }` —
+  `ensureCanViewActor`(본인·같은 소속사 직원·ADMIN). 이미지 교체 로직은 `ActorsService.updateImages`로 옮겨서
+  운영자 API(`AdminActorsService.updateImages`)도 이걸 호출.
+- `Actor.verified`는 컬럼·운영자 토글만 남아 있고 팬 응답엔 안 내려줌(배지 안 하기로 결정). 필요 없으면 나중에 정리.
+- 앱: `studio/[actorId]/profile.tsx`(닉네임·사진·로그아웃, 채팅방 헤더 오른쪽 "프로필"), `components/chat-photo-editor.tsx`
+  (스튜디오 프로필·콘솔 모니터링 화면 공용).
+- 발견: 채널이 하나인 배우는 `/studio`가 곧장 채팅방으로 넘어가서 로그아웃 버튼(스튜디오 목록에만 있음)이 안
+  보였음 → 프로필 화면에 로그아웃 추가.
+
 ## 운영자 배우·소속사·계정 관리 (2026-09-28)
 
 - API(`@Roles(ADMIN)`): `GET/POST /admin/actors`, `GET/PATCH /admin/actors/:id`(이름·대화방 이름·구독료(사타앙)·`verified`),

@@ -106,6 +106,7 @@ function RootLayout() {
               <Stack.Screen name="media-viewer" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
               <Stack.Screen name="studio/index" options={{ headerShown: true, title: t('studio.screen') }} />
               <Stack.Screen name="studio/[actorId]/index" options={{ headerShown: true, title: '' }} />
+              <Stack.Screen name="studio/[actorId]/profile" options={{ headerShown: true, title: t('studioProfile.title') }} />
               <Stack.Screen
                 name="studio/[actorId]/replies/[messageId]"
                 options={{ headerShown: true, title: t('studio.repliesScreen') }}

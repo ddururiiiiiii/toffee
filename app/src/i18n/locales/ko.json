@@ -199,5 +199,23 @@
   },
   "safety": {
     "more": "더보기"
+  },
+  "chatPhoto": {
+    "change": "대화방 사진 바꾸기",
+    "remove": "사진 삭제",
+    "removeTitle": "대화방 사진 삭제",
+    "removeConfirm": "채팅방에서 팬들에게 보이는 사진이 지워져요.",
+    "uploading": "올리는 중…",
+    "failed": "사진을 바꾸지 못했어요. 다시 시도해 주세요."
+  },
+  "studioProfile": {
+    "title": "내 프로필",
+    "headerButton": "프로필",
+    "nickname": "닉네임",
+    "nicknameHint": "채팅방에서 팬들에게 보이는 이름이에요. 언제든 바꿀 수 있어요.",
+    "save": "저장",
+    "saved": "저장했어요.",
+    "saveFailed": "저장하지 못했어요. 다시 시도해 주세요.",
+    "officialNote": "배우 찾기 화면의 공식 사진과 공식 이름({{name}})은 운영자가 관리해요. 바꾸려면 운영자에게 요청해 주세요."
   }
 }

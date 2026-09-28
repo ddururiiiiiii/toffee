@@ -109,7 +109,7 @@ function BasicInfo({ actor }: { actor: AdminActor }) {
       title="기본 정보"
       hint="구독료는 앱에 보이는 금액이에요 — 실제 결제 금액은 스토어에 등록한 상품 가격이 기준이라 같이 바꿔야 해요.">
       <AdminField label="공식 이름(실명·활동명)" value={legalName} onChangeText={setLegalName} maxLength={100} />
-      <AdminField label="대화방 이름" value={chatDisplayName} onChangeText={setChatDisplayName} maxLength={50} />
+      <AdminField label="닉네임(배우가 직접 바꿀 수 있음)" value={chatDisplayName} onChangeText={setChatDisplayName} maxLength={20} />
       <AdminField label="월 구독료(바트)" value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
       <ThemedView style={styles.chips}>
         <AdminChip

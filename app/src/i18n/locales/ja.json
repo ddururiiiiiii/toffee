@@ -199,5 +199,23 @@
   },
   "safety": {
     "more": "その他"
+  },
+  "chatPhoto": {
+    "change": "トーク写真を変更",
+    "remove": "写真を削除",
+    "removeTitle": "トーク写真の削除",
+    "removeConfirm": "トークルームでファンに表示される写真が削除されます。",
+    "uploading": "アップロード中…",
+    "failed": "写真を変更できませんでした。もう一度お試しください。"
+  },
+  "studioProfile": {
+    "title": "マイプロフィール",
+    "headerButton": "プロフィール",
+    "nickname": "ニックネーム",
+    "nicknameHint": "トークルームでファンに表示される名前です。いつでも変更できます。",
+    "save": "保存",
+    "saved": "保存しました。",
+    "saveFailed": "保存できませんでした。もう一度お試しください。",
+    "officialNote": "検索画面の公式写真と公式名（{{name}}）は運営が管理しています。変更したい場合は運営にご連絡ください。"
   }
 }

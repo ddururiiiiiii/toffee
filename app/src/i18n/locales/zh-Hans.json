@@ -199,5 +199,23 @@
   },
   "safety": {
     "more": "更多"
+  },
+  "chatPhoto": {
+    "change": "更换聊天头像",
+    "remove": "删除照片",
+    "removeTitle": "删除聊天头像",
+    "removeConfirm": "粉丝在聊天室中将看不到这张照片。",
+    "uploading": "上传中…",
+    "failed": "无法更换照片，请重试。"
+  },
+  "studioProfile": {
+    "title": "我的资料",
+    "headerButton": "资料",
+    "nickname": "昵称",
+    "nicknameHint": "这是粉丝在聊天室中看到的名字，可以随时修改。",
+    "save": "保存",
+    "saved": "已保存。",
+    "saveFailed": "保存失败，请重试。",
+    "officialNote": "搜索页面上的官方照片和官方名称（{{name}}）由运营团队管理。如需修改，请联系运营团队。"
   }
 }

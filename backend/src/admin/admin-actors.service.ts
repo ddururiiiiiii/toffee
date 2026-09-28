@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { MediaService } from '../storage/media.service.js';
 import { ActorsService } from '../actors/actors.service.js';
 import { AdminAgenciesService } from './admin-agencies.service.js';
-import { isStorageKey, profileImagePrefix, type ProfileImageTarget } from '../storage/media-policy.js';
+import { profileImagePrefix, type ProfileImageTarget } from '../storage/media-policy.js';
 import { Role } from '../generated/prisma/enums.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import type { CreateActorDto, UpdateActorDto, UpdateActorImagesDto } from './dto/upsert-actor.dto.js';
@@ -92,32 +92,7 @@ export class AdminActorsService {
   }
 
   async updateImages(id: string, dto: UpdateActorImagesDto) {
-    const actor = await this.prisma.actor.findUnique({
-      where: { id },
-      select: { officialProfileImageUrl: true, chatProfileImageUrl: true },
-    });
-    if (!actor) throw new NotFoundException('배우를 찾을 수 없습니다.');
-
-    const data: Prisma.ActorUpdateInput = {};
-    const replaced: (string | null)[] = [];
-    if (dto.officialProfileImageKey !== undefined) {
-      data.officialProfileImageUrl = await this.checkImageKey('ACTOR', id, dto.officialProfileImageKey);
-      replaced.push(actor.officialProfileImageUrl);
-    }
-    if (dto.chatProfileImageKey !== undefined) {
-      data.chatProfileImageUrl = await this.checkImageKey('ACTOR', id, dto.chatProfileImageKey);
-      replaced.push(actor.chatProfileImageUrl);
-    }
-    const updated = await this.prisma.actor.update({
-      where: { id },
-      data,
-      select: { officialProfileImageUrl: true, chatProfileImageUrl: true },
-    });
-    // 이전 파일은 이제 어디서도 안 쓰면 지움(공식/대화방 프로필에 같은 파일을 쓰는 경우는 남겨둠)
-    const stillUsed = new Set([updated.officialProfileImageUrl, updated.chatProfileImageUrl]);
-    for (const old of replaced) {
-      if (isStorageKey(old) && !stillUsed.has(old)) await this.media.deleteQuietly(old);
-    }
+    await this.actors.updateImages(id, { official: dto.officialProfileImageKey, chat: dto.chatProfileImageKey });
     return this.findOne(id);
   }
 
@@ -139,18 +114,14 @@ export class AdminActorsService {
 
   // 업로드 발급 — 배우 사진은 배우, 소속사 로고는 소속사가 실제로 있어야 함
   async createProfileUpload(target: ProfileImageTarget, targetId: string, contentType: string, sizeBytes: number) {
-    if (target === 'ACTOR') await this.ensureActor(targetId);
-    else if (!(await this.prisma.agency.findUnique({ where: { id: targetId }, select: { id: true } }))) {
+    if (target === 'ACTOR') {
+      await this.ensureActor(targetId);
+      return this.actors.createProfileUpload(targetId, contentType, sizeBytes);
+    }
+    if (!(await this.prisma.agency.findUnique({ where: { id: targetId }, select: { id: true } }))) {
       throw new NotFoundException('소속사를 찾을 수 없습니다.');
     }
     return this.media.createUploadAt(profileImagePrefix(target, targetId), 'PHOTO', contentType, sizeBytes);
-  }
-
-  /** null(삭제)은 그대로, 키면 이 대상의 프로필용으로 올린 진짜 이미지인지 확인 */
-  async checkImageKey(target: ProfileImageTarget, id: string, key: string | null): Promise<string | null> {
-    if (key === null) return null;
-    await this.media.verifyAt(profileImagePrefix(target, id), 'PHOTO', key, '이 대상의 프로필용으로 올린 파일이 아니에요.');
-    return key;
   }
 
   private async ensureActor(id: string) {

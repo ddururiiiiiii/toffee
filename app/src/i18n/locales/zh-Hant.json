@@ -199,5 +199,23 @@
   },
   "safety": {
     "more": "更多"
+  },
+  "chatPhoto": {
+    "change": "更換聊天頭像",
+    "remove": "刪除照片",
+    "removeTitle": "刪除聊天頭像",
+    "removeConfirm": "粉絲在聊天室中將看不到這張照片。",
+    "uploading": "上傳中…",
+    "failed": "無法更換照片，請重試。"
+  },
+  "studioProfile": {
+    "title": "我的資料",
+    "headerButton": "資料",
+    "nickname": "暱稱",
+    "nicknameHint": "這是粉絲在聊天室中看到的名字，可以隨時修改。",
+    "save": "儲存",
+    "saved": "已儲存。",
+    "saveFailed": "儲存失敗，請重試。",
+    "officialNote": "搜尋頁面上的官方照片和官方名稱（{{name}}）由營運團隊管理。如需修改，請聯絡營運團隊。"
   }
 }

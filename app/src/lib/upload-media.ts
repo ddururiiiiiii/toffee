@@ -68,3 +68,8 @@ export function uploadMedia(
 export function uploadProfileImage(target: 'ACTOR' | 'AGENCY', targetId: string, uri: string, contentType?: string): Promise<string> {
   return putToStorage('/admin/uploads', { target, targetId }, uri, contentType);
 }
+
+/** 배우 본인·소속사 직원 — 대화방 사진. 받은 키를 PATCH /actors/:id/chat-profile-image에 넘김 */
+export function uploadChatProfileImage(actorId: string, uri: string, contentType?: string): Promise<string> {
+  return putToStorage(`/actors/${actorId}/chat-profile-image/upload`, {}, uri, contentType);
+}
