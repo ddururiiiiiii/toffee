@@ -22,6 +22,21 @@
 
 ---
 
+## 2026-09-28 (이어서) — 2차 작업: 통계·알림 끄기·1년 보존·파일 정리·영상 썸네일(진행 중)
+
+- 사용자 결정: 아티스트 게시판은 보류, 나머지 진행.
+- 완료: 운영자 통계 대시보드(앱 요약 숫자 + 통계 화면), 배우별 알림 끄기(채팅방 🔔), 대화기록 1년 보존(매일 새벽),
+  붙이지 않은 업로드 파일 정리(매일 새벽).
+- 진행 중 — 영상 썸네일: 서버(`Message.thumbnailKey`, 응답 `thumbnailUrl`, 삭제·정리 반영)와 `expo-video-thumbnails`
+  설치까지 커밋. **남은 일**: 앱 `lib/video-thumbnail.ts`(네이티브: expo-video-thumbnails) + `.web.ts`(video+canvas
+  캡처)로 첫 장면 만들기 → 스튜디오 영상 발송 시 PHOTO로 업로드해 `thumbnailKey` 전달 → `MediaTile`이
+  `thumbnailUrl` 있으면 사진 위에 ▶ 표시. `expo install`은 이 환경에서 외부 확인 서버가 막혀서 `npm install
+  expo-video-thumbnails@~57.0.0`로 설치함.
+- 사용자 질문 답변 기록: 모든 역할이 같은 소셜 로그인 + 운영자가 역할 지정(운영자 계정은 DB에서만), 소속사는 회사
+  구글 계정 권장, 운영자 추가 인증은 2차 보안 후보.
+
+---
+
 ## 2026-09-28 (이어서) — 가입 직후 닉네임 자유 수정 (점검 후 1차 항목 ④)
 
 - `nextNicknameChangeAt`를 `common/nickname/nickname.ts`로 옮기고 `User.createdAt + 24시간` 안에는 제한 없음(단위 테스트 3개).
