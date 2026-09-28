@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { loadToken, saveToken, removeToken } from './token-storage';
 import { apiClient } from './api-client';
 import type { Role } from './types';
+import { unregisterThisDevice } from '@/lib/push';
 
 interface AuthContextValue {
   token: string | null;
@@ -45,6 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    // 로그인 토큰이 있을 때 먼저 이 기기의 푸시 등록을 해제(안 하면 같은 폰의 다음 사람에게 앞 사람 알림이 감)
+    await unregisterThisDevice();
     await removeToken();
     setToken(null);
     setRole(null);

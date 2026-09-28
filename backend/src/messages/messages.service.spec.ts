@@ -21,7 +21,7 @@ function setup() {
     actor: { findUniqueOrThrow: vi.fn().mockResolvedValue({ chatDisplayName: '캐러멜' }) },
   } as unknown as PrismaService;
   const push = {
-    sendToUser: vi.fn((_userId: string, compose: ComposePush) => {
+    sendToUsers: vi.fn((_userIds: string[], compose: ComposePush) => {
       fanPushes.push(compose);
       return Promise.resolve();
     }),

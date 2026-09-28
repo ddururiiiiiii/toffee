@@ -149,5 +149,8 @@
     "saveNoticeTitle": "僅限個人收藏",
     "saveNoticeBody": "演員傳送的照片、影片和語音僅供訂閱者本人觀看。分享給他人或發布到社群媒體等，可能會依照服務條款被限制使用。",
     "saveNoticeAgree": "同意並儲存"
+  },
+  "push": {
+    "channelMessages": "新訊息"
   }
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { GoogleLoginDto } from './dto/google-login.dto.js';
@@ -8,6 +8,7 @@ import { KakaoLoginDto } from './dto/kakao-login.dto.js';
 import { LineLoginDto } from './dto/line-login.dto.js';
 import { DevLoginDto } from './dto/dev-login.dto.js';
 import { UpdateLocaleDto } from './dto/update-locale.dto.js';
+import { PushDeviceDto } from './dto/push-device.dto.js';
 import { AuthProvider, Role } from '../generated/prisma/enums.js';
 import { Public } from '../common/decorators/public.decorator.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
@@ -81,6 +82,20 @@ export class AuthController {
   @Get('me')
   me(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.getMe(user.id);
+  }
+
+  // 푸시 받을 기기 등록 — 앱이 로그인 후, 그리고 FCM이 토큰을 바꿀 때마다 보냄. 여러 기기 가능.
+  @Put('me/push-devices')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async registerPushDevice(@CurrentUser() user: AuthenticatedUser, @Body() dto: PushDeviceDto) {
+    await this.authService.registerPushDevice(user.id, dto.token, dto.platform);
+  }
+
+  // 로그아웃 시 이 기기만 해제 — 같은 폰으로 다른 계정이 로그인했을 때 앞 사람 알림이 오지 않게
+  @Post('me/push-devices/remove')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unregisterPushDevice(@CurrentUser() user: AuthenticatedUser, @Body() dto: PushDeviceDto) {
+    await this.authService.unregisterPushDevice(user.id, dto.token);
   }
 
   // 앱 표시 언어 동기화 — 푸시 등 서버가 만드는 문구의 언어를 정하는 데 씀

@@ -149,5 +149,8 @@
     "saveNoticeTitle": "仅限个人收藏",
     "saveNoticeBody": "演员发送的照片、视频和语音仅供订阅者本人观看。分享给他人或发布到社交媒体等，可能会根据服务条款被限制使用。",
     "saveNoticeAgree": "同意并保存"
+  },
+  "push": {
+    "channelMessages": "新消息"
   }
 }

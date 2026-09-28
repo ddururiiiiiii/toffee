@@ -194,4 +194,19 @@ export class AuthService {
   updateLocale(userId: string, locale: string) {
     return this.prisma.user.update({ where: { id: userId }, data: { locale }, select: { id: true, role: true, locale: true } });
   }
+
+  // 기기 등록 — 토큰은 한 계정에만 속함(같은 폰에서 계정을 바꿔 로그인하면 새 계정으로 옮겨감).
+  // 한 계정은 여러 기기를 가질 수 있음.
+  async registerPushDevice(userId: string, token: string, platform?: string): Promise<void> {
+    await this.prisma.pushDevice.upsert({
+      where: { token },
+      create: { userId, token, platform },
+      update: { userId, platform },
+    });
+  }
+
+  // 이 기기만 해제(로그아웃) — 다른 기기 알림은 그대로
+  async unregisterPushDevice(userId: string, token: string): Promise<void> {
+    await this.prisma.pushDevice.deleteMany({ where: { userId, token } });
+  }
 }

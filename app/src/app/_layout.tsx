@@ -12,6 +12,7 @@ import '@/i18n';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { LocalePreferenceProvider } from '@/i18n/locale-preference-context';
 import { useSyncLocale } from '@/hooks/use-sync-locale';
+import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { useOnboardingStatus } from '@/hooks/use-onboarding';
 
@@ -69,8 +70,10 @@ function AuthGate({ children }: { children: ReactNode }) {
 
 export default Sentry.wrap(RootLayout);
 
-function LocaleSync() {
+// 로그인 상태에 따라 돌아야 하는 백그라운드 작업들(언어 동기화, 푸시 등록·알림 처리)
+function SessionEffects() {
   useSyncLocale();
+  usePushNotifications();
   return null;
 }
 
@@ -85,7 +88,7 @@ function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <LocalePreferenceProvider>
       <AuthProvider>
-        <LocaleSync />
+        <SessionEffects />
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <AnimatedSplashOverlay />
           <AuthGate>

@@ -70,7 +70,6 @@ model User {
   role                  Role                  @default(USER)
   displayName           String
   email                 String?               @unique
-  fcmToken              String?
   // 앱 표시 언어(ko/th/en/ja/zh-Hans/zh-Hant) — 푸시 알림처럼 서버가 만드는 문구의 언어를 고르는 데 씀.
   // 앱이 기기 언어/설정 변경 시 PATCH /auth/me/locale로 동기화. null이면 기본 언어(en).
   locale                String?
@@ -91,10 +90,27 @@ model User {
   subscriptions   Subscription[]
   fanMessages     Message[]        @relation("FanMessages")
   agency          Agency?          @relation(fields: [agencyId], references: [id])
+  pushDevices     PushDevice[]
   reportsFiled    Report[]         @relation("ReportsFiled")
   actorSelf       Actor?           @relation("ActorSelf")
   storyViews      StoryView[]
   parentalConsent ParentalConsent?
+}
+
+// 푸시 받을 기기 — 한 사람이 폰·태블릿 등 여러 기기로 받을 수 있게 기기(토큰)마다 한 줄(유료 서비스라
+// 계정당 1대로 제한하지 않음, 2026-09-28). 토큰은 한 계정에만 속함(같은 폰에서 계정을 바꾸면 옮겨감).
+// FCM이 "죽은 토큰"이라고 알려주면 발송 중에 자동 삭제.
+model PushDevice {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  platform  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model AuthIdentity {

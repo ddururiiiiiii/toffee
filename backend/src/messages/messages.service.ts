@@ -112,24 +112,30 @@ export class MessagesService {
     // 본문은 메시지 미리보기 — {{name}}은 받는 팬 본인 이름으로 치환, 텍스트가 없으면 미디어 종류 안내를
     // 받는 사람 언어로.
     const actor = await this.prisma.actor.findUniqueOrThrow({ where: { id: actorId }, select: { chatDisplayName: true } });
+    // 알림을 누르면 앱이 이 값으로 해당 채팅방(팬)/콘솔(소속사)로 이동
+    const pushData = { type: 'NEW_MESSAGE', actorId, messageId: message.id };
     const preview = (locale: string | null, fanName?: string) => {
       if (!dto.body) return pushStrings(locale).media[dto.mediaType];
       const text = fanName ? personalize(dto.body, fanName) : dto.body;
       return text.slice(0, PUSH_PREVIEW_LENGTH);
     };
-    await Promise.all(
-      activeSubscriptions.map((sub) =>
-        this.pushService
-          .sendToUser(sub.userId, ({ locale, displayName }) => ({ title: actor.chatDisplayName, body: preview(locale, displayName) }))
-          .catch(() => {}),
-      ),
-    );
+    await this.pushService
+      .sendToUsers(
+        activeSubscriptions.map((sub) => sub.userId),
+        ({ locale, displayName }) => ({ title: actor.chatDisplayName, body: preview(locale, displayName) }),
+        pushData,
+      )
+      .catch(() => {});
     // 소속사 모니터링용 알림 — 팬 알림과 별개, 실패해도 발송 자체엔 영향 없음(모니터링은 원문 그대로라 치환 안 함)
     await this.pushService
-      .notifyActorStaff(actorId, ({ locale }) => ({
-        title: pushStrings(locale).staffNewMessageTitle(actor.chatDisplayName),
-        body: preview(locale),
-      }))
+      .notifyActorStaff(
+        actorId,
+        ({ locale }) => ({
+          title: pushStrings(locale).staffNewMessageTitle(actor.chatDisplayName),
+          body: preview(locale),
+        }),
+        pushData,
+      )
       .catch(() => {});
 
     return message;

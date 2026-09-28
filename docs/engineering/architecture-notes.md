@@ -82,6 +82,34 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
 
+## 푸시 알림 — 기기 등록·발송 (2026-09-28)
+
+젤리 방식(@react-native-firebase로 iOS도 FCM 토큰, 서버는 firebase-admin)을 출발점으로 하되 **유료
+서비스 기준으로 보강**(사용자 방침: 젤리는 참고만):
+
+- **여러 기기**: `User.fcmToken`(계정당 1개) → `PushDevice { userId, token @unique, platform }`.
+  마이그레이션 `20260928060000_add_push_devices`가 기존 토큰을 옮긴 뒤 컬럼 삭제(임시 DB에서 확인).
+  같은 토큰을 다른 계정이 등록하면 그 계정으로 옮겨감(같은 폰에서 계정 전환).
+- **API**: `PUT /auth/me/push-devices { token, platform }`, `POST /auth/me/push-devices/remove { token }`
+  (로그아웃 시 이 기기만 — 남의 기기 토큰으론 아무 일도 안 일어남).
+- **발송**: `PushService.sendToUsers(userIds, compose, data)` — 기기마다 받는 사람 언어·이름으로 문구를
+  만들어(`buildPushMessages`) FCM `sendEach`로 **500개씩** 발송, `registration-token-not-registered` 등
+  죽은 토큰은 즉시 삭제, 실패는 로그만(best-effort). 안드로이드 채널 `messages`(high), iOS 기본 사운드.
+  방송 메시지는 구독자 전체를 한 번에 `sendToUsers`로(예전엔 사람마다 DB 조회 + 개별 발송).
+- **data**: `{ type: 'NEW_MESSAGE', actorId, messageId }` — 앱이 알림 탭 시 역할별로 이동(팬 `/chat`,
+  소속사 `/console`, 배우 `/studio`), 앱 사용 중 수신이면 해당 대화 쿼리만 새로고침.
+- **앱**: `lib/push.native.ts`(실제) / `lib/push.ts`(웹 no-op — 웹 푸시는 1차 범위 밖, 네이티브 모듈을
+  웹 번들에 안 넣기 위해 파일 분리). `hooks/use-push-notifications.ts`를 루트 `SessionEffects`에서 실행,
+  `logout()`이 로그인 토큰을 지우기 전에 `unregisterThisDevice()`.
+- **네이티브 설정**: `@react-native-firebase/app`·`messaging`, `expo-notifications`(아이콘 색 브랜드
+  Lavender), `expo-build-properties`(iOS `useFrameworks: static` — RNFirebase 요구). `googleServicesFile`
+  경로는 잡아뒀지만 **파일 자체는 없음**(Firebase 프로젝트 생성 전) — 없으면 prebuild가 실패하므로 스토어
+  빌드 전에 운영 보류 목록대로 넣을 것.
+- **검증**: 단위 테스트(1,200기기 → 500/500/200 묶음, 죽은 토큰만 삭제, 발송 실패해도 예외 없음, 기기별
+  언어·이름), 실서버에서 여러 기기 등록·계정 전환·기기 해제·잘못된 platform 400, 웹 앱 렌더링·로그아웃
+  정상. **실제 기기 수신은 Firebase 설정 + 스토어용 빌드 후 확인 필요.**
+- 후속: 오래 안 쓴 기기(FCM 기준 270일) 정리, 알림 설정(끄기·미리보기 숨김).
+
 ## 음성 메시지 음파·재생 (2026-09-28)
 
 - `Message.mediaDurationMs Int?`, `Message.waveform Json?`(0~1, 최대 64칸 — `SendBroadcastDto`에서

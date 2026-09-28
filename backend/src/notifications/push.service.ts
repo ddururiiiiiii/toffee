@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { cert, getApps, initializeApp, type App, type ServiceAccount } from 'firebase-admin/app';
-import { getMessaging } from 'firebase-admin/messaging';
+import { getMessaging, type Message } from 'firebase-admin/messaging';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Role } from '../generated/prisma/enums.js';
 
@@ -16,6 +16,34 @@ const INVALID_TOKEN_ERROR_CODES = new Set([
   'messaging/registration-token-not-registered',
   'messaging/invalid-registration-token',
 ]);
+
+// FCM sendEach 한 번에 보낼 수 있는 최대 메시지 수
+const FCM_BATCH_SIZE = 500;
+
+export interface PushDeviceTarget {
+  token: string;
+  user: PushRecipient;
+}
+
+/** 기기별 메시지 만들기 — 받는 사람마다 언어·이름이 달라서 기기마다 따로 조립(순수 함수, 테스트용으로 분리) */
+export function buildPushMessages(devices: PushDeviceTarget[], compose: ComposePush, data?: Record<string, string>): Message[] {
+  return devices.map(({ token, user }) => {
+    const { title, body } = compose(user);
+    return {
+      token,
+      notification: { title, body },
+      data,
+      android: { priority: 'high', notification: { channelId: 'messages' } },
+      apns: { payload: { aps: { sound: 'default' } } },
+    };
+  });
+}
+
+export function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+  return chunks;
+}
 
 @Injectable()
 export class PushService implements OnModuleInit {
@@ -37,25 +65,42 @@ export class PushService implements OnModuleInit {
     this.app = getApps()[0] ?? initializeApp({ credential: cert(serviceAccount) });
   }
 
-  /**
-   * userId로 등록된 토큰을 찾아 발송하고, 죽은 토큰이면 DB에서 지워서 다음 로그인 때 새 토큰이 등록되게 함.
-   * 문구는 받는 사람마다 언어(User.locale)·이름이 달라서 compose 함수로 받아 사람별로 만듦.
-   */
-  async sendToUser(userId: string, compose: ComposePush, data?: Record<string, string>): Promise<void> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { fcmToken: true, locale: true, displayName: true },
-    });
-    if (!user?.fcmToken) return;
-
-    const { title, body } = compose({ locale: user.locale, displayName: user.displayName });
-    const result = await this.send(user.fcmToken, title, body, data);
-    if (result.invalidToken) {
-      await this.prisma.user.update({ where: { id: userId }, data: { fcmToken: null } });
-    }
+  /** 한 사람의 모든 기기로 */
+  sendToUser(userId: string, compose: ComposePush, data?: Record<string, string>): Promise<void> {
+    return this.sendToUsers([userId], compose, data);
   }
 
-  // 배우가 새 메시지/스토리를 보낼 때 현재 소속사 스태프 전원에게 알림(모니터링용) — best-effort
+  /**
+   * 여러 사람의 모든 기기로 — 받는 사람 언어·이름에 맞춰 기기마다 문구를 만들고 500개씩 묶어 발송
+   * (구독자가 수천 명이어도 사람마다 따로 요청하지 않게). FCM이 죽었다고 알려준 토큰은 바로 삭제.
+   * 실패는 로그만 남기고 호출한 쪽 흐름을 막지 않음(best-effort).
+   */
+  async sendToUsers(userIds: string[], compose: ComposePush, data?: Record<string, string>): Promise<void> {
+    if (!this.app || userIds.length === 0) return;
+    const devices = await this.prisma.pushDevice.findMany({
+      where: { userId: { in: userIds } },
+      select: { token: true, user: { select: { locale: true, displayName: true } } },
+    });
+    if (devices.length === 0) return;
+
+    const messaging = getMessaging(this.app);
+    const deadTokens: string[] = [];
+    for (const batch of chunk(buildPushMessages(devices, compose, data), FCM_BATCH_SIZE)) {
+      try {
+        const result = await messaging.sendEach(batch);
+        result.responses.forEach((response, index) => {
+          const code = response.error?.code;
+          if (code && INVALID_TOKEN_ERROR_CODES.has(code)) deadTokens.push((batch[index] as { token: string }).token);
+        });
+        if (result.failureCount > 0) this.logger.warn(`FCM 발송 ${batch.length}건 중 ${result.failureCount}건 실패`);
+      } catch (error) {
+        this.logger.warn(`FCM 발송 실패: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+    if (deadTokens.length > 0) await this.prisma.pushDevice.deleteMany({ where: { token: { in: deadTokens } } });
+  }
+
+  // 배우가 새 메시지를 보낼 때 현재 소속사 스태프 전원에게 알림(모니터링용) — best-effort
   async notifyActorStaff(actorId: string, compose: ComposePush, data?: Record<string, string>): Promise<void> {
     const actor = await this.prisma.actor.findUnique({ where: { id: actorId }, select: { agencyId: true } });
     if (!actor?.agencyId) return;
@@ -63,24 +108,10 @@ export class PushService implements OnModuleInit {
       where: { agencyId: actor.agencyId, role: Role.AGENCY_STAFF },
       select: { id: true },
     });
-    await Promise.all(staff.map((staffUser) => this.sendToUser(staffUser.id, compose, data).catch(() => {})));
-  }
-
-  private async send(
-    token: string,
-    title: string,
-    body: string,
-    data?: Record<string, string>,
-  ): Promise<{ ok: boolean; invalidToken: boolean }> {
-    if (!this.app) return { ok: false, invalidToken: false };
-    try {
-      await getMessaging(this.app).send({ token, notification: { title, body }, data });
-      return { ok: true, invalidToken: false };
-    } catch (error) {
-      const code = (error as { code?: string } | undefined)?.code;
-      const invalidToken = !!code && INVALID_TOKEN_ERROR_CODES.has(code);
-      this.logger.warn(`FCM 발송 실패: ${error instanceof Error ? error.message : String(error)}`);
-      return { ok: false, invalidToken };
-    }
+    await this.sendToUsers(
+      staff.map((user) => user.id),
+      compose,
+      data,
+    );
   }
 }
