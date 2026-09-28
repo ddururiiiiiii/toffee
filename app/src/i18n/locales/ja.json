@@ -7,7 +7,10 @@
   "tabs": {
     "actors": "俳優",
     "chats": "トーク",
-    "my": "マイ"
+    "my": "マイ",
+    "discover": "見つける",
+    "inbox": "メッセージ",
+    "profile": "プロフィール"
   },
   "screens": {
     "console": "コンソール",
@@ -263,5 +266,45 @@
     "body": "退会するとニックネームや生年月日などの情報が削除され、元に戻せません。\n\n• 購読中のスターがいる場合は、先に App Store・Google Play で購読を解約してください。退会してもストアの課金は自動では止まりません。\n• これまでのトークは見られなくなります。残しておきたい写真・音声・動画は事前に保存してください。\n• 送った返信はスターに「退会したファン」と表示されます。",
     "confirm": "退会する",
     "failed": "退会できませんでした。もう一度お試しください。"
+  },
+  "discover": {
+    "tagline": "Closer to what matters.",
+    "searchPlaceholder": "俳優・事務所を検索",
+    "clearSearch": "検索語を消去",
+    "forYou": "おすすめ",
+    "trending": "人気",
+    "new": "新着",
+    "trendingTitle": "Toffeeで人気",
+    "newTitle": "Toffeeの新着",
+    "allTitle": "すべての俳優",
+    "seeAll": "すべて見る",
+    "newBadge": "NEW",
+    "openProfile": "{{name}}のプロフィールを見る",
+    "subscribed": "購読中",
+    "emptyTitle": "俳優が見つかりません",
+    "emptyBody": "別の名前や事務所で検索してみてください。",
+    "loadFailedTitle": "読み込めませんでした",
+    "retry": "再試行"
+  },
+  "time": {
+    "yesterday": "昨日"
+  },
+  "inbox": {
+    "search": "俳優を探す",
+    "sentPhoto": "写真を送信しました",
+    "sentVoice": "ボイスメッセージを送信しました",
+    "sentVideo": "動画を送信しました",
+    "justSentPhoto": "新しい写真が届きました",
+    "justSentVoice": "ボイスメッセージが届きました",
+    "justSentVideo": "動画が届きました",
+    "justSentMessage": "新しいメッセージが届きました",
+    "you": "自分: {{text}}",
+    "noMessagesYet": "まもなく最初のメッセージが届きます",
+    "muted": "通知オフ",
+    "unread": "未読 {{count}}件",
+    "emptyTitle": "まだ購読している俳優がいません",
+    "emptyBody": "好きな俳優を購読すると、ここでメッセージを受け取れます。",
+    "discover": "俳優を見つける",
+    "loadFailed": "メッセージ一覧を読み込めませんでした"
   }
 }

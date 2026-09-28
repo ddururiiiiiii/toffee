@@ -1,7 +1,9 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { IapVerificationService } from './iap-verification.service.js';
-import { ParentalConsentStatus, SubscriptionEventType } from '../generated/prisma/enums.js';
+import { MessageSenderType, ParentalConsentStatus, SubscriptionEventType } from '../generated/prisma/enums.js';
+
+const LAST_MESSAGE_PREVIEW = 80;
 import type { VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
 import { MediaService } from '../storage/media.service.js';
 import { appError } from '../common/i18n/app-error.js';
@@ -15,22 +17,57 @@ export class SubscriptionsService {
     private readonly media: MediaService,
   ) {}
 
+  /**
+   * 내 구독 = 인박스 목록(B3 시안) — 채팅방마다 마지막 메시지 미리보기, 안 읽은 스타 메시지 수, 최근 대화 순 정렬.
+   * 안 읽음 = 마지막으로 채팅방을 본 시각(lastReadAt, 없으면 구독 시작) 이후의 스타 메시지.
+   */
   async listMine(userId: string) {
-    const subscriptions = await this.prisma.subscription.findMany({
-      where: { userId, cancelledAt: null },
-      include: {
-        actor: {
-          select: { id: true, chatDisplayName: true, chatProfileImageUrl: true, monthlyPriceCents: true },
+    const [subscriptions, me] = await Promise.all([
+      this.prisma.subscription.findMany({
+        where: { userId, cancelledAt: null },
+        include: {
+          actor: {
+            select: { id: true, chatDisplayName: true, chatProfileImageUrl: true, monthlyPriceCents: true },
+          },
         },
-      },
-      orderBy: { startedAt: 'desc' },
-    });
-    return Promise.all(
-      subscriptions.map(async (subscription) => ({
-        ...subscription,
-        actor: { ...subscription.actor, chatProfileImageUrl: await this.media.resolveImageUrl(subscription.actor.chatProfileImageUrl) },
-      })),
+        orderBy: { startedAt: 'desc' },
+      }),
+      this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { nickname: true, displayName: true } }),
+    ]);
+    const fanName = me.nickname ?? me.displayName;
+    const rows = await Promise.all(
+      subscriptions.map(async (subscription) => {
+        const visible = { actorId: subscription.actorId, deletedAt: null, createdAt: { gte: subscription.startedAt } };
+        const readFrom = subscription.lastReadAt && subscription.lastReadAt > subscription.startedAt ? subscription.lastReadAt : subscription.startedAt;
+        const [last, unreadCount, chatProfileImageUrl] = await Promise.all([
+          this.prisma.message.findFirst({
+            where: { ...visible, OR: [{ senderType: MessageSenderType.ARTIST }, { fanUserId: userId }] },
+            orderBy: { createdAt: 'desc' },
+            select: { senderType: true, mediaType: true, body: true, createdAt: true },
+          }),
+          this.prisma.message.count({
+            where: { ...visible, senderType: MessageSenderType.ARTIST, createdAt: { gt: readFrom } },
+          }),
+          this.media.resolveImageUrl(subscription.actor.chatProfileImageUrl),
+        ]);
+        return {
+          ...subscription,
+          actor: { ...subscription.actor, chatProfileImageUrl },
+          unreadCount,
+          lastMessage: last
+            ? {
+                senderType: last.senderType,
+                mediaType: last.mediaType,
+                // 스타 메시지의 {{name}}은 받는 팬 이름으로(채팅방과 같게)
+                body: last.body ? last.body.replaceAll('{{name}}', fanName).slice(0, LAST_MESSAGE_PREVIEW) : null,
+                createdAt: last.createdAt,
+              }
+            : null,
+        };
+      }),
     );
+    const activity = (row: (typeof rows)[number]) => (row.lastMessage?.createdAt ?? row.startedAt).getTime();
+    return rows.sort((a, b) => activity(b) - activity(a));
   }
 
   // 결제(IAP)는 계약 성사 후에 붙임 — 지금은 결제 없이 구독 레코드만 만드는 샌드박스 플로우

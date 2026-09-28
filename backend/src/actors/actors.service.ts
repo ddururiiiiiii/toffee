@@ -18,6 +18,8 @@ const LIST_SELECT = {
   chatDisplayName: true,
   chatProfileImageUrl: true,
   monthlyPriceCents: true,
+  // Discover의 "NEW" 표시용
+  createdAt: true,
   // 소속사는 팬에게도 공개(소속사별 목록/검색) — 무소속이면 null
   agency: { select: { id: true, name: true, logoUrl: true } },
 } as const;
@@ -31,7 +33,7 @@ export class ActorsService {
   ) {}
 
   // q는 배우 이름뿐 아니라 소속사 이름에도 매칭 — "GMMTV"로 검색하면 소속 배우가 다 나오게
-  async findAll(query?: string, agencyId?: string) {
+  async findAll(query?: string, agencyId?: string, sort?: 'trending' | 'new') {
     const where: Prisma.ActorWhereInput = {};
     if (agencyId) where.agencyId = agencyId;
     if (query) {
@@ -43,7 +45,12 @@ export class ActorsService {
     const actors = await this.prisma.actor.findMany({
       where,
       select: LIST_SELECT,
-      orderBy: { legalName: 'asc' },
+      orderBy:
+        sort === 'trending'
+          ? [{ subscriptions: { _count: 'desc' } }, { legalName: 'asc' }]
+          : sort === 'new'
+            ? [{ createdAt: 'desc' }]
+            : { legalName: 'asc' },
     });
     return Promise.all(actors.map((actor) => this.withImageUrls(actor)));
   }

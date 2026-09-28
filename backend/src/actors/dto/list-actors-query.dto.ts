@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 
 export class ListActorsQueryDto {
   @IsOptional()
@@ -9,4 +9,10 @@ export class ListActorsQueryDto {
   @IsOptional()
   @IsString()
   agencyId?: string;
+
+  // Discover 화면 정렬 — trending(구독 이력이 많은 순, 해지 포함 — Prisma 정렬에 조건을 못 걸어서), new(최근 등록 순), 없으면 이름순.
+  // 구독자 수 자체는 응답에 넣지 않음(배우별 팬 수는 공개하지 않는 정보)
+  @IsOptional()
+  @IsIn(['trending', 'new'])
+  sort?: 'trending' | 'new';
 }

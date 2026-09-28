@@ -5,6 +5,8 @@ export interface PushData {
   type?: string;
   actorId?: string;
   messageId?: string;
+  title?: string;
+  body?: string;
 }
 
 export async function registerThisDevice(): Promise<void> {}
@@ -22,3 +24,5 @@ export function subscribeNotificationOpens(_onOpen: (data: PushData) => void): (
 export function subscribeForegroundMessages(_onMessage: (data: PushData) => void): () => void {
   return () => {};
 }
+
+export function setAppBadgeCount(_count: number): void {}

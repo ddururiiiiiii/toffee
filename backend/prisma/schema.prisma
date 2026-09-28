@@ -264,6 +264,8 @@ model Subscription {
   iapExpiresAt        DateTime?
   // 이 배우의 새 메시지 알림 끄기(카톡 채팅방 알림 끄기처럼) — 구독·메시지 수신은 그대로
   notificationsMuted  Boolean      @default(false)
+  // 팬이 이 채팅방을 마지막으로 본 시각 — 인박스의 안 읽은 개수(이 시각 이후의 스타 메시지). 채팅방 조회 때 갱신
+  lastReadAt          DateTime?
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   actor Actor @relation(fields: [actorId], references: [id], onDelete: Cascade)

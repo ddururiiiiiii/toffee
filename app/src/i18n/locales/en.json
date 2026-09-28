@@ -7,7 +7,10 @@
   "tabs": {
     "actors": "Actors",
     "chats": "Chats",
-    "my": "My"
+    "my": "My",
+    "discover": "Discover",
+    "inbox": "Inbox",
+    "profile": "Profile"
   },
   "screens": {
     "console": "Console",
@@ -263,5 +266,45 @@
     "body": "Deleting your account removes your information such as nickname and date of birth, and it can't be undone.\n\n• If you have active subscriptions, cancel them in the App Store or Google Play first. Deleting your account does not stop store billing.\n• You won't be able to see your chats again. Save any photos, voice or videos you want to keep beforehand.\n• Replies you sent will be shown to stars as \"Deleted fan\".",
     "confirm": "Delete",
     "failed": "Couldn't delete your account. Please try again."
+  },
+  "discover": {
+    "tagline": "Closer to what matters.",
+    "searchPlaceholder": "Search actors or agencies",
+    "clearSearch": "Clear search",
+    "forYou": "For You",
+    "trending": "Trending",
+    "new": "New",
+    "trendingTitle": "Trending on Toffee",
+    "newTitle": "New on Toffee",
+    "allTitle": "All actors",
+    "seeAll": "See all",
+    "newBadge": "NEW",
+    "openProfile": "View {{name}}'s profile",
+    "subscribed": "Subscribed",
+    "emptyTitle": "No actors found",
+    "emptyBody": "Try another name or agency.",
+    "loadFailedTitle": "Couldn't load",
+    "retry": "Try again"
+  },
+  "time": {
+    "yesterday": "Yesterday"
+  },
+  "inbox": {
+    "search": "Find actors",
+    "sentPhoto": "Sent a photo",
+    "sentVoice": "Sent a voice message",
+    "sentVideo": "Sent a video",
+    "justSentPhoto": "Just sent a new photo",
+    "justSentVoice": "Just sent a voice message",
+    "justSentVideo": "Just sent a video",
+    "justSentMessage": "Sent you a new message",
+    "you": "You: {{text}}",
+    "noMessagesYet": "Their first message is on the way",
+    "muted": "Muted",
+    "unread": "{{count}} unread",
+    "emptyTitle": "No subscriptions yet",
+    "emptyBody": "Subscribe to an actor you love to receive their messages here.",
+    "discover": "Discover actors",
+    "loadFailed": "Couldn't load your inbox"
   }
 }

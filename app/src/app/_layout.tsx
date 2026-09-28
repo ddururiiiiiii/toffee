@@ -1,5 +1,10 @@
 import { useEffect, type ReactNode } from 'react';
-import { NotoSansThai_400Regular } from '@expo-google-fonts/noto-sans-thai';
+import {
+  NotoSansThai_400Regular,
+  NotoSansThai_500Medium,
+  NotoSansThai_600SemiBold,
+  NotoSansThai_700Bold,
+} from '@expo-google-fonts/noto-sans-thai';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as Sentry from '@sentry/react-native';
@@ -100,7 +105,7 @@ function SessionEffects() {
 function RootLayout() {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
-  const [fontsLoaded, fontError] = useFonts({ NotoSansThai_400Regular });
+  const [fontsLoaded, fontError] = useFonts({ NotoSansThai_400Regular, NotoSansThai_500Medium, NotoSansThai_600SemiBold, NotoSansThai_700Bold });
 
   if (!fontsLoaded && !fontError) return null;
 

@@ -142,6 +142,10 @@ export class MessagesService {
     });
 
     const fan = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    // 채팅방을 보고 있으면 읽음 처리(인박스 안 읽은 개수 기준) — 응답은 기다리지 않음
+    void this.prisma.subscription
+      .update({ where: { userId_actorId: { userId, actorId } }, data: { lastReadAt: new Date() } })
+      .catch(() => {});
     return this.mediaService.withReadUrls(
       messages.map(withQuote).map((message) => ({
         ...message,

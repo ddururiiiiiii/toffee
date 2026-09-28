@@ -7,7 +7,10 @@
   "tabs": {
     "actors": "배우",
     "chats": "대화",
-    "my": "마이"
+    "my": "마이",
+    "discover": "둘러보기",
+    "inbox": "메시지",
+    "profile": "프로필"
   },
   "screens": {
     "console": "콘솔",
@@ -263,5 +266,45 @@
     "body": "탈퇴하면 닉네임·생년월일 등 내 정보가 삭제되고 되돌릴 수 없어요.\n\n• 구독 중인 배우가 있다면 App Store·Google Play에서 먼저 구독을 해지해 주세요. 앱을 탈퇴해도 스토어 결제는 자동으로 멈추지 않아요.\n• 지금까지의 대화는 다시 볼 수 없어요. 간직하고 싶은 사진·음성·영상은 미리 저장해 두세요.\n• 내가 보낸 답장은 스타에게 \"탈퇴한 팬\"으로 표시돼요.",
     "confirm": "탈퇴하기",
     "failed": "탈퇴하지 못했어요. 다시 시도해 주세요."
+  },
+  "discover": {
+    "tagline": "Closer to what matters.",
+    "searchPlaceholder": "배우, 소속사 검색",
+    "clearSearch": "검색어 지우기",
+    "forYou": "추천",
+    "trending": "인기",
+    "new": "신규",
+    "trendingTitle": "지금 인기 있는 배우",
+    "newTitle": "새로 온 배우",
+    "allTitle": "모든 배우",
+    "seeAll": "전체 보기",
+    "newBadge": "NEW",
+    "openProfile": "{{name}} 프로필 보기",
+    "subscribed": "구독 중",
+    "emptyTitle": "찾는 배우가 없어요",
+    "emptyBody": "다른 이름이나 소속사로 검색해 보세요.",
+    "loadFailedTitle": "불러오지 못했어요",
+    "retry": "다시 시도"
+  },
+  "time": {
+    "yesterday": "어제"
+  },
+  "inbox": {
+    "search": "배우 찾기",
+    "sentPhoto": "사진을 보냈어요",
+    "sentVoice": "음성 메시지를 보냈어요",
+    "sentVideo": "동영상을 보냈어요",
+    "justSentPhoto": "방금 사진을 보냈어요",
+    "justSentVoice": "방금 음성 메시지를 보냈어요",
+    "justSentVideo": "방금 동영상을 보냈어요",
+    "justSentMessage": "새 메시지가 도착했어요",
+    "you": "나: {{text}}",
+    "noMessagesYet": "곧 첫 메시지가 도착할 거예요",
+    "muted": "알림 꺼짐",
+    "unread": "안 읽은 메시지 {{count}}개",
+    "emptyTitle": "아직 구독한 배우가 없어요",
+    "emptyBody": "좋아하는 배우를 구독하면 여기에서 1:1 메시지를 받을 수 있어요.",
+    "discover": "배우 둘러보기",
+    "loadFailed": "메시지 목록을 불러오지 못했어요"
   }
 }

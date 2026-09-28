@@ -18,18 +18,22 @@ export interface Actor {
   chatDisplayName: string;
   chatProfileImageUrl: string | null;
   monthlyPriceCents: number;
+  createdAt?: string;
   // 무소속이면 null
   agency: AgencySummary | null;
 }
 
 // q는 서버에서 배우 이름 + 소속사 이름 둘 다에 매칭됨
-export function useActors(query: string, agencyId?: string | null) {
+export type ActorSort = 'trending' | 'new';
+
+export function useActors(query: string, agencyId?: string | null, sort?: ActorSort) {
   return useQuery({
-    queryKey: ['actors', { query, agencyId: agencyId ?? null }],
+    queryKey: ['actors', { query, agencyId: agencyId ?? null, sort: sort ?? null }],
     queryFn: () => {
       const params = new URLSearchParams();
       if (query) params.set('q', query);
       if (agencyId) params.set('agencyId', agencyId);
+      if (sort) params.set('sort', sort);
       const search = params.toString();
       return apiClient.get<Actor[]>(`/actors${search ? `?${search}` : ''}`);
     },

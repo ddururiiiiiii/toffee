@@ -7,7 +7,10 @@
   "tabs": {
     "actors": "演员",
     "chats": "聊天",
-    "my": "我的"
+    "my": "我的",
+    "discover": "发现",
+    "inbox": "消息",
+    "profile": "我的"
   },
   "screens": {
     "console": "控制台",
@@ -263,5 +266,45 @@
     "body": "注销后，昵称、出生日期等信息将被删除且无法恢复。\n\n• 如有正在订阅的明星，请先在 App Store 或 Google Play 取消订阅。注销账号不会自动停止商店扣费。\n• 将无法再查看之前的聊天。想保留的照片、语音、视频请提前保存。\n• 你发送的回复将向明星显示为“已注销的粉丝”。",
     "confirm": "注销",
     "failed": "注销失败，请重试。"
+  },
+  "discover": {
+    "tagline": "Closer to what matters.",
+    "searchPlaceholder": "搜索演员或经纪公司",
+    "clearSearch": "清除搜索",
+    "forYou": "推荐",
+    "trending": "热门",
+    "new": "新入驻",
+    "trendingTitle": "Toffee 热门",
+    "newTitle": "Toffee 新入驻",
+    "allTitle": "全部演员",
+    "seeAll": "查看全部",
+    "newBadge": "NEW",
+    "openProfile": "查看 {{name}} 的主页",
+    "subscribed": "已订阅",
+    "emptyTitle": "没有找到演员",
+    "emptyBody": "试试其他名字或经纪公司。",
+    "loadFailedTitle": "加载失败",
+    "retry": "重试"
+  },
+  "time": {
+    "yesterday": "昨天"
+  },
+  "inbox": {
+    "search": "寻找演员",
+    "sentPhoto": "发送了照片",
+    "sentVoice": "发送了语音消息",
+    "sentVideo": "发送了视频",
+    "justSentPhoto": "刚刚发送了新照片",
+    "justSentVoice": "刚刚发送了语音消息",
+    "justSentVideo": "刚刚发送了视频",
+    "justSentMessage": "给你发来了新消息",
+    "you": "我：{{text}}",
+    "noMessagesYet": "第一条消息即将到来",
+    "muted": "已静音",
+    "unread": "{{count}} 条未读",
+    "emptyTitle": "还没有订阅的演员",
+    "emptyBody": "订阅喜爱的演员，就能在这里收到 TA 的消息。",
+    "discover": "发现演员",
+    "loadFailed": "消息列表加载失败"
   }
 }

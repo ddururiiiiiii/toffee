@@ -12,14 +12,25 @@ export interface Subscription {
   // 이 배우 알림 끄기(채팅방 🔔)
   notificationsMuted: boolean;
   actor: { id: string; chatDisplayName: string; chatProfileImageUrl: string | null; monthlyPriceCents: number };
+  /** 마지막으로 채팅방을 본 뒤 온 스타 메시지 수 */
+  unreadCount: number;
+  /** 인박스 미리보기(서버가 최근 대화 순으로 정렬해서 줌) */
+  lastMessage: {
+    senderType: 'ARTIST' | 'FAN';
+    mediaType: 'TEXT' | 'PHOTO' | 'AUDIO' | 'VIDEO';
+    body: string | null;
+    createdAt: string;
+  } | null;
 }
 
-export function useMySubscriptions() {
+/** 내 구독 = 인박스 목록. live면 인박스를 보고 있는 동안 주기적으로 새로고침(새 메시지·안 읽음 반영) */
+export function useMySubscriptions(options: { live?: boolean } = {}) {
   const { token } = useAuth();
   return useQuery({
     queryKey: ['my-subscriptions'],
     queryFn: () => apiClient.get<Subscription[]>('/me/subscriptions'),
     enabled: !!token,
+    refetchInterval: options.live ? 10000 : false,
   });
 }
 

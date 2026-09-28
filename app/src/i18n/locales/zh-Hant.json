@@ -7,7 +7,10 @@
   "tabs": {
     "actors": "演員",
     "chats": "聊天",
-    "my": "我的"
+    "my": "我的",
+    "discover": "探索",
+    "inbox": "訊息",
+    "profile": "我的"
   },
   "screens": {
     "console": "控制台",
@@ -263,5 +266,45 @@
     "body": "刪除帳號後，暱稱、出生日期等資料將被刪除且無法復原。\n\n• 如有正在訂閱的明星，請先在 App Store 或 Google Play 取消訂閱。刪除帳號不會自動停止商店扣款。\n• 將無法再查看先前的聊天。想保留的照片、語音、影片請提前儲存。\n• 你傳送的回覆將向明星顯示為「已刪除帳號的粉絲」。",
     "confirm": "刪除",
     "failed": "刪除失敗，請重試。"
+  },
+  "discover": {
+    "tagline": "Closer to what matters.",
+    "searchPlaceholder": "搜尋演員或經紀公司",
+    "clearSearch": "清除搜尋",
+    "forYou": "推薦",
+    "trending": "熱門",
+    "new": "新加入",
+    "trendingTitle": "Toffee 熱門",
+    "newTitle": "Toffee 新加入",
+    "allTitle": "全部演員",
+    "seeAll": "查看全部",
+    "newBadge": "NEW",
+    "openProfile": "查看 {{name}} 的主頁",
+    "subscribed": "已訂閱",
+    "emptyTitle": "找不到演員",
+    "emptyBody": "試試其他名字或經紀公司。",
+    "loadFailedTitle": "載入失敗",
+    "retry": "重試"
+  },
+  "time": {
+    "yesterday": "昨天"
+  },
+  "inbox": {
+    "search": "尋找演員",
+    "sentPhoto": "傳送了照片",
+    "sentVoice": "傳送了語音訊息",
+    "sentVideo": "傳送了影片",
+    "justSentPhoto": "剛剛傳送了新照片",
+    "justSentVoice": "剛剛傳送了語音訊息",
+    "justSentVideo": "剛剛傳送了影片",
+    "justSentMessage": "傳來了新訊息",
+    "you": "我：{{text}}",
+    "noMessagesYet": "第一則訊息即將到來",
+    "muted": "已靜音",
+    "unread": "{{count}} 則未讀",
+    "emptyTitle": "還沒有訂閱的演員",
+    "emptyBody": "訂閱喜愛的演員，就能在這裡收到 TA 的訊息。",
+    "discover": "探索演員",
+    "loadFailed": "訊息列表載入失敗"
   }
 }

@@ -20,6 +20,8 @@ export interface PushData {
   type?: string;
   actorId?: string;
   messageId?: string;
+  title?: string;
+  body?: string;
 }
 
 // 로그아웃할 때 "이 기기"만 서버에서 떼어내려고 마지막으로 등록한 토큰을 기억해 둠
@@ -69,7 +71,19 @@ function toPushData(message: RemoteMessage | null): PushData | null {
   const data = message?.data;
   if (!data) return null;
   const pick = (key: string) => (typeof data[key] === 'string' ? (data[key] as string) : undefined);
-  return { type: pick('type'), actorId: pick('actorId'), messageId: pick('messageId') };
+  return {
+    type: pick('type'),
+    actorId: pick('actorId'),
+    messageId: pick('messageId'),
+    // 앱 사용 중 배너에 보여줄 제목·본문(서버가 만든 알림 문구 그대로)
+    title: message?.notification?.title,
+    body: message?.notification?.body,
+  };
+}
+
+/** 앱 아이콘 숫자 배지 — 인박스의 안 읽은 메시지 합계. 권한이 없거나 지원 안 하는 기기면 조용히 무시 */
+export function setAppBadgeCount(count: number): void {
+  void Notifications.setBadgeCountAsync(count).catch(() => {});
 }
 
 /** 알림을 눌러 앱을 연 경우(백그라운드·완전 종료 둘 다) */

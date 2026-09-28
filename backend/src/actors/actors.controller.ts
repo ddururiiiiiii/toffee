@@ -16,7 +16,7 @@ export class ActorsController {
   @Public()
   @Get()
   findAll(@Query() query: ListActorsQueryDto) {
-    return this.actorsService.findAll(query.q, query.agencyId);
+    return this.actorsService.findAll(query.q, query.agencyId, query.sort);
   }
 
   // 'mine'은 ':id'보다 먼저 등록해야 함 — 안 그러면 "mine"이 id로 잡혀버림

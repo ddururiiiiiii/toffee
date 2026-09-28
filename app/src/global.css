@@ -1,6 +1,6 @@
 :root {
   --font-display:
-    'NotoSansThai_400Regular', Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji,
+    'NotoSansThai_400Regular', 'Apple SD Gothic Neo', 'Noto Sans KR', Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji,
     Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
   --font-mono:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;

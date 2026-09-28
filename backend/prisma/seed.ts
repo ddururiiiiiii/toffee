@@ -111,14 +111,16 @@ async function main() {
     data: { selfUser: { connect: { email: 'caramel-self@toffee.demo' } } },
   });
 
-  // 팬 2명 — fan1은 caramel만, fan2는 둘 다 구독(CP 할인 시나리오)
+  // 팬 2명 — fan1은 caramel만, fan2는 둘 다 구독(CP 할인 시나리오). 가입 절차(생년월일)까지 마친 성인 팬으로 —
+  // 생년월일이 없으면 로그인하자마자 온보딩 화면만 나오고, 서버도 구독을 막음(2026-09-28)
+  const ADULT = { birthDate: new Date('2000-03-03') };
   const fan1 = await prisma.user.create({
     data: {
-      ...AGREED, role: Role.USER, displayName: '민지', nickname: '캐러멜바라기', email: 'fan1@toffee.demo' },
+      ...AGREED, ...ADULT, role: Role.USER, displayName: '민지', nickname: '캐러멜바라기', email: 'fan1@toffee.demo' },
   });
   const fan2 = await prisma.user.create({
     data: {
-      ...AGREED, role: Role.USER, displayName: '수아', nickname: '누가누가', email: 'fan2@toffee.demo' },
+      ...AGREED, ...ADULT, role: Role.USER, displayName: '수아', nickname: '누가누가', email: 'fan2@toffee.demo' },
   });
 
   const fan1Sub = await prisma.subscription.create({
