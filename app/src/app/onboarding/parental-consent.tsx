@@ -1,83 +1,73 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { MailCheck } from 'lucide-react-native';
 
+import { OnboardingLayout } from '@/components/onboarding-layout';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
+import { Icon } from '@/components/ui/icon';
+import { TextField } from '@/components/ui/text-field';
 import { useRequestParentalConsent } from '@/hooks/use-onboarding';
 import { ApiError } from '@/lib/api-client';
 import { useTheme } from '@/hooks/use-theme';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 
+// 미성년자 — 부모님 이메일로 동의 요청(부모가 메일의 페이지에서 "동의합니다"를 누르면 자동으로 이용 가능)
 export default function ParentalConsentOnboardingScreen() {
   const theme = useTheme();
   const { t } = useTranslation();
   const [parentEmail, setParentEmail] = useState('');
   const requestConsent = useRequestParentalConsent();
+  const valid = parentEmail.includes('@');
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ThemedView style={styles.content}>
-        <ThemedText type="title" style={styles.title}>
-          {t('onboarding.consentTitle')}
-        </ThemedText>
-        <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-          {t('onboarding.consentHint')}
-        </ThemedText>
-
-        {requestConsent.isSuccess ? (
-          <ThemedView type="backgroundElement" style={styles.pendingCard}>
-            <ThemedText type="smallBold">{t('onboarding.consentSentTitle')}</ThemedText>
+    <OnboardingLayout
+      title={t('onboarding.consentTitle')}
+      subtitle={t('onboarding.consentHint')}
+      footer={
+        requestConsent.isSuccess ? (
+          <Button
+            title={t('onboarding.consentResend')}
+            variant="secondary"
+            loading={requestConsent.isPending}
+            onPress={() => requestConsent.mutate(parentEmail)}
+          />
+        ) : (
+          <Button
+            title={t('onboarding.consentSend')}
+            loading={requestConsent.isPending}
+            disabled={!valid}
+            onPress={() => requestConsent.mutate(parentEmail)}
+          />
+        )
+      }>
+      {requestConsent.isSuccess ? (
+        <View style={[styles.sent, { backgroundColor: theme.tintSoft }]}>
+          <Icon as={MailCheck} size={24} color={theme.tint} />
+          <View style={styles.sentBody}>
+            <ThemedText type="headline">{t('onboarding.consentSentTitle')}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               {t('onboarding.consentSentHint')}
             </ThemedText>
-            <Pressable onPress={() => requestConsent.mutate(parentEmail)} disabled={requestConsent.isPending}>
-              <ThemedText type="small" themeColor="tint">
-                {t('onboarding.consentResend')}
-              </ThemedText>
-            </Pressable>
-          </ThemedView>
-        ) : (
-          <>
-            <TextInput
-              value={parentEmail}
-              onChangeText={setParentEmail}
-              placeholder={t('onboarding.parentEmailPlaceholder')}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              placeholderTextColor={theme.textSecondary}
-              style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
-            />
-            <Pressable
-              onPress={() => requestConsent.mutate(parentEmail)}
-              disabled={!parentEmail.includes('@') || requestConsent.isPending}
-              style={[styles.button, { backgroundColor: theme.tint, opacity: parentEmail.includes('@') ? 1 : 0.5 }]}>
-              {requestConsent.isPending ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <ThemedText style={styles.buttonText}>{t('onboarding.consentSend')}</ThemedText>
-              )}
-            </Pressable>
-            {requestConsent.isError && (
-              <ThemedText themeColor="danger" type="small">
-                {requestConsent.error instanceof ApiError ? requestConsent.error.message : t('onboarding.consentSendFailed')}
-              </ThemedText>
-            )}
-          </>
-        )}
-      </ThemedView>
-    </SafeAreaView>
+          </View>
+        </View>
+      ) : (
+        <TextField
+          value={parentEmail}
+          onChangeText={setParentEmail}
+          placeholder={t('onboarding.parentEmailPlaceholder')}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          accessibilityLabel={t('onboarding.parentEmailPlaceholder')}
+          error={requestConsent.isError ? (requestConsent.error instanceof ApiError ? requestConsent.error.message : t('onboarding.consentSendFailed')) : null}
+        />
+      )}
+    </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: Spacing.four, gap: Spacing.four },
-  title: { textAlign: 'center', fontSize: 28, lineHeight: 36 },
-  subtitle: { textAlign: 'center', marginTop: -Spacing.three },
-  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, fontSize: 16 },
-  button: { borderRadius: 10, paddingVertical: Spacing.three, alignItems: 'center' },
-  buttonText: { color: '#fff', fontWeight: '600' },
-  pendingCard: { borderRadius: 14, padding: Spacing.four, gap: Spacing.two, alignItems: 'flex-start' },
+  sent: { flexDirection: 'row', gap: Spacing.three, padding: Spacing.four, borderRadius: Radius.lg },
+  sentBody: { flex: 1, gap: 4 },
 });

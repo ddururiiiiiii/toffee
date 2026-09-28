@@ -166,7 +166,7 @@ function RootLayout() {
               <Stack.Screen name="onboarding/terms" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/birth-date" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/nickname" options={{ headerShown: false }} />
-              <Stack.Screen name="onboarding/parental-consent" options={{ headerShown: true, title: '' }} />
+              <Stack.Screen name="onboarding/parental-consent" options={{ headerShown: false }} />
               <Stack.Screen name="terms" options={{ headerShown: true, title: t('screens.terms') }} />
               <Stack.Screen name="privacy" options={{ headerShown: true, title: t('screens.privacy') }} />
             </Stack>

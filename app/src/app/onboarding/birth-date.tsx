@@ -1,25 +1,25 @@
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRef, useState } from 'react';
+import { StyleSheet, View, type TextInput } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { OnboardingLayout } from '@/components/onboarding-layout';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
+import { TextField } from '@/components/ui/text-field';
 import { useSetBirthDate } from '@/hooks/use-onboarding';
 import { ApiError } from '@/lib/api-client';
-import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
 // 미성년자(국가별 기준, 서버 minor-age.ts)면 법정대리인 동의가 필요해서 물어보는 것 — 그 외 용도로는 안 씀
 export default function BirthDateOnboardingScreen() {
-  const theme = useTheme();
   const { t } = useTranslation();
   const [year, setYear] = useState('');
   const [month, setMonth] = useState('');
   const [day, setDay] = useState('');
-  const setBirthDate = useSetBirthDate();
-
   const [invalid, setInvalid] = useState(false);
+  const setBirthDate = useSetBirthDate();
+  const monthRef = useRef<TextInput>(null);
+  const dayRef = useRef<TextInput>(null);
   const isValid = year.length === 4 && month.length >= 1 && day.length >= 1;
 
   // 달력에 없는 날짜·미래 날짜는 보내기 전에 걸러서 바로 알려줌(서버도 한 번 더 검사)
@@ -35,79 +35,73 @@ export default function BirthDateOnboardingScreen() {
     setBirthDate.mutate(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
   };
 
+  // 숫자만, 칸이 차면 다음 칸으로
+  const digits = (value: string) => value.replace(/\D/g, '');
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ThemedView style={styles.content}>
-        <ThemedText type="title" style={styles.title}>
-          {t('onboarding.birthDateTitle')}
+    <OnboardingLayout
+      step={2}
+      title={t('onboarding.birthDateTitle')}
+      subtitle={t('onboarding.birthDateHint')}
+      footer={<Button title={t('onboarding.next')} loading={setBirthDate.isPending} disabled={!isValid} onPress={handleSubmit} />}>
+      <View style={styles.row}>
+        <TextField
+          value={year}
+          onChangeText={(v) => {
+            setYear(digits(v));
+            if (digits(v).length === 4) monthRef.current?.focus();
+          }}
+          placeholder="YYYY"
+          keyboardType="number-pad"
+          maxLength={4}
+          containerStyle={styles.year}
+          style={styles.center}
+          accessibilityLabel="YYYY"
+        />
+        <TextField
+          ref={monthRef}
+          value={month}
+          onChangeText={(v) => {
+            setMonth(digits(v));
+            if (digits(v).length === 2) dayRef.current?.focus();
+          }}
+          placeholder="MM"
+          keyboardType="number-pad"
+          maxLength={2}
+          containerStyle={styles.part}
+          style={styles.center}
+          accessibilityLabel="MM"
+        />
+        <TextField
+          ref={dayRef}
+          value={day}
+          onChangeText={(v) => setDay(digits(v))}
+          placeholder="DD"
+          keyboardType="number-pad"
+          maxLength={2}
+          containerStyle={styles.part}
+          style={styles.center}
+          accessibilityLabel="DD"
+          onSubmitEditing={() => isValid && handleSubmit()}
+        />
+      </View>
+      {invalid ? (
+        <ThemedText type="small" themeColor="danger">
+          {t('onboarding.birthDateInvalid')}
         </ThemedText>
-        <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-          {t('onboarding.birthDateHint')}
+      ) : null}
+      {setBirthDate.isError ? (
+        <ThemedText type="small" themeColor="danger">
+          {setBirthDate.error instanceof ApiError ? setBirthDate.error.message : t('onboarding.saveFailed')}
         </ThemedText>
-
-        <ThemedView style={styles.row}>
-          <TextInput
-            value={year}
-            onChangeText={setYear}
-            placeholder="YYYY"
-            keyboardType="number-pad"
-            maxLength={4}
-            placeholderTextColor={theme.textSecondary}
-            style={[styles.input, styles.yearInput, { color: theme.text, borderColor: theme.backgroundSelected }]}
-          />
-          <TextInput
-            value={month}
-            onChangeText={setMonth}
-            placeholder="MM"
-            keyboardType="number-pad"
-            maxLength={2}
-            placeholderTextColor={theme.textSecondary}
-            style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
-          />
-          <TextInput
-            value={day}
-            onChangeText={setDay}
-            placeholder="DD"
-            keyboardType="number-pad"
-            maxLength={2}
-            placeholderTextColor={theme.textSecondary}
-            style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
-          />
-        </ThemedView>
-
-        <Pressable
-          onPress={handleSubmit}
-          disabled={!isValid || setBirthDate.isPending}
-          style={[styles.button, { backgroundColor: theme.tint, opacity: isValid ? 1 : 0.5 }]}>
-          {setBirthDate.isPending ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <ThemedText style={styles.buttonText}>{t('onboarding.next')}</ThemedText>
-          )}
-        </Pressable>
-        {invalid && (
-          <ThemedText themeColor="danger" type="small">
-            {t('onboarding.birthDateInvalid')}
-          </ThemedText>
-        )}
-        {setBirthDate.isError && (
-          <ThemedText themeColor="danger" type="small">
-            {setBirthDate.error instanceof ApiError ? setBirthDate.error.message : t('onboarding.saveFailed')}
-          </ThemedText>
-        )}
-      </ThemedView>
-    </SafeAreaView>
+      ) : null}
+    </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: Spacing.four, gap: Spacing.four },
-  title: { textAlign: 'center', fontSize: 28, lineHeight: 36 },
-  subtitle: { textAlign: 'center', marginTop: -Spacing.three },
-  row: { flexDirection: 'row', gap: Spacing.two, justifyContent: 'center' },
-  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, fontSize: 16, width: 64, textAlign: 'center' },
-  yearInput: { width: 90 },
-  button: { borderRadius: 10, paddingVertical: Spacing.three, alignItems: 'center' },
-  buttonText: { color: '#fff', fontWeight: '600' },
+  row: { flexDirection: 'row', gap: Spacing.two },
+  year: { flex: 1.6 },
+  part: { flex: 1 },
+  center: { textAlign: 'center' },
 });
