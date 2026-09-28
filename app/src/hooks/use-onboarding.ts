@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+import { getLocales } from 'expo-localization';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
@@ -26,8 +28,15 @@ export const TERMS_VERSION = '2026-09-28';
 export function useAcceptTerms() {
   const queryClient = useQueryClient();
   return useMutation({
+    // 가입 첫 단계라 기기 지역(국가별 미성년 기준·통계용)과 플랫폼도 같이 보냄
     mutationFn: () =>
-      apiClient.post<OnboardingStatus>('/me/terms-agreement', { version: TERMS_VERSION, agreeTerms: true, agreePrivacy: true }),
+      apiClient.post<OnboardingStatus>('/me/terms-agreement', {
+        version: TERMS_VERSION,
+        agreeTerms: true,
+        agreePrivacy: true,
+        countryCode: getLocales()[0]?.regionCode ?? undefined,
+        platform: Platform.OS,
+      }),
     onSuccess: (status) => queryClient.setQueryData(['onboarding-status'], status),
   });
 }

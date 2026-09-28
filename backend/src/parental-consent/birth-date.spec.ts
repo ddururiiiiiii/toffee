@@ -22,3 +22,15 @@ describe('calculateAge', () => {
     expect(calculateAge(parseBirthDate('2012-09-28', NOW), NOW)).toBe(14);
   });
 });
+
+describe('consentAgeFor', () => {
+  it('국가별 기준, 모르는 나라는 가장 엄격하게', async () => {
+    const { consentAgeFor, normalizeCountryCode } = await import('./minor-age.js');
+    expect(consentAgeFor('KR')).toBe(14);
+    expect(consentAgeFor('th')).toBe(20);
+    expect(consentAgeFor('JP')).toBe(20);
+    expect(consentAgeFor(null)).toBe(20);
+    expect(normalizeCountryCode(' kr ')).toBe('KR');
+    expect(normalizeCountryCode('KOR')).toBeNull();
+  });
+});

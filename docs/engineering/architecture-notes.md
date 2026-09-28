@@ -82,6 +82,18 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
 
+## 미성년 국가별 기준·통계 기록 (2026-09-28)
+
+- 스키마(`20260928130000_add_country_activity_and_subscription_events`): `User.countryCode`, `signupPlatform`,
+  `lastActiveAt`, `SubscriptionEvent { userId, actorId, type: STARTED|CANCELLED, priceCents, createdAt }`.
+- 국가: 앱이 약관 동의(`POST /me/terms-agreement`) 때 `expo-localization`의 `regionCode`·`Platform.OS`를 보냄 →
+  처음 한 번만 저장(`normalizeCountryCode`, 두 글자 아니면 null). 기존 계정은 null → 기본값 적용.
+- 동의 나이: `parental-consent/minor-age.ts`의 `CONSENT_AGE_BY_COUNTRY`(KR 14, TH 20), 없으면 `DEFAULT_CONSENT_AGE`
+  20. 생년월일 입력 시 `consentAgeFor(user.countryCode)`로 판정.
+- 이력: `SubscriptionsService.subscribe`/`verifyPurchase`(새 시작일 때만)/`unsubscribe`, 탈퇴 시 활성 구독마다
+  CANCELLED. `lastActiveAt`은 JWT 검증에서 1시간 지났을 때만 비동기 갱신.
+- 가입 경로(소셜 종류)는 `AuthIdentity.provider`+`createdAt`으로 계산 가능(별도 컬럼 안 만듦).
+
 ## 약관 동의·회원 탈퇴·문의하기 (2026-09-28)
 
 - 스키마(`20260928120000_add_terms_consent_and_account_deletion`): `User.termsVersion`, `termsAcceptedAt`, `deletedAt`.

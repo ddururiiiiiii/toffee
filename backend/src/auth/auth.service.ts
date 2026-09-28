@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { OAuth2Client } from 'google-auth-library';
 import appleSignin from 'apple-signin-auth';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { AuthProvider, Role, UserStatus } from '../generated/prisma/enums.js';
+import { AuthProvider, Role, SubscriptionEventType, UserStatus } from '../generated/prisma/enums.js';
 import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
 import { ModerationService } from '../moderation/moderation.service.js';
 import { NICKNAME_CHANGE_COOLDOWN_MS, normalizeNickname } from '../common/nickname/nickname.js';
@@ -199,8 +199,12 @@ export class AuthService {
       throw new ForbiddenException('배우·소속사 계정은 앱에서 탈퇴할 수 없어요. 운영자에게 요청해 주세요.');
     }
     const now = new Date();
+    const active = await this.prisma.subscription.findMany({ where: { userId, cancelledAt: null }, select: { actorId: true } });
     await this.prisma.$transaction([
       this.prisma.subscription.updateMany({ where: { userId, cancelledAt: null }, data: { cancelledAt: now } }),
+      this.prisma.subscriptionEvent.createMany({
+        data: active.map(({ actorId }) => ({ userId, actorId, type: SubscriptionEventType.CANCELLED, createdAt: now })),
+      }),
       this.prisma.pushDevice.deleteMany({ where: { userId } }),
       this.prisma.parentalConsent.deleteMany({ where: { userId } }),
       ...(user.status === UserStatus.BANNED ? [] : [this.prisma.authIdentity.deleteMany({ where: { userId } })]),

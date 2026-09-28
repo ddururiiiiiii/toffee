@@ -97,7 +97,7 @@
   },
   "onboarding": {
     "birthDateTitle": "请填写你的出生日期",
-    "birthDateHint": "未满14周岁的用户，需要先取得父母（法定监护人）的同意才能使用本服务。",
+    "birthDateHint": "未成年人需先获得父母（法定监护人）的同意才能使用服务。",
     "next": "下一步",
     "saveFailed": "保存失败。",
     "consentTitle": "需要监护人同意",

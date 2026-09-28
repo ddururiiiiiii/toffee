@@ -97,7 +97,7 @@
   },
   "onboarding": {
     "birthDateTitle": "What's your date of birth?",
-    "birthDateHint": "If you're under 14, you'll need consent from a parent or legal guardian before using the service.",
+    "birthDateHint": "Minors need consent from a parent or legal guardian before using the service.",
     "next": "Next",
     "saveFailed": "Couldn't save.",
     "consentTitle": "Parental consent required",

@@ -101,23 +101,30 @@ model User {
   // 앱 온보딩에서 다시 동의받음. 역할과 상관없이 모든 계정.
   termsVersion          String?
   termsAcceptedAt       DateTime?
+  // 가입할 때 기기의 지역 설정(ISO 국가 코드, 예: TH·KR) — 미성년자 기준 나이를 국가별로 적용하고(minor-age.ts)
+  // 통계(국가별 가입자)에 씀. 가입 기기(ios/android/web)도 통계용. 약관 동의 때 앱이 보냄.
+  countryCode           String?
+  signupPlatform        String?
+  // 마지막 접속(한 시간 단위로만 갱신) — 일간·월간 이용자 수 통계용
+  lastActiveAt          DateTime?
   // 회원 탈퇴 시각 — 탈퇴하면 개인정보(이메일·이름·닉네임·생년월일 등)를 지우고 이 값만 남김. 결제·구독 기록은
   // 법정 보관 기간 동안 유지, 팬 답장은 "탈퇴한 팬"으로 표시(잠정, STATUS.md 출시 전 확정 정책).
   deletedAt             DateTime?
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
 
-  authIdentities    AuthIdentity[]
-  subscriptions     Subscription[]
-  fanMessages       Message[]        @relation("FanMessages")
-  agency            Agency?          @relation(fields: [agencyId], references: [id])
-  pushDevices       PushDevice[]
-  blockedInChannels ActorFanBlock[]  @relation("BlockedInChannels")
-  blocksIssued      ActorFanBlock[]  @relation("BlocksIssued")
-  reportsFiled      Report[]         @relation("ReportsFiled")
-  actorSelf         Actor?           @relation("ActorSelf")
-  storyViews        StoryView[]
-  parentalConsent   ParentalConsent?
+  authIdentities     AuthIdentity[]
+  subscriptions      Subscription[]
+  subscriptionEvents SubscriptionEvent[]
+  fanMessages        Message[]           @relation("FanMessages")
+  agency             Agency?             @relation(fields: [agencyId], references: [id])
+  pushDevices        PushDevice[]
+  blockedInChannels  ActorFanBlock[]     @relation("BlockedInChannels")
+  blocksIssued       ActorFanBlock[]     @relation("BlocksIssued")
+  reportsFiled       Report[]            @relation("ReportsFiled")
+  actorSelf          Actor?              @relation("ActorSelf")
+  storyViews         StoryView[]
+  parentalConsent    ParentalConsent?
 }
 
 // 푸시 받을 기기 — 한 사람이 폰·태블릿 등 여러 기기로 받을 수 있게 기기(토큰)마다 한 줄(유료 서비스라
@@ -180,15 +187,16 @@ model Actor {
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
-  selfUser         User?                @relation("ActorSelf", fields: [selfUserId], references: [id])
-  agency           Agency?              @relation(fields: [agencyId], references: [id])
-  agencyHistory    ActorAgencyHistory[]
-  fanBlocks        ActorFanBlock[]
-  subscriptions    Subscription[]
-  messages         Message[]
-  pairingsAsFirst  GlCp[]               @relation("PairingActorOne")
-  pairingsAsSecond GlCp[]               @relation("PairingActorTwo")
-  stories          Story[]
+  selfUser           User?                @relation("ActorSelf", fields: [selfUserId], references: [id])
+  agency             Agency?              @relation(fields: [agencyId], references: [id])
+  agencyHistory      ActorAgencyHistory[]
+  fanBlocks          ActorFanBlock[]
+  subscriptions      Subscription[]
+  subscriptionEvents SubscriptionEvent[]
+  messages           Message[]
+  pairingsAsFirst    GlCp[]               @relation("PairingActorOne")
+  pairingsAsSecond   GlCp[]               @relation("PairingActorTwo")
+  stories            Story[]
 
   @@index([agencyId])
 }
@@ -259,6 +267,29 @@ model Subscription {
   actor Actor @relation(fields: [actorId], references: [id], onDelete: Cascade)
 
   @@unique([userId, actorId])
+}
+
+enum SubscriptionEventType {
+  STARTED
+  CANCELLED
+}
+
+// 구독 시작·해지 이력 — Subscription은 사람×배우당 한 줄이라 재구독하면 startedAt/cancelledAt이 덮어써짐.
+// 구독률·해지율·재구독률·매출 추이 같은 통계(운영자 대시보드, 2차)를 위해 일어난 일을 그대로 쌓아둠.
+// priceCents는 시작 시점에 실제 적용된 월 가격(동시구독 할인 반영).
+model SubscriptionEvent {
+  id         String                @id @default(uuid())
+  userId     String
+  actorId    String
+  type       SubscriptionEventType
+  priceCents Int?
+  createdAt  DateTime              @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actor Actor @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([actorId, createdAt])
+  @@index([createdAt])
 }
 
 model Message {

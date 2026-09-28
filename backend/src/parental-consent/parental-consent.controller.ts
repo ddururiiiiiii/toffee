@@ -19,7 +19,7 @@ export class ParentalConsentController {
 
   @Post('me/terms-agreement')
   acceptTerms(@CurrentUser() user: AuthenticatedUser, @Body() dto: AcceptTermsDto) {
-    return this.parentalConsentService.acceptTerms(user.id, dto.version);
+    return this.parentalConsentService.acceptTerms(user.id, dto.version, { countryCode: dto.countryCode, platform: dto.platform });
   }
 
   @Patch('me/birth-date')

@@ -97,7 +97,7 @@
   },
   "onboarding": {
     "birthDateTitle": "생년월일을 알려주세요",
-    "birthDateHint": "만 14세 미만이면 법정대리인(부모님) 동의를 먼저 받아야 서비스를 이용할 수 있어요.",
+    "birthDateHint": "미성년자는 법정대리인(부모님) 동의를 먼저 받아야 서비스를 이용할 수 있어요.",
     "next": "다음",
     "saveFailed": "저장하지 못했어요.",
     "consentTitle": "법정대리인 동의가 필요해요",

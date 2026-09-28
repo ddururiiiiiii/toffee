@@ -10,7 +10,7 @@ import { ApiError } from '@/lib/api-client';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
-// 만 14세 미만이면 법정대리인 동의가 필요해서 물어보는 것 — 그 외 용도로는 안 씀
+// 미성년자(국가별 기준, 서버 minor-age.ts)면 법정대리인 동의가 필요해서 물어보는 것 — 그 외 용도로는 안 씀
 export default function BirthDateOnboardingScreen() {
   const theme = useTheme();
   const { t } = useTranslation();

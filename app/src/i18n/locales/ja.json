@@ -97,7 +97,7 @@
   },
   "onboarding": {
     "birthDateTitle": "生年月日を入力してください",
-    "birthDateHint": "14歳未満の方は、保護者（法定代理人）の同意を得てからご利用いただけます。",
+    "birthDateHint": "未成年の方は、先に保護者（法定代理人）の同意が必要です。",
     "next": "次へ",
     "saveFailed": "保存できませんでした。",
     "consentTitle": "保護者の同意が必要です",

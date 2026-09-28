@@ -6,6 +6,8 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { UserStatus } from '../../generated/prisma/enums.js';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user.js';
 
+const ACTIVE_TOUCH_INTERVAL_MS = 60 * 60 * 1000;
+
 interface JwtPayload {
   sub: string;
 }
@@ -37,6 +39,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       // 언제 풀리는지 같이 알려줌(태국 시간 기준 날짜·시각 — 서버 오류 문구 다국어화는 2차)
       const until = user.suspendedUntil.toLocaleString('ko-KR', { timeZone: 'Asia/Bangkok', dateStyle: 'medium', timeStyle: 'short' });
       throw new UnauthorizedException(`일시정지된 계정이에요. ${until}(태국 시간)부터 다시 이용할 수 있어요.`);
+    }
+    // 마지막 접속 기록(통계용) — 매 요청마다 쓰지 않게 한 시간 지났을 때만, 응답은 기다리지 않음
+    if (!user.lastActiveAt || Date.now() - user.lastActiveAt.getTime() > ACTIVE_TOUCH_INTERVAL_MS) {
+      void this.prisma.user.update({ where: { id: user.id }, data: { lastActiveAt: new Date() } }).catch(() => {});
     }
     return { id: user.id, role: user.role };
   }

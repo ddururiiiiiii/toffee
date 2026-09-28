@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { IapVerificationService } from './iap-verification.service.js';
-import { ParentalConsentStatus } from '../generated/prisma/enums.js';
+import { ParentalConsentStatus, SubscriptionEventType } from '../generated/prisma/enums.js';
 import type { VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
 import { MediaService } from '../storage/media.service.js';
 
@@ -52,6 +52,7 @@ export class SubscriptionsService {
           data: { startedAt: new Date(), cancelledAt: null, lastArtistMessageAt: null, lastFanReplyAt: null },
         })
       : await this.prisma.subscription.create({ data: { userId, actorId } });
+    await this.recordEvent(userId, actorId, SubscriptionEventType.STARTED, priceInfo.effectivePriceCents);
 
     return { subscription, ...priceInfo };
   }
@@ -84,6 +85,10 @@ export class SubscriptionsService {
     const subscription = existing
       ? await this.prisma.subscription.update({ where: { id: existing.id }, data })
       : await this.prisma.subscription.create({ data: { userId, actorId, ...data } });
+    // 이미 구독 중인 상태에서 다시 검증(갱신·복원)한 건 새 시작이 아님
+    if (!existing || existing.cancelledAt) {
+      await this.recordEvent(userId, actorId, SubscriptionEventType.STARTED, priceInfo.effectivePriceCents);
+    }
 
     return { subscription, ...priceInfo };
   }
@@ -95,10 +100,19 @@ export class SubscriptionsService {
     if (!existing || existing.cancelledAt) {
       throw new NotFoundException('구독 중인 배우가 아니에요.');
     }
-    return this.prisma.subscription.update({ where: { id: existing.id }, data: { cancelledAt: new Date() } });
+    const [subscription] = await this.prisma.$transaction([
+      this.prisma.subscription.update({ where: { id: existing.id }, data: { cancelledAt: new Date() } }),
+      this.prisma.subscriptionEvent.create({ data: { userId, actorId, type: SubscriptionEventType.CANCELLED } }),
+    ]);
+    return subscription;
   }
 
-  // 만 14세 미만인데 법정대리인 동의를 아직 못 받은 계정은 구독(결제) 자체를 막음
+  // 통계용 이력(SubscriptionEvent) — 구독률·해지율·재구독·매출 추이
+  private recordEvent(userId: string, actorId: string, type: SubscriptionEventType, priceCents?: number) {
+    return this.prisma.subscriptionEvent.create({ data: { userId, actorId, type, priceCents } });
+  }
+
+  // 미성년자(국가별 기준)인데 법정대리인 동의를 아직 못 받은 계정은 구독(결제) 자체를 막음
   private async ensureCanSubscribe(userId: string): Promise<void> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (user.parentalConsentStatus === ParentalConsentStatus.PENDING) {

@@ -2,13 +2,13 @@ import { ConflictException, BadRequestException, Injectable } from '@nestjs/comm
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'node:crypto';
 import { calculateAge, parseBirthDate } from './birth-date.js';
+import { consentAgeFor, normalizeCountryCode } from './minor-age.js';
 import { CURRENT_TERMS_VERSION } from '../common/legal/terms.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailService } from '../notifications/email.service.js';
 import { ParentalConsentStatus, Role } from '../generated/prisma/enums.js';
 
-// 한국 개인정보보호법 기준 — 만 14세 미만은 법정대리인 동의 필요 (Bubble도 같은 방식)
-const MINIMUM_AGE_WITHOUT_CONSENT = 14;
+// 동의가 필요한 나이는 국가별(minor-age.ts) — 가입 때 저장한 기기 지역(User.countryCode) 기준
 const CONSENT_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 
@@ -39,28 +39,42 @@ export class ParentalConsentService {
     };
   }
 
-  // 약관·개인정보 수집 동의 기록 — 버전과 시각을 남김(유료 서비스라 "언제 어떤 약관에 동의했는지" 증빙용)
-  async acceptTerms(userId: string, version: string) {
+  // 약관·개인정보 수집 동의 기록 — 버전과 시각을 남김(유료 서비스라 "언제 어떤 약관에 동의했는지" 증빙용).
+  // 가입 첫 단계라 기기 지역·플랫폼도 같이 받아둠(미성년 기준·통계). 이미 있으면(약관 재동의) 덮어쓰지 않음.
+  async acceptTerms(userId: string, version: string, device: { countryCode?: string; platform?: string } = {}) {
     if (version !== CURRENT_TERMS_VERSION) {
       throw new BadRequestException('약관이 새로 바뀌었어요. 앱을 다시 열어 최신 약관을 확인해 주세요.');
     }
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { countryCode: true, signupPlatform: true },
+    });
     await this.prisma.user.update({
       where: { id: userId },
-      data: { termsVersion: version, termsAcceptedAt: new Date() },
+      data: {
+        termsVersion: version,
+        termsAcceptedAt: new Date(),
+        countryCode: user.countryCode ?? normalizeCountryCode(device.countryCode),
+        signupPlatform: user.signupPlatform ?? (device.platform?.slice(0, 20) || null),
+      },
     });
     return this.getOnboardingStatus(userId);
   }
 
-  // 온보딩에서 생년월일을 받으면 여기서 만 14세 미만인지 판정 — 미만이면 부모 동의 대기 상태로 전환.
-  // 한 번 입력하면 다시 못 바꿈 — 바꿀 수 있으면 14세 미만이 나이를 고쳐 부모 동의를 건너뛸 수 있음
+  // 온보딩에서 생년월일을 받으면 여기서 국가별 기준 나이(한국 14세, 태국 20세 등) 미만인지 판정 — 미만이면
+  // 부모 동의 대기 상태로 전환. 한 번 입력하면 다시 못 바꿈 — 바꿀 수 있으면 미성년자가 나이를 고쳐 부모 동의를
+  // 건너뛸 수 있음
   // (잘못 입력한 경우는 운영자가 확인 후 DB에서 정정, STATUS "출시 전 확정할 정책").
   async setBirthDate(userId: string, raw: string) {
     const birthDate = parseBirthDate(raw);
-    const existing = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { birthDate: true } });
+    const existing = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { birthDate: true, countryCode: true },
+    });
     if (existing.birthDate) {
       throw new ConflictException('생년월일은 한 번만 입력할 수 있어요. 잘못 입력했다면 고객센터로 문의해 주세요.');
     }
-    const requiresConsent = calculateAge(birthDate, new Date()) < MINIMUM_AGE_WITHOUT_CONSENT;
+    const requiresConsent = calculateAge(birthDate, new Date()) < consentAgeFor(existing.countryCode);
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: {
