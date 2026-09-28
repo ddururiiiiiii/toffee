@@ -9,14 +9,17 @@ import { useTheme } from '@/hooks/use-theme';
 import { confirm } from '@/lib/confirm';
 
 /**
- * 스타·소속사 화면의 팬 답장 한 줄에 붙는 ⋯ 메뉴 — 신고(운영자 대기열로) / 이 채널에서 차단(답장만 막힘).
+ * 스타·소속사 화면의 팬 답장 한 줄에 붙는 ⋯ 메뉴 — (스타만) 답장하기(인용) / 신고(운영자 대기열로) / 이 채널에서
+ * 차단(답장만 막힘).
  * 차단은 되돌릴 수 있고(차단 관리 화면), 구독·열람은 그대로라는 걸 확인 창에서 알려줌.
  */
-export function FanReplyActions({ actorId, messageId, fanUserId, nickname }: {
+export function FanReplyActions({ actorId, messageId, fanUserId, nickname, onQuote }: {
   actorId: string;
   messageId: string;
   fanUserId: string;
   nickname: string;
+  /** 스타 화면에서만 — 이 답장을 인용해서 답장하기 */
+  onQuote?: () => void;
 }) {
   const theme = useTheme();
   const router = useRouter();
@@ -45,6 +48,13 @@ export function FanReplyActions({ actorId, messageId, fanUserId, nickname }: {
   }
   return (
     <View style={styles.row}>
+      {onQuote && (
+        <Pressable onPress={onQuote} hitSlop={8}>
+          <ThemedText type="smallBold" style={{ color: theme.tint }}>
+            ↩ {t('quote.action')}
+          </ThemedText>
+        </Pressable>
+      )}
       <Pressable onPress={() => router.push({ pathname: '/report', params: { messageId } })} hitSlop={8}>
         <ThemedText type="smallBold" themeColor="danger">
           {t('report.action')}

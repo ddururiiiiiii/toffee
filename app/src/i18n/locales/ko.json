@@ -161,7 +161,9 @@
     "deleteTitle": "메시지 삭제",
     "deleteBody": "팬 화면에서 이 메시지가 사라져요. 이미 보낸 알림은 되돌릴 수 없고, 소속사 모니터링에는 삭제 기록이 남아요.",
     "deleteFailed": "삭제하지 못했어요. 다시 시도해 주세요.",
-    "hiddenByAdmin": "운영 정책에 따라 가려진 메시지예요(팬에게 보이지 않아요)."
+    "hiddenByAdmin": "운영 정책에 따라 가려진 메시지예요(팬에게 보이지 않아요).",
+    "waitingReplies": "팬 답장을 기다리는 중…",
+    "newReplies": "새 답장 {{count}}개 ↓"
   },
   "media": {
     "save": "저장",

@@ -161,7 +161,9 @@
     "deleteTitle": "刪除訊息",
     "deleteBody": "這則訊息將從粉絲的畫面中消失。已傳送的通知無法收回，經紀公司的監控中會保留刪除紀錄。",
     "deleteFailed": "刪除失敗，請重試。",
-    "hiddenByAdmin": "依營運政策已隱藏（粉絲看不到）。"
+    "hiddenByAdmin": "依營運政策已隱藏（粉絲看不到）。",
+    "waitingReplies": "正在等待粉絲回覆…",
+    "newReplies": "{{count}} 則新回覆 ↓"
   },
   "media": {
     "save": "儲存",

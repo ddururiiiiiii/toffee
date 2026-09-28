@@ -161,7 +161,9 @@
     "deleteTitle": "Delete message",
     "deleteBody": "This message will disappear from fans' screens. Notifications already sent can't be recalled, and the deletion stays on record in agency monitoring.",
     "deleteFailed": "Couldn't delete. Please try again.",
-    "hiddenByAdmin": "Hidden under our policy (not visible to fans)."
+    "hiddenByAdmin": "Hidden under our policy (not visible to fans).",
+    "waitingReplies": "Waiting for fan replies…",
+    "newReplies": "{{count}} new ↓"
   },
   "media": {
     "save": "Save",

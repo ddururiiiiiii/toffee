@@ -161,7 +161,9 @@
     "deleteTitle": "删除消息",
     "deleteBody": "这条消息将从粉丝的画面中消失。已发送的通知无法撤回，经纪公司的监控中会保留删除记录。",
     "deleteFailed": "删除失败，请重试。",
-    "hiddenByAdmin": "根据运营政策已隐藏（粉丝看不到）。"
+    "hiddenByAdmin": "根据运营政策已隐藏（粉丝看不到）。",
+    "waitingReplies": "正在等待粉丝回复…",
+    "newReplies": "{{count}} 条新回复 ↓"
   },
   "media": {
     "save": "保存",

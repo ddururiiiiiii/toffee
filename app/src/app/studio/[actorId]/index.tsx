@@ -70,7 +70,8 @@ function MyMessage({
   const theme = useTheme();
   const { t, i18n } = useTranslation();
   const hiddenByAdmin = !!message.deletedAt && message.deletedByAdmin;
-  const hasPreview = (message.recentReplies?.length ?? 0) > 0;
+  // 최근 메시지엔 서버가 recentReplies를 줌(답장이 없으면 빈 배열 → "기다리는 중" 줄), 오래된 메시지는 숫자만
+  const hasPreview = !!message.recentReplies && !hiddenByAdmin;
   return (
     <ThemedView style={styles.messageRow}>
       {hiddenByAdmin && (
@@ -112,7 +113,7 @@ function MyMessage({
           </Pressable>
         )}
       </ThemedView>
-      {/* 최근 메시지는 팬 답장이 한 줄씩 넘어가며 보임(버블·위버스 방식), 오래된 메시지는 숫자만 */}
+      {/* 최근 메시지는 팬 답장이 온 순서대로 한 줄씩 넘어가며 보임(버블·위버스 방식) */}
       {hasPreview && <ReplyTicker replies={message.recentReplies ?? []} count={message.replyCount} onPress={onOpenReplies} />}
     </ThemedView>
   );

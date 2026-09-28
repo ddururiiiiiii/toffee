@@ -905,15 +905,23 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
 - 앱: 알림 열기 시 팬은 `/chat/[actorId]?focus=<messageId>` — 채팅방이 그 메시지로 `scrollToIndex` 후 2.5초 테두리
   강조. 사진 로딩 등으로 목록 높이가 바뀌며 맨 아래로 내려가는 걸 막으려고 1.5초 동안은 focus에 고정.
 
-## 스타 화면 팬 답장 흐름 미리보기 (2026-09-28)
+## 스타 화면 팬 답장 줄 + 답장 채팅 화면 (2026-09-28)
 
-- `GET /actors/:id/messages/broadcasts`(스튜디오·소속사 모니터링 공용) 응답에 `recentReplies`
-  (`{ id, nickname, body(80자), createdAt }[]`, 오래된 것 → 최신) 추가. 삭제 안 된 최근 스타 메시지 중 답장이 있는 것
-  10개에만(`REPLY_PREVIEW_MESSAGES`), 메시지당 5개(`REPLY_PREVIEW_PER_MESSAGE`).
-- 조회는 메시지마다 `findMany({ where: { replyToMessageId }, take: 5 })`를 병렬로 — `include`의 중첩 `take`는 Prisma
-  기본 전략(query)에서 전체 답장을 읽은 뒤 메모리에서 자를 수 있어서. `@@index([replyToMessageId])` 사용.
-- 필터: 차단(`notBlockedIn`) + `fanUser.status ACTIVE`·`deletedAt null` + `reports none RESOLVED` + `deletedAt null`.
+- `GET /actors/:id/messages/broadcasts`(스튜디오·소속사 모니터링 공용): 삭제 안 된 최근 스타 메시지 10개
+  (`REPLY_PREVIEW_MESSAGES`)에만 `recentReplies`(`{ id, nickname, body(80자), createdAt }[]`, 오래된 것 → 최신, 최대
+  20개 `REPLY_PREVIEW_PER_MESSAGE`). 답장이 없으면 `[]`(앱이 "기다리는 중" 줄), 그 밖의 메시지는 필드 없음(숫자만).
+- 조회는 답장이 있는 메시지마다 `findMany({ where: { replyToMessageId }, take })`를 병렬로 — `include`의 중첩 `take`는
+  Prisma 기본 전략(query)에서 전체 답장을 읽은 뒤 메모리에서 자를 수 있어서. `@@index([replyToMessageId])` 사용.
+  필터: 차단(`notBlockedIn`) + `fanUser.status ACTIVE`·`deletedAt null` + `reports none RESOLVED` + `deletedAt null`.
   `replyCount`는 기존대로 차단만 뺀 숫자라 미리보기 개수와 다를 수 있음(의도).
-- 앱 `components/reply-ticker.tsx`: 2.5초마다 한 칸, `Animated` 슬라이드(웹은 JS 드라이버), 새 답장(latestId 변경)이면
-  최신부터, `AccessibilityInfo.isReduceMotionEnabled`면 애니메이션 없이. 폴링: 스튜디오 목록 10초 → 5초, 메시지별
-  답장 목록 10초 → 3초.
+- `GET .../messages/replies?messageId&limit&before`: `limit`(1~200)·`before`(답장 id) 주면 Prisma cursor 페이지네이션,
+  `orderBy [createdAt desc, id desc]`(같은 시각에도 순서 고정). 안 주면 전부(콘솔 기존 동작).
+- 앱 `components/reply-ticker.tsx`: 보여주는 답장을 **id로** 기억하고 2.5초마다 다음 id로(끝이면 처음) — 새 답장이
+  붙어도 건너뛰지 않음. `Animated` 슬라이드(웹은 JS 드라이버), reduce motion이면 애니메이션 없이.
+- 앱 `studio/[actorId]/replies/[messageId].tsx`: `useInfiniteQuery`(100개씩, 3초 폴링 — 불러온 페이지 전부 다시 받음,
+  id로 중복 제거) + `inverted` FlatList(첫 항목 = 최신 = 맨 아래). `maintainVisibleContentPosition
+  { minIndexForVisible: 0, autoscrollToTopThreshold: 80 }`로 맨 아래면 따라가고 위면 자리 유지, 스크롤 위치로
+  "새 답장 N개 ↓"(위로 올린 순간의 최신 id 이후 개수). `FanReplyActions`에 `onQuote`(스타 화면에서만 ⋯에 답장하기).
+- 확인: 로컬 Postgres + 시드 + 웹(Playwright)으로 답장 줄 순서, 채팅 화면 방향, 새 답장 버튼, 맨 아래 따라가기,
+  ⋯ 메뉴까지 실제 화면으로 확인. 인라인 확인 중 답장 화면 상단 스타 메시지에 `{{name}}`이 그대로 보이던 것도 수정
+  (`showNameToken`).

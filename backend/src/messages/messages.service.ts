@@ -82,7 +82,7 @@ function withQuote<T extends { replyTo: QuotedSource | null }>(message: T) {
 const PUSH_PREVIEW_LENGTH = 60;
 // 스타 화면 "팬 답장 흐름" 미리보기 — 최근 스타 메시지 몇 개에만, 메시지당 최근 답장 몇 개만(오래된 메시지는 숫자만)
 const REPLY_PREVIEW_MESSAGES = 10;
-const REPLY_PREVIEW_PER_MESSAGE = 5;
+const REPLY_PREVIEW_PER_MESSAGE = 20;
 const REPLY_PREVIEW_LENGTH = 80;
 
 function personalize(body: string, fanName: string): string {
@@ -284,7 +284,7 @@ export class MessagesService {
 
   // 콘솔 "구독자 답장 모아보기" — 스태프/배우 본인/관리자. messageId를 주면 그 스타 메시지에 달린 답장만
   // (스타 화면의 "메시지별 팬 답장")
-  async listReplies(requesterId: string, actorId: string, messageId?: string) {
+  async listReplies(requesterId: string, actorId: string, messageId?: string, page: { limit?: number; before?: string } = {}) {
     await ensureCanViewActor(this.prisma, requesterId, actorId);
     const replies = await this.prisma.message.findMany({
       where: {
@@ -294,7 +294,10 @@ export class MessagesService {
         ...(messageId ? { replyToMessageId: messageId } : {}),
       },
       include: { fanUser: { select: { id: true, nickname: true, deletedAt: true } } },
-      orderBy: { createdAt: 'desc' },
+      // 최신 → 오래된 순. 같은 시각이면 id로 순서를 고정해야 나눠 받을 때 빠지거나 겹치지 않음
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      ...(page.limit ? { take: page.limit } : {}),
+      ...(page.before ? { cursor: { id: page.before }, skip: 1 } : {}),
     });
     // 스타·소속사에겐 실명일 수 있는 로그인 이름 대신 닉네임 + 같은 닉네임 구분용 태그만. 탈퇴한 팬은 null
     // (앱이 "탈퇴한 팬"으로 표시)
@@ -316,21 +319,25 @@ export class MessagesService {
         _count: { select: { replies: { where: { senderType: MessageSenderType.FAN, fanUser: notBlockedIn(actorId) } } } },
       },
     });
+    // 미리보기 줄은 최근 메시지(삭제 안 된 것) 몇 개에만 — 답장이 아직 없어도 빈 배열로 줘서 앱이 "기다리는 중" 줄을 그림.
+    // 그보다 오래된 메시지는 recentReplies 자체가 없음(앱은 숫자만)
+    const previewTargets = messages.filter((m) => !m.deletedAt).slice(0, REPLY_PREVIEW_MESSAGES);
     const previews = await this.recentReplyPreviews(
       actorId,
-      messages.filter((m) => !m.deletedAt && m._count.replies > 0).slice(0, REPLY_PREVIEW_MESSAGES).map((m) => m.id),
+      previewTargets.filter((m) => m._count.replies > 0).map((m) => m.id),
     );
+    const previewIds = new Set(previewTargets.map((m) => m.id));
     return this.mediaService.withReadUrls(
       messages.map(({ _count, ...message }) => ({
         ...withQuote(message),
         replyCount: _count.replies,
-        recentReplies: previews.get(message.id) ?? [],
+        ...(previewIds.has(message.id) ? { recentReplies: previews.get(message.id) ?? [] } : {}),
       })),
     );
   }
 
   /**
-   * 메시지별 최근 팬 답장(오래된 것 → 최신 순) — 스타 화면에서 답장이 한 줄씩 넘어가며 보이는 박스용. 눈에 잘 띄는
+   * 메시지별 최근 팬 답장(오래된 것 → 최신 순) — 스타 화면에서 답장이 온 순서대로 한 줄씩 넘어가며 보이는 줄용. 눈에 잘 띄는
    * 자리라 답장 목록보다 엄격하게: 이 채널에서 차단됐거나 정지·탈퇴한 팬, 신고 처리된 답장은 뺌. 닉네임만(태그 없음).
    * 메시지마다 따로 조회(각각 인덱스 + LIMIT) — include의 take는 전체 답장을 읽은 뒤 자를 수 있어서.
    */
@@ -346,7 +353,7 @@ export class MessagesService {
             fanUser: { ...notBlockedIn(actorId), status: UserStatus.ACTIVE, deletedAt: null },
             reports: { none: { status: ReportStatus.RESOLVED } },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
           take: REPLY_PREVIEW_PER_MESSAGE,
           select: { id: true, body: true, createdAt: true, fanUser: { select: { nickname: true } } },
         });

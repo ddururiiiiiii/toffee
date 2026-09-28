@@ -239,25 +239,55 @@ describe('MessagesService.listBroadcasts 팬 답장 흐름 미리보기', () => 
     const { service, findMany } = previewSetup([broadcast('m1', 2), broadcast('m2', 0), broadcast('m3', 5, new Date())]);
     const result = (await service.listBroadcasts('admin', 'actor-1')) as unknown as {
       id: string;
-      recentReplies: { id: string; nickname: string | null; body: string }[];
+      recentReplies?: { id: string; nickname: string | null; body: string }[];
     }[];
 
-    expect(result[0].recentReplies.map((r) => r.body)).toEqual(['첫 번째', '두 번째']);
-    expect(result[0].recentReplies[1]).toMatchObject({ nickname: '민지' });
-    // 답장 없는 메시지·삭제한 메시지는 조회하지 않음
+    expect(result[0].recentReplies?.map((r) => r.body)).toEqual(['첫 번째', '두 번째']);
+    expect(result[0].recentReplies?.[1]).toMatchObject({ nickname: '민지' });
+    // 답장 없는 최근 메시지는 빈 줄(조회는 안 함), 삭제한 메시지는 줄 자체가 없음
     expect(result[1].recentReplies).toEqual([]);
-    expect(result[2].recentReplies).toEqual([]);
+    expect(result[2].recentReplies).toBeUndefined();
     expect(findMany).toHaveBeenCalledTimes(2);
     // 정지·탈퇴·차단·신고 처리된 답장 제외 조건
     expect(findMany.mock.calls[1][0]).toMatchObject({
       where: { fanUser: { status: 'ACTIVE', deletedAt: null }, reports: { none: { status: 'RESOLVED' } } },
-      take: 5,
+      take: 20,
     });
   });
 
   it('최근 메시지 10개까지만 미리보기', async () => {
     const { service, findMany } = previewSetup(Array.from({ length: 15 }, (_, i) => broadcast(`m${i}`, 1)));
-    await service.listBroadcasts('admin', 'actor-1');
+    const result = (await service.listBroadcasts('admin', 'actor-1')) as unknown as { recentReplies?: unknown[] }[];
     expect(findMany).toHaveBeenCalledTimes(11);
+    expect(result[9].recentReplies).toBeDefined();
+    expect(result[10].recentReplies).toBeUndefined();
+  });
+});
+
+describe('MessagesService.listReplies 나눠 받기', () => {
+  function listSetup() {
+    const findMany = vi.fn().mockResolvedValue([]);
+    const prisma = {
+      user: { findUniqueOrThrow: vi.fn().mockResolvedValue({ role: Role.ADMIN }) },
+      message: { findMany },
+    } as unknown as PrismaService;
+    const service = new MessagesService(prisma, {} as PushService, {} as ModerationService, {} as MediaService, config());
+    return { service, findMany };
+  }
+
+  it('limit·before를 주면 그 답장 이전 N개(같은 시각은 id로 순서 고정)', async () => {
+    const { service, findMany } = listSetup();
+    await service.listReplies('admin', 'actor-1', 'm1', { limit: 100, before: 'r50' });
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 100, cursor: { id: 'r50' }, skip: 1, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] }),
+    );
+  });
+
+  it('안 주면 전부(콘솔 기존 동작)', async () => {
+    const { service, findMany } = listSetup();
+    await service.listReplies('admin', 'actor-1');
+    const args = findMany.mock.calls[0][0] as Record<string, unknown>;
+    expect(args.take).toBeUndefined();
+    expect(args.cursor).toBeUndefined();
   });
 });

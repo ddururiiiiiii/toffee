@@ -45,7 +45,7 @@ export class MessagesController {
     @Param('actorId') actorId: string,
     @Query() query: ListRepliesQueryDto,
   ) {
-    return this.messagesService.listReplies(user.id, actorId, query.messageId);
+    return this.messagesService.listReplies(user.id, actorId, query.messageId, { limit: query.limit, before: query.before });
   }
 
   // 소속사 모니터링용 — 배우가 실제로 보낸 메시지를 읽기 전용으로 확인

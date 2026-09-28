@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api-client';
 import { uploadMedia, type UploadMediaType } from '@/lib/upload-media';
@@ -8,7 +8,7 @@ import type { ChatMessage } from './use-messages';
 
 // 배우 본인 화면("스튜디오") — 내가 보낸 메시지(+메시지별 팬 답장 수), 발송
 
-/** 스타 화면 "팬 답장 흐름" 미리보기 한 줄 — 서버가 최근 메시지 몇 개에만, 오래된 것 → 최신 순으로 줌 */
+/** 스타 화면 "팬 답장 줄" 한 줄 — 서버가 최근 메시지 몇 개에만(답장이 없으면 빈 배열), 오래된 것 → 최신 순으로 줌 */
 export interface ReplyPreview {
   id: string;
   nickname: string | null;
@@ -18,6 +18,7 @@ export interface ReplyPreview {
 
 export interface StudioMessage extends ChatMessage {
   replyCount: number;
+  /** 최근 메시지에만 있음 — 없으면 오래된 메시지(답장 줄 없이 숫자만) */
   recentReplies?: ReplyPreview[];
 }
 
@@ -32,13 +33,23 @@ export function useStudioMessages(actorId: string) {
   });
 }
 
+const REPLIES_PAGE_SIZE = 100;
+
+/**
+ * 스타 메시지 하나에 달린 팬 답장 — 최신 100개부터, 위로 올리면(fetchNextPage) 이전 100개씩. 서버는 최신 → 오래된 순.
+ * 열어 두면 3초마다 새로고침해서 새 답장이 채팅처럼 아래에 붙음(실시간 연결은 호스팅 결정 후).
+ */
 export function useMessageReplies(actorId: string, messageId: string) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['actor-replies', actorId, messageId],
-    queryFn: () =>
-      apiClient.get<FanReply[]>(`/actors/${actorId}/messages/replies?messageId=${encodeURIComponent(messageId)}`),
+    queryFn: ({ pageParam }) =>
+      apiClient.get<FanReply[]>(
+        `/actors/${actorId}/messages/replies?messageId=${encodeURIComponent(messageId)}&limit=${REPLIES_PAGE_SIZE}` +
+          (pageParam ? `&before=${encodeURIComponent(pageParam)}` : ''),
+      ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => (lastPage.length === REPLIES_PAGE_SIZE ? lastPage[lastPage.length - 1].id : undefined),
     enabled: !!actorId && !!messageId,
-    // 답장 목록을 열어 두면 새 답장이 곧바로 위에 쌓이게
     refetchInterval: 3000,
   });
 }

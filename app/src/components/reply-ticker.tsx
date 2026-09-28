@@ -12,64 +12,73 @@ const ROTATE_MS = 2500;
 const SLIDE_PX = 14;
 
 /**
- * 스타 메시지 아래 "팬 답장 흐름" — 버블·위버스처럼 최근 팬 답장이 한 줄씩 위로 넘어가며 바뀌고, 누르면 답장 목록.
- * 새 답장이 들어오면(폴링) 바로 그 답장으로 넘어감. 기기에서 "동작 줄이기"를 켰으면 넘어가는 효과 없이 바뀜.
+ * 스타 메시지 아래 "팬 답장 줄" — 버블·위버스처럼 팬 답장이 온 순서대로 한 줄씩 위로 넘어가며 보이고, 누르면 답장
+ * 채팅 화면. 새 답장이 들어와도 건너뛰지 않고 순서가 되면 이어서 보여줌(끝까지 가면 처음부터 다시). 답장이 아직
+ * 없으면 "기다리는 중" 줄. 기기에서 "동작 줄이기"를 켰으면 넘어가는 효과 없이 바뀜.
  */
 export function ReplyTicker({ replies, count, onPress }: { replies: ReplyPreview[]; count: number; onPress: () => void }) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const latestId = replies[replies.length - 1]?.id;
-  // 최신 답장에서 시작해 한 칸씩 넘어감(끝나면 오래된 것부터 다시). 새 답장이 오면(latestId가 바뀌면) 최신부터 다시
-  const [cursor, setCursor] = useState({ latestId, offset: 0 });
-  const offset = cursor.latestId === latestId ? cursor.offset : 0;
-  const index = replies.length > 0 ? (replies.length - 1 + offset) % replies.length : 0;
+  // 지금 보여주는 답장 id — 위치(index)가 아니라 id로 기억해야 새 답장이 붙거나 오래된 게 빠져도 순서가 안 꼬임
+  const [currentId, setCurrentId] = useState<string | undefined>(replies[0]?.id);
+  const found = replies.findIndex((r) => r.id === currentId);
+  const index = found >= 0 ? found : 0;
+  const reply = replies[index];
   const [progress] = useState(() => new Animated.Value(1));
   const reduceMotion = useReduceMotion();
 
   useEffect(() => {
     if (replies.length < 2) return;
-    const timer = setInterval(
-      () => setCursor((c) => ({ latestId, offset: (c.latestId === latestId ? c.offset : 0) + 1 })),
-      ROTATE_MS,
-    );
+    const timer = setInterval(() => {
+      setCurrentId((id) => {
+        const at = replies.findIndex((r) => r.id === id);
+        return replies[(at + 1) % replies.length].id;
+      });
+    }, ROTATE_MS);
     return () => clearInterval(timer);
-  }, [replies.length, latestId]);
+  }, [replies]);
 
   useEffect(() => {
     if (reduceMotion) return;
     progress.setValue(0);
     Animated.timing(progress, { toValue: 1, duration: 280, useNativeDriver: Platform.OS !== 'web' }).start();
-  }, [index, latestId, progress, reduceMotion]);
+  }, [reply?.id, progress, reduceMotion]);
 
-  const reply = replies[index];
-  if (!reply) return null;
-  const nickname = reply.nickname ?? t('console.noNickname');
+  const nickname = reply ? (reply.nickname ?? t('console.noNickname')) : '';
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${t('studio.replies', { count })}. ${nickname}: ${reply.body}`}
+      accessibilityLabel={reply ? `${t('studio.replies', { count })}. ${nickname}: ${reply.body}` : t('studio.waitingReplies')}
       style={styles.pressable}>
       <ThemedView style={[styles.box, { backgroundColor: theme.backgroundElement }]}>
-        <Animated.View
-          style={[
-            styles.line,
-            {
-              opacity: progress,
-              transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [SLIDE_PX, 0] }) }],
-            },
-          ]}>
-          <ThemedText type="smallBold" numberOfLines={1} style={styles.nickname}>
-            {nickname}
+        {reply ? (
+          <Animated.View
+            style={[
+              styles.line,
+              {
+                opacity: progress,
+                transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [SLIDE_PX, 0] }) }],
+              },
+            ]}>
+            <ThemedText type="smallBold" numberOfLines={1} style={styles.nickname}>
+              {nickname}
+            </ThemedText>
+            <ThemedText type="small" numberOfLines={1} style={styles.body}>
+              {reply.body}
+            </ThemedText>
+          </Animated.View>
+        ) : (
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.body}>
+            {t('studio.waitingReplies')}
           </ThemedText>
-          <ThemedText type="small" numberOfLines={1} style={styles.body}>
-            {reply.body}
+        )}
+        {count > 0 && (
+          <ThemedText type="smallBold" style={[styles.count, { color: theme.tint }]}>
+            {t('studio.replies', { count })} ›
           </ThemedText>
-        </Animated.View>
-        <ThemedText type="smallBold" style={[styles.count, { color: theme.tint }]}>
-          {t('studio.replies', { count })} ›
-        </ThemedText>
+        )}
       </ThemedView>
     </Pressable>
   );
@@ -100,7 +109,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   line: { flex: 1, flexDirection: 'row', gap: Spacing.one, alignItems: 'center' },
-  nickname: { flexShrink: 0, maxWidth: '40%' },
+  nickname: { flexShrink: 1, maxWidth: '50%' },
   body: { flex: 1 },
   count: { flexShrink: 0 },
 });
