@@ -41,8 +41,11 @@
   검증하고, 마이그레이션 SQL은 `prisma/migrations/`의 기존 파일을 본떠 손으로 작성할
   것. 파일명은 `YYYYMMDDHHmmss_설명` 형식.
 - 커밋 전엔 최소 `backend`: `npx tsc --noEmit`, `npm run lint`(oxlint), `npm test`, `npx nest build`
-  / `app`: `npx tsc --noEmit`, `npx eslint src` 통과를 확인할 것 — push하면 GitHub Actions CI(`.github/workflows/ci.yml`)가
-  같은 검사 + 마이그레이션 드리프트 검사를 다시 돌림. 백엔드는 ESLint가 아니라 oxlint라 `npx eslint src`를 치면 설정 파일이 없다고
+  / `app`: `npx tsc --noEmit`, `npx eslint src` 통과를 확인할 것. GitHub Actions CI(`.github/workflows/ci.yml`)는
+  Actions 무료 시간을 아끼려고 **main 대상 PR/push에서만** 자동으로 돎(작업 브랜치 push에선 안 돎,
+  2026-09-28) — 그래서 스키마를 바꿨다면 로컬 Postgres에 `prisma migrate deploy` 후
+  `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code`로
+  드리프트 검사까지 직접 할 것. main 반영은 사용자가 요청할 때만. 백엔드는 ESLint가 아니라 oxlint라 `npx eslint src`를 치면 설정 파일이 없다고
   실패함(정상). 앱 `tsc`가 `*.module.css`/`global.css` 타입을 못 찾는다고 실패하면
   gitignore된 `app/expo-env.d.ts`가 없는 것 — `/// <reference types="expo/types" />`
   한 줄로 만들어 주거나 `npx expo start`를 한 번 띄우면 자동 생성됨.

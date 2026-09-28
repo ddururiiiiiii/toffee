@@ -1,10 +1,17 @@
 name: CI
 
+# GitHub Actions 무료 시간(개인 계정 private 저장소 합산 월 2,000분)을 아끼려고 작업 브랜치 push에는
+# 돌리지 않음 — main에 올릴 때(PR/merge)만 자동 실행, 작업 브랜치는 Actions 탭에서 수동 실행 가능.
+# 작업 브랜치에선 커밋 전 로컬 검사(CLAUDE.md "세션 환경")가 사실상 유일한 안전망이니 꼭 돌릴 것.
+# 문서만 바뀐 변경도 건너뜀.
 on:
   push:
-    branches: ['**']
+    branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
     branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
+  workflow_dispatch: {}
 
 concurrency:
   group: ci-${{ github.ref }}

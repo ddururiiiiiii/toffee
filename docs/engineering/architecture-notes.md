@@ -129,7 +129,11 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
 
 ## CI + Sentry — 구현 완료 (2026-09-28)
 
-**CI** (`.github/workflows/ci.yml`, 모든 브랜치 push + main 대상 PR):
+**CI** (`.github/workflows/ci.yml`) — 처음엔 모든 브랜치 push에 돌렸으나, 같은 날 사용자
+GitHub Actions 무료 시간(개인 계정의 private 저장소 전체 합산 — 젤리의 EAS 빌드/백업/OTA와 같이
+씀) 한도 문제로 **main 대상 PR/push + 수동 실행(workflow_dispatch)만**으로 축소, 문서만 바뀐
+변경은 건너뜀. 작업 브랜치는 로컬 검사로 대체. (GitHub Organization으로 옮기면 무료 시간이
+개인 계정과 별도로 잡힘 — `ops-infra-backlog.md` 참고.)
 - `backend`: `npm ci` → `prisma generate/validate` → `tsc --noEmit` → `npm run lint`(oxlint)
   → `npm test`(vitest) → `npm run build`.
 - `migrations`: Postgres 16 서비스 컨테이너에 `prisma migrate deploy` → `prisma migrate diff
