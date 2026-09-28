@@ -138,6 +138,7 @@ function RootLayout() {
               <Stack.Screen name="admin/actors/new" options={{ headerShown: true, title: '배우 등록' }} />
               <Stack.Screen name="admin/actors/[id]" options={{ headerShown: true, title: '배우' }} />
               <Stack.Screen name="admin/agencies" options={{ headerShown: true, title: '소속사 관리' }} />
+              <Stack.Screen name="admin/stats" options={{ headerShown: true, title: '통계' }} />
               <Stack.Screen name="onboarding/terms" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/birth-date" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/nickname" options={{ headerShown: false }} />

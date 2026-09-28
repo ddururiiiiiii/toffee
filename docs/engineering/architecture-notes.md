@@ -82,6 +82,17 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
 
+## 운영자 통계 (2026-09-28)
+
+- `GET /admin/stats/summary`(앱 홈 숫자), `GET /admin/stats/daily?days=7..90`(일별 추이), `GET /admin/stats/breakdown`
+  (국가·가입 기기·언어·가입 경로·배우별) — `AdminStatsService`. 하루 경계는 `Asia/Bangkok`(UTC+7 고정), 일별 집계는
+  `$queryRawUnsafe`로 `to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Bangkok', 'YYYY-MM-DD')`.
+- 팬 통계는 `role = USER`·`deletedAt IS NULL`만. 구독률 = 활성 구독이 하나라도 있는 팬 / 전체 팬. 접속은
+  `User.lastActiveAt`(1시간 단위 갱신) 기준이라 "오늘/30일 접속자"만 가능(과거 일별 접속자는 기록 안 함).
+  가입 경로는 사용자별 첫 `AuthIdentity.provider`(개발용 이메일 로그인 계정은 안 잡힘). 신규 구독 금액은
+  `SubscriptionEvent.priceCents` 합(결제 연동 후 실제 매출·갱신은 별도).
+- 앱: `admin/stats.tsx`(폭 900px 이상이면 2열), 차트는 라이브러리 없이 View로 그린 `components/simple-charts.tsx`.
+
 ## 답장 횟수 제한·스타 메시지 삭제·운영자 가림 (2026-09-28)
 
 - 스키마(`20260928140000_add_message_deletion`): `Message.deletedAt`, `deletedByAdmin`(소프트 삭제 — 모니터링 기록·신고 증거용).

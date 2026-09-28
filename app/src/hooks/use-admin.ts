@@ -279,3 +279,70 @@ export function useReactivateUser() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }),
   });
 }
+
+// ── 통계(2026-09-28) — 앱 홈은 summary 숫자, 통계 화면은 일별 추이·분포 ──────────────
+
+export interface AdminStatsSummary {
+  timeZone: string;
+  fans: { total: number; newToday: number; new7d: number; activeToday: number; active30d: number };
+  subscriptions: {
+    active: number;
+    subscribedFans: number;
+    subscriptionRate: number;
+    startedToday: number;
+    cancelledToday: number;
+    started30d: number;
+    cancelled30d: number;
+  };
+  reports: { pending: number };
+  messages: { starToday: number; fanRepliesToday: number };
+}
+
+export interface AdminStatsDay {
+  day: string;
+  signups: number;
+  subscriptionsStarted: number;
+  subscriptionsCancelled: number;
+  newRevenueCents: number;
+  starMessages: number;
+  fanReplies: number;
+}
+
+export interface AdminStatsBreakdown {
+  countries: { key: string; count: number }[];
+  platforms: { key: string; count: number }[];
+  locales: { key: string; count: number }[];
+  providers: { key: string; count: number }[];
+  actors: {
+    id: string;
+    name: string;
+    nickname: string;
+    activeSubscribers: number;
+    started30d: number;
+    cancelled30d: number;
+    newRevenue30dCents: number;
+  }[];
+}
+
+export function useAdminStatsSummary() {
+  return useQuery({
+    queryKey: ['admin', 'stats', 'summary'],
+    queryFn: () => apiClient.get<AdminStatsSummary>('/admin/stats/summary'),
+    refetchInterval: 60_000,
+  });
+}
+
+export function useAdminStatsDaily(days: number) {
+  return useQuery({
+    queryKey: ['admin', 'stats', 'daily', days],
+    queryFn: () => apiClient.get<AdminStatsDay[]>(`/admin/stats/daily?days=${days}`),
+  });
+}
+
+export function useAdminStatsBreakdown() {
+  return useQuery({
+    queryKey: ['admin', 'stats', 'breakdown'],
+    queryFn: () => apiClient.get<AdminStatsBreakdown>('/admin/stats/breakdown'),
+  });
+}
+

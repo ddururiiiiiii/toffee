@@ -5,14 +5,16 @@ import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/lib/auth-context';
+import { useAdminStatsSummary } from '@/hooks/use-admin';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
 const MENU: {
-  href: '/admin/reports' | '/admin/banned-words' | '/admin/users' | '/admin/actors' | '/admin/agencies';
+  href: '/admin/reports' | '/admin/banned-words' | '/admin/users' | '/admin/actors' | '/admin/agencies' | '/admin/stats';
   label: string;
   description: string;
 }[] = [
+  { href: '/admin/stats', label: '통계', description: '가입·구독·해지 추이, 국가·가입 경로, 배우별 구독(PC에서 넓게)' },
   { href: '/admin/reports', label: '신고 처리', description: '신고된 메시지를 검토하고 승인/기각해요' },
   { href: '/admin/banned-words', label: '금칙어 관리', description: '팬 답장에서 자동으로 차단할 단어를 관리해요' },
   { href: '/admin/users', label: '회원 관리', description: '회원 정지·영구차단, 배우·소속사 직원 계정 지정' },
@@ -24,9 +26,34 @@ export default function AdminHomeScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { logout } = useAuth();
+  const { data: summary } = useAdminStatsSummary();
+  // 앱에선 숫자 요약만(2026-09-28 결정: 앱은 가볍게, 그래프는 통계 화면·웹)
+  const cards = summary
+    ? [
+        { label: '대기 신고', value: summary.reports.pending, href: '/admin/reports' as const, alert: summary.reports.pending > 0 },
+        { label: '오늘 가입', value: summary.fans.newToday, href: '/admin/stats' as const },
+        { label: '활성 구독', value: summary.subscriptions.active, href: '/admin/stats' as const },
+        { label: '오늘 접속', value: summary.fans.activeToday, href: '/admin/stats' as const },
+      ]
+    : [];
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
+      <ThemedView style={styles.cards}>
+        {cards.map((card) => (
+          <Pressable
+            key={card.label}
+            onPress={() => router.push(card.href)}
+            style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
+            <ThemedText type="small" themeColor="textSecondary">
+              {card.label}
+            </ThemedText>
+            <ThemedText type="subtitle" themeColor={card.alert ? 'danger' : 'text'} style={styles.cardValue}>
+              {card.value}
+            </ThemedText>
+          </Pressable>
+        ))}
+      </ThemedView>
       <ThemedView style={styles.list}>
         {MENU.map((item) => (
           <Pressable
@@ -52,6 +79,9 @@ export default function AdminHomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  cards: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, paddingHorizontal: Spacing.four, paddingTop: Spacing.three },
+  card: { flexGrow: 1, flexBasis: 70, borderRadius: 14, padding: Spacing.two, alignItems: 'center' },
+  cardValue: { fontSize: 24, lineHeight: 30 },
   list: { padding: Spacing.four, gap: Spacing.three },
   row: { borderRadius: 14, padding: Spacing.three, gap: 4 },
   logoutButton: {

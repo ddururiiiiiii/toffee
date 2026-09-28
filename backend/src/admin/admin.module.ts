@@ -6,10 +6,12 @@ import { AdminAgenciesService } from './admin-agencies.service.js';
 import { AdminActorsController } from './admin-actors.controller.js';
 import { AdminActorsService } from './admin-actors.service.js';
 import { ActorsModule } from '../actors/actors.module.js';
+import { AdminStatsController } from './admin-stats.controller.js';
+import { AdminStatsService } from './admin-stats.service.js';
 
 @Module({
   imports: [ActorsModule],
-  controllers: [AdminUsersController, AdminAgenciesController, AdminActorsController],
-  providers: [AdminUsersService, AdminAgenciesService, AdminActorsService],
+  controllers: [AdminUsersController, AdminAgenciesController, AdminActorsController, AdminStatsController],
+  providers: [AdminUsersService, AdminAgenciesService, AdminActorsService, AdminStatsService],
 })
 export class AdminModule {}

@@ -9,7 +9,7 @@ import { Spacing } from '@/constants/theme';
 
 // 운영자 화면 공용 조각 — 운영자 화면은 한국어 전용(다국어 대상 아님)
 
-export function AdminSection({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+export function AdminSection({ title, hint, children }: { title: string; hint?: string; children?: ReactNode }) {
   const theme = useTheme();
   return (
     <ThemedView style={[styles.section, { backgroundColor: theme.backgroundElement }]}>
