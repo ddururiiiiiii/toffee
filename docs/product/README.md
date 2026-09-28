@@ -8,4 +8,6 @@
 - [`feature-decisions.md`](./feature-decisions.md) — 지금까지 확정된 제품 기능 결정 사항
 - [`business-compliance-checklist.md`](./business-compliance-checklist.md) — 기능이 아닌,
   상업 서비스 운영에 필요한 법률/결제/세무 체크리스트
+- [`ops-infra-backlog.md`](./ops-infra-backlog.md) — 운영·인프라·사업 쪽 결정 사항과, 기능 개발
+  이후로 미뤄둔 작업 목록(계정 구조, 파일 저장소, 호스팅 등)
 - [`brand/`](./brand/) — 원본 디자인 가이드·로고 파일·화면 목업 이미지(레퍼런스 자료)
