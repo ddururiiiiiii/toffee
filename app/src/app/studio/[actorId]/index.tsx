@@ -27,7 +27,8 @@ import { MediaTile } from '@/components/media-tile';
 import { QuoteBlock } from '@/components/quote-block';
 import { VoiceMessage } from '@/components/voice-message';
 import { useActor } from '@/hooks/use-actors';
-import { useStudioMessages, useStudioSend, type Attachment, type StudioMessage } from '@/hooks/use-studio';
+import { useDeleteBroadcast, useStudioMessages, useStudioSend, type Attachment, type StudioMessage } from '@/hooks/use-studio';
+import { confirm } from '@/lib/confirm';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 import { dbToLevel, resample } from '@/lib/waveform';
@@ -56,12 +57,26 @@ function toAttachment(result: ImagePicker.ImagePickerResult): Attachment | null 
   };
 }
 
-function MyMessage({ message, onOpenReplies }: { message: StudioMessage; onOpenReplies: () => void }) {
+function MyMessage({
+  message,
+  onOpenReplies,
+  onDelete,
+}: {
+  message: StudioMessage;
+  onOpenReplies: () => void;
+  onDelete: () => void;
+}) {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
+  const hiddenByAdmin = !!message.deletedAt && message.deletedByAdmin;
   return (
     <ThemedView style={styles.messageRow}>
-      <ThemedView style={[styles.bubble, { backgroundColor: theme.tint }]}>
+      {hiddenByAdmin && (
+        <ThemedText type="small" themeColor="danger">
+          {t('studio.hiddenByAdmin')}
+        </ThemedText>
+      )}
+      <ThemedView style={[styles.bubble, { backgroundColor: theme.tint }, hiddenByAdmin && styles.hiddenBubble]}>
         {message.replyTo && <QuoteBlock quote={message.replyTo} tone="light" />}
         {message.mediaType === 'PHOTO' || message.mediaType === 'VIDEO' ? (
           <MediaTile id={message.id} url={message.mediaUrl} mediaType={message.mediaType} durationMs={message.mediaDurationMs} />
@@ -80,6 +95,13 @@ function MyMessage({ message, onOpenReplies }: { message: StudioMessage; onOpenR
         <ThemedText type="small" themeColor="textSecondary">
           {new Date(message.createdAt).toLocaleString(i18n.language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
         </ThemedText>
+        {!hiddenByAdmin && (
+          <Pressable onPress={onDelete} hitSlop={8} accessibilityRole="button">
+            <ThemedText type="small" themeColor="textSecondary">
+              {t('studio.delete')}
+            </ThemedText>
+          </Pressable>
+        )}
         <Pressable onPress={onOpenReplies} hitSlop={8}>
           <ThemedText type="smallBold" style={{ color: theme.tint }}>
             {message.replyCount > 0 ? `${t('studio.replies', { count: message.replyCount })} ›` : t('studio.noReplies')}
@@ -108,6 +130,12 @@ export default function StudioChannelScreen() {
   const { data: actor } = useActor(actorId);
   const { data: messages, isLoading } = useStudioMessages(actorId);
   const send = useStudioSend(actorId);
+  const deleteBroadcast = useDeleteBroadcast(actorId);
+  const removeMessage = async (messageId: string) => {
+    const ok = await confirm(t('studio.deleteTitle'), t('studio.deleteBody'), t('studio.delete'), t('common.cancel'));
+    if (!ok) return;
+    deleteBroadcast.mutate(messageId, { onError: () => setNotice({ text: t('studio.deleteFailed'), error: true }) });
+  };
   const recorder = useAudioRecorder(RECORDING_OPTIONS);
   const recorderState = useAudioRecorderState(recorder, 100);
   const levels = useRef<number[]>([]);
@@ -201,7 +229,8 @@ export default function StudioChannelScreen() {
         ) : (
           <FlatList
             inverted
-            data={messages}
+            // 내가 지운 메시지는 안 보임(운영자가 가린 건 이유와 함께 보임)
+            data={messages?.filter((message) => !message.deletedAt || message.deletedByAdmin)}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
             ListEmptyComponent={
@@ -210,7 +239,11 @@ export default function StudioChannelScreen() {
               </ThemedText>
             }
             renderItem={({ item }) => (
-              <MyMessage message={item} onOpenReplies={() => router.push(`/studio/${actorId}/replies/${item.id}`)} />
+              <MyMessage
+                message={item}
+                onOpenReplies={() => router.push(`/studio/${actorId}/replies/${item.id}`)}
+                onDelete={() => void removeMessage(item.id)}
+              />
             )}
           />
         )}
@@ -327,6 +360,7 @@ export default function StudioChannelScreen() {
 }
 
 const styles = StyleSheet.create({
+  hiddenBubble: { opacity: 0.45 },
   nameHint: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.one },
   headerButton: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
   container: { flex: 1 },

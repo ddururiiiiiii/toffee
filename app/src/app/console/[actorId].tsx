@@ -56,7 +56,7 @@ function SegmentedControl({ value, onChange }: { value: Section; onChange: (sect
 }
 
 type MonitorItem =
-  | { kind: 'message'; id: string; mediaType: string; body: string | null; createdAt: string }
+  | { kind: 'message'; id: string; mediaType: string; body: string | null; createdAt: string; removed: 'actor' | 'admin' | null }
   | { kind: 'story'; id: string; mediaType: string; createdAt: string };
 
 // 소속사는 발송 권한이 없음 — 배우가 실제로 보낸 메시지/스토리를 읽기 전용으로만 확인
@@ -70,7 +70,14 @@ function MonitorSection({ actorId }: { actorId: string }) {
 
   const items: MonitorItem[] = [
     ...(broadcasts ?? []).map(
-      (m: ChatMessage): MonitorItem => ({ kind: 'message', id: m.id, mediaType: m.mediaType, body: m.body, createdAt: m.createdAt }),
+      (m: ChatMessage): MonitorItem => ({
+        kind: 'message',
+        id: m.id,
+        mediaType: m.mediaType,
+        body: m.body,
+        createdAt: m.createdAt,
+        removed: m.deletedAt ? (m.deletedByAdmin ? 'admin' : 'actor') : null,
+      }),
     ),
     ...(stories ?? []).map(
       (s: ActorStory): MonitorItem => ({ kind: 'story', id: s.id, mediaType: s.mediaType, createdAt: s.createdAt }),
@@ -92,6 +99,12 @@ function MonitorSection({ actorId }: { actorId: string }) {
           <ThemedText type="smallBold">
             {t(`console.kind.${item.kind}`)} · {mediaLabel(t, item.mediaType)}
           </ThemedText>
+          {/* 모니터링 기록이라 지워진 메시지도 표시(팬에게는 안 보임) */}
+          {item.kind === 'message' && item.removed && (
+            <ThemedText type="small" themeColor="danger">
+              {t(item.removed === 'admin' ? 'studio.hiddenByAdmin' : 'console.deletedByActor')}
+            </ThemedText>
+          )}
           {item.kind === 'message' && item.body && <ThemedText type="small">{showNameToken(item.body, t('studio.fanNickname'))}</ThemedText>}
           <ThemedText type="small" themeColor="textSecondary">
             {new Date(item.createdAt).toLocaleString(i18n.language)}

@@ -54,7 +54,9 @@
     "replyAfterFirst": "明星傳送第一則訊息後即可回覆。",
     "sendFailed": "傳送失敗，請重試。",
     "notSubscribed": "訂閱已結束，無法查看與 {{name}} 的聊天。",
-    "resubscribe": "重新訂閱"
+    "resubscribe": "重新訂閱",
+    "repliesLeft": "這則訊息還可回覆 {{count}} 則",
+    "noRepliesLeft": "每則訊息最多可回覆 {{limit}} 則，請等待明星的下一則訊息。"
   },
   "mypage": {
     "title": "我的",
@@ -93,7 +95,8 @@
     "activeSubscribers": "有效訂閱人數",
     "lastBroadcast": "最近傳送日期",
     "noBroadcast": "尚無傳送紀錄",
-    "noNickname": "（無暱稱）"
+    "noNickname": "（無暱稱）",
+    "deletedByActor": "明星已刪除的訊息（粉絲看不到）"
   },
   "onboarding": {
     "birthDateTitle": "請填寫你的出生日期",
@@ -149,7 +152,12 @@
     },
     "insertName": "插入粉絲名字",
     "insertNameHint": "傳送時〈粉絲暱稱〉會替換成每位粉絲自己的暱稱。",
-    "fanNickname": "粉絲暱稱"
+    "fanNickname": "粉絲暱稱",
+    "delete": "刪除",
+    "deleteTitle": "刪除訊息",
+    "deleteBody": "這則訊息將從粉絲的畫面中消失。已傳送的通知無法收回，經紀公司的監控中會保留刪除紀錄。",
+    "deleteFailed": "刪除失敗，請重試。",
+    "hiddenByAdmin": "依營運政策已隱藏（粉絲看不到）。"
   },
   "media": {
     "save": "儲存",

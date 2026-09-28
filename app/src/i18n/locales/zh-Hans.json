@@ -54,7 +54,9 @@
     "replyAfterFirst": "明星发送第一条消息后即可回复。",
     "sendFailed": "发送失败，请重试。",
     "notSubscribed": "订阅已结束，无法查看与 {{name}} 的聊天。",
-    "resubscribe": "重新订阅"
+    "resubscribe": "重新订阅",
+    "repliesLeft": "这条消息还可回复 {{count}} 条",
+    "noRepliesLeft": "每条消息最多可回复 {{limit}} 条，请等待明星的下一条消息。"
   },
   "mypage": {
     "title": "我的",
@@ -93,7 +95,8 @@
     "activeSubscribers": "活跃订阅人数",
     "lastBroadcast": "最近发送日期",
     "noBroadcast": "暂无发送记录",
-    "noNickname": "（无昵称）"
+    "noNickname": "（无昵称）",
+    "deletedByActor": "明星已删除的消息（粉丝看不到）"
   },
   "onboarding": {
     "birthDateTitle": "请填写你的出生日期",
@@ -149,7 +152,12 @@
     },
     "insertName": "插入粉丝名字",
     "insertNameHint": "发送时〈粉丝昵称〉会替换成每位粉丝自己的昵称。",
-    "fanNickname": "粉丝昵称"
+    "fanNickname": "粉丝昵称",
+    "delete": "删除",
+    "deleteTitle": "删除消息",
+    "deleteBody": "这条消息将从粉丝的画面中消失。已发送的通知无法撤回，经纪公司的监控中会保留删除记录。",
+    "deleteFailed": "删除失败，请重试。",
+    "hiddenByAdmin": "根据运营政策已隐藏（粉丝看不到）。"
   },
   "media": {
     "save": "保存",

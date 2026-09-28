@@ -21,6 +21,9 @@ export interface ChatMessage {
   waveform?: number[] | null;
   // 스타의 인용 답장이면 인용한 팬 메시지 요약(전체 공개, 닉네임만)
   replyTo?: MessageQuote | null;
+  // 스타·소속사 화면용(팬 화면엔 지워진 메시지가 아예 안 옴) — 스타가 삭제했거나 운영자가 신고 승인으로 가림
+  deletedAt?: string | null;
+  deletedByAdmin?: boolean;
   createdAt: string;
 }
 
@@ -42,6 +45,25 @@ export function useSendReply(actorId: string) {
     mutationFn: (body: string) => apiClient.post<ChatMessage>(`/actors/${actorId}/messages/reply`, { body }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messages', actorId] });
+      queryClient.invalidateQueries({ queryKey: ['reply-quota', actorId] });
     },
   });
 }
+
+// 스타 메시지 하나당 보낼 수 있는 답장 수(서버 설정, 기본 3) — 입력창 위 "남은 답장 N개"
+export interface ReplyQuota {
+  messageId: string | null;
+  limit: number;
+  used: number;
+  remaining: number;
+}
+
+export function useReplyQuota(actorId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['reply-quota', actorId],
+    queryFn: () => apiClient.get<ReplyQuota>(`/actors/${actorId}/messages/reply-quota`),
+    enabled: !!actorId && enabled,
+    refetchInterval: 5000,
+  });
+}
+

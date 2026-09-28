@@ -1,4 +1,5 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PushService } from '../notifications/push.service.js';
 import { pushStrings } from '../notifications/push-messages.js';
@@ -89,7 +90,35 @@ export class MessagesService {
     private readonly pushService: PushService,
     private readonly moderationService: ModerationService,
     private readonly mediaService: MediaService,
+    private readonly config: ConfigService,
   ) {}
+
+  // 스타 메시지 하나당 팬 1명이 보낼 수 있는 답장 수(버블 방식, 잠정 3 — STATUS.md 출시 전 확정 정책). 설정값으로 조정
+  private get repliesPerMessage(): number {
+    const value = Number(this.config.get<string>('FAN_REPLIES_PER_MESSAGE'));
+    return Number.isInteger(value) && value > 0 ? value : 3;
+  }
+
+  // 팬이 지금 답장할 대상(구독 이후 가장 최근의, 지워지지 않은 스타 메시지)과 거기에 이미 보낸 답장 수
+  private async replyTarget(userId: string, actorId: string, since: Date) {
+    const target = await this.prisma.message.findFirst({
+      where: { actorId, senderType: MessageSenderType.ARTIST, deletedAt: null, createdAt: { gte: since } },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    });
+    const used = target
+      ? await this.prisma.message.count({ where: { replyToMessageId: target.id, fanUserId: userId, senderType: MessageSenderType.FAN } })
+      : 0;
+    return { target, used };
+  }
+
+  /** 팬 화면 입력창 위 "남은 답장 N개" */
+  async replyQuota(userId: string, actorId: string) {
+    const subscription = await ensureActiveSubscription(this.prisma, userId, actorId);
+    const { target, used } = await this.replyTarget(userId, actorId, subscription.startedAt);
+    const limit = this.repliesPerMessage;
+    return { messageId: target?.id ?? null, limit, used, remaining: target ? Math.max(limit - used, 0) : 0 };
+  }
 
   // 팬 본인의 대화방: 구독 시작일 이후의 방송 메시지 + 본인이 보낸 답장만, 시간순
   async listForFan(userId: string, actorId: string) {
@@ -98,6 +127,8 @@ export class MessagesService {
       where: {
         actorId,
         createdAt: { gte: subscription.startedAt },
+        // 스타가 지웠거나 운영자가 가린 메시지는 팬에게 안 보임(팬 답장엔 deletedAt이 없음)
+        deletedAt: null,
         OR: [{ senderType: MessageSenderType.ARTIST }, { fanUserId: userId }],
       },
       include: quoteInclude(actorId),
@@ -126,14 +157,15 @@ export class MessagesService {
     if (blocked) throw new ForbiddenException('이 채널에서는 답장을 보낼 수 없어요.');
     await this.moderationService.assertNoBannedWords(dto.body);
     // 버블 방식: 팬은 대상을 고르지 않고, 지금 팬 화면에 보이는 가장 최근 스타 메시지에 대한 답장이 됨
-    // (구독 전 메시지는 팬에게 안 보이므로 제외). 스타 화면은 이걸로 메시지별 답장을 묶어 보여줌.
-    const latestArtistMessage = await this.prisma.message.findFirst({
-      where: { actorId, senderType: MessageSenderType.ARTIST, createdAt: { gte: subscription.startedAt } },
-      orderBy: { createdAt: 'desc' },
-      select: { id: true },
-    });
+    // (구독 전·삭제된 메시지는 팬에게 안 보이므로 제외). 스타 화면은 이걸로 메시지별 답장을 묶어 보여줌.
+    const { target: latestArtistMessage, used } = await this.replyTarget(userId, actorId, subscription.startedAt);
     // 스타 메시지가 오기 전엔 답장할 곳이 없음 — 예전엔 대상 없이 저장돼서 스타의 "메시지별 답장" 어디에도 안 보였음
     if (!latestArtistMessage) throw new BadRequestException('스타의 첫 메시지가 오면 답장할 수 있어요.');
+    if (used >= this.repliesPerMessage) {
+      throw new BadRequestException(
+        `이 메시지에는 답장을 ${this.repliesPerMessage}개까지 보낼 수 있어요. 스타의 다음 메시지를 기다려 주세요.`,
+      );
+    }
     const [message] = await this.prisma.$transaction([
       this.prisma.message.create({
         data: {
@@ -262,5 +294,25 @@ export class MessagesService {
     return this.mediaService.withReadUrls(
       messages.map(({ _count, ...message }) => ({ ...withQuote(message), replyCount: _count.replies })),
     );
+  }
+
+  /**
+   * 스타의 보낸 메시지 삭제(보내기 취소) — 팬 화면에서 사라지고, 소속사 모니터링엔 "배우가 삭제한 메시지"로 남음.
+   * 이미 보낸 푸시 알림은 되돌릴 수 없음. 첨부 파일은 신고가 걸려 있지 않으면 지움(신고 증거는 남김).
+   */
+  async deleteBroadcast(requesterId: string, actorId: string, messageId: string) {
+    await ensureIsActorSelf(this.prisma, requesterId, actorId);
+    const message = await this.prisma.message.findFirst({
+      where: { id: messageId, actorId, senderType: MessageSenderType.ARTIST },
+      select: { id: true, deletedAt: true, mediaKey: true, _count: { select: { reports: true } } },
+    });
+    if (!message) throw new NotFoundException('메시지를 찾을 수 없어요.');
+    if (message.deletedAt) return;
+    const keepFile = message._count.reports > 0;
+    await this.prisma.message.update({
+      where: { id: messageId },
+      data: { deletedAt: new Date(), ...(keepFile ? {} : { mediaKey: null }) },
+    });
+    if (!keepFile) await this.mediaService.deleteQuietly(message.mediaKey);
   }
 }

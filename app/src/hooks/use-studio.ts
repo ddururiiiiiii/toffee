@@ -77,3 +77,13 @@ export function useStudioSend(actorId: string) {
     },
   });
 }
+
+// 보낸 메시지 삭제(보내기 취소) — 팬 화면에서 사라짐, 소속사 모니터링엔 "삭제한 메시지"로 남음
+export function useDeleteBroadcast(actorId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (messageId: string) => apiClient.delete(`/actors/${actorId}/messages/${messageId}`),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['actor-broadcasts', actorId] }),
+  });
+}
+

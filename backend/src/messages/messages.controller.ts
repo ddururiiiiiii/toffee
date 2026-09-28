@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { MessagesService } from './messages.service.js';
 import { ListRepliesQueryDto } from './dto/list-replies-query.dto.js';
 import { SendReplyDto } from './dto/send-reply.dto.js';
@@ -53,5 +53,23 @@ export class MessagesController {
   @Get('broadcasts')
   listBroadcasts(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string) {
     return this.messagesService.listBroadcasts(user.id, actorId);
+  }
+
+  // 팬 화면 "남은 답장 N개"
+  @Get('reply-quota')
+  replyQuota(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string) {
+    return this.messagesService.replyQuota(user.id, actorId);
+  }
+
+  // 스타 본인의 보낸 메시지 삭제
+  @Roles(Role.ACTOR, Role.ADMIN)
+  @Delete(':messageId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteBroadcast(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('actorId') actorId: string,
+    @Param('messageId') messageId: string,
+  ) {
+    await this.messagesService.deleteBroadcast(user.id, actorId, messageId);
   }
 }

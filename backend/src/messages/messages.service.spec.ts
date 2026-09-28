@@ -6,6 +6,9 @@ import type { PrismaService } from '../prisma/prisma.service.js';
 import type { PushService } from '../notifications/push.service.js';
 import type { ModerationService } from '../moderation/moderation.service.js';
 import type { MediaService } from '../storage/media.service.js';
+import type { ConfigService } from '@nestjs/config';
+
+const config = (values: Record<string, string> = {}) => ({ get: (key: string) => values[key] }) as unknown as ConfigService;
 
 // sendBroadcast의 푸시 문구 조립만 검증 — DB/FCM은 가짜로 대체
 function setup() {
@@ -34,7 +37,7 @@ function setup() {
     verifyForAttach: vi.fn().mockResolvedValue(undefined),
     withReadUrl: vi.fn((item: object) => Promise.resolve(item)),
   } as unknown as MediaService;
-  const service = new MessagesService(prisma, push, {} as ModerationService, media);
+  const service = new MessagesService(prisma, push, {} as ModerationService, media, config());
   return { service, fanPushes, staffPushes };
 }
 
@@ -87,3 +90,50 @@ describe('인용 답장 요약(toQuote)', () => {
     expect(toQuote(null)).toBeNull();
   });
 });
+
+// 팬 답장 횟수 제한 — 스타 메시지 하나당 N개(기본 3, FAN_REPLIES_PER_MESSAGE)
+function replySetup(alreadySent: number, settings: Record<string, string> = {}) {
+  const created = vi.fn().mockResolvedValue({ id: 'r1' });
+  const prisma = {
+    subscription: {
+      findUnique: vi.fn().mockResolvedValue({ startedAt: new Date(0), cancelledAt: null }),
+      update: vi.fn().mockResolvedValue({}),
+    },
+    actorFanBlock: { findUnique: vi.fn().mockResolvedValue(null) },
+    message: {
+      findFirst: vi.fn().mockResolvedValue({ id: 'star-1' }),
+      count: vi.fn().mockResolvedValue(alreadySent),
+      create: created,
+    },
+    $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+  } as unknown as PrismaService;
+  const moderation = { assertNoBannedWords: vi.fn().mockResolvedValue(undefined) } as unknown as ModerationService;
+  const service = new MessagesService(prisma, {} as PushService, moderation, {} as MediaService, config(settings));
+  return { service, created, prisma };
+}
+
+describe('MessagesService 답장 횟수 제한', () => {
+  it('3개 미만이면 보내지고, 3개째까지 허용', async () => {
+    const { service, created } = replySetup(2);
+    await service.sendReply('fan', 'actor', { body: '안녕' });
+    expect(created).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ replyToMessageId: 'star-1' }) }));
+  });
+
+  it('이미 3개 보냈으면 거절', async () => {
+    const { service, created } = replySetup(3);
+    await expect(service.sendReply('fan', 'actor', { body: '안녕' })).rejects.toThrow('3개까지');
+    expect(created).not.toHaveBeenCalled();
+  });
+
+  it('설정값으로 바꿀 수 있고, 남은 개수를 알려줌', async () => {
+    const { service } = replySetup(4, { FAN_REPLIES_PER_MESSAGE: '5' });
+    await expect(service.replyQuota('fan', 'actor')).resolves.toEqual({ messageId: 'star-1', limit: 5, used: 4, remaining: 1 });
+  });
+
+  it('지워진 스타 메시지는 답장 대상에서 빠짐', async () => {
+    const { service, prisma } = replySetup(0);
+    await service.replyQuota('fan', 'actor');
+    expect(prisma.message.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ deletedAt: null }) }));
+  });
+});
+

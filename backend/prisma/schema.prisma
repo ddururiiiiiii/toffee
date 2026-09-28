@@ -314,6 +314,10 @@ model Message {
   // (버블 방식, 2026-09-28 확정). 스타의 인용 답장(예정)은 인용한 팬 메시지를 가리킴.
   // 원본이 지워지면 null(앱에서 "삭제된 메시지"로 표시).
   replyToMessageId String?
+  // 스타 메시지 삭제(보내기 취소)·운영자 가림 — 지우지 않고 표시만(소속사 모니터링 기록·신고 증거용). 둘 다 팬
+  // 화면에선 사라짐. deletedByAdmin이면 운영자가 신고 승인으로 가린 것(스타 화면엔 "운영 정책으로 가려진 메시지").
+  deletedAt        DateTime?
+  deletedByAdmin   Boolean           @default(false)
   createdAt        DateTime          @default(now())
 
   actor        Actor                @relation(fields: [actorId], references: [id], onDelete: Cascade)

@@ -54,7 +54,9 @@
     "replyAfterFirst": "You can reply once the star sends their first message.",
     "sendFailed": "Couldn't send. Please try again.",
     "notSubscribed": "Your subscription has ended, so you can't view the chat with {{name}}.",
-    "resubscribe": "Subscribe again"
+    "resubscribe": "Subscribe again",
+    "repliesLeft": "{{count}} replies left for this message",
+    "noRepliesLeft": "You can send up to {{limit}} replies per message. Please wait for the star's next message."
   },
   "mypage": {
     "title": "My page",
@@ -93,7 +95,8 @@
     "activeSubscribers": "Active subscribers",
     "lastBroadcast": "Last sent",
     "noBroadcast": "Nothing sent yet",
-    "noNickname": "(no nickname)"
+    "noNickname": "(no nickname)",
+    "deletedByActor": "Deleted by the star (not visible to fans)"
   },
   "onboarding": {
     "birthDateTitle": "What's your date of birth?",
@@ -149,7 +152,12 @@
     },
     "insertName": "Insert fan name",
     "insertNameHint": "〈fan nickname〉 is replaced with each fan's own nickname when sent.",
-    "fanNickname": "fan nickname"
+    "fanNickname": "fan nickname",
+    "delete": "Delete",
+    "deleteTitle": "Delete message",
+    "deleteBody": "This message will disappear from fans' screens. Notifications already sent can't be recalled, and the deletion stays on record in agency monitoring.",
+    "deleteFailed": "Couldn't delete. Please try again.",
+    "hiddenByAdmin": "Hidden under our policy (not visible to fans)."
   },
   "media": {
     "save": "Save",

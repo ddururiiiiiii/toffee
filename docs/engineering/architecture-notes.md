@@ -82,6 +82,17 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
 
+## 답장 횟수 제한·스타 메시지 삭제·운영자 가림 (2026-09-28)
+
+- 스키마(`20260928140000_add_message_deletion`): `Message.deletedAt`, `deletedByAdmin`(소프트 삭제 — 모니터링 기록·신고 증거용).
+- 답장 제한: `MessagesService.replyTarget`(구독 이후 가장 최근의 지워지지 않은 스타 메시지 + 그 메시지에 이 팬이 보낸
+  답장 수), `FAN_REPLIES_PER_MESSAGE`(기본 3) 넘으면 400. `GET /actors/:id/messages/reply-quota` → `{ messageId,
+  limit, used, remaining }`(팬 입력창 위 표시, 5초 폴링). 단위 테스트 4개.
+- 삭제: `DELETE /actors/:actorId/messages/:messageId`(ACTOR 본인·ADMIN, 스타 메시지만) → `deletedAt`. 신고가 걸려
+  있지 않으면 첨부 파일도 삭제. `listForFan`은 `deletedAt: null`만, `listBroadcasts`(스튜디오·콘솔)는 전부 내려주고
+  앱이 표시를 나눔(스튜디오: 내가 지운 건 숨김, 운영자 가림은 표시 / 콘솔: 둘 다 라벨과 함께 표시).
+- 운영자 가림: `ReportsService.resolve`에서 신고 대상이 스타 메시지면 `deletedAt + deletedByAdmin: true`(같은 트랜잭션).
+
 ## 미성년 국가별 기준·통계 기록 (2026-09-28)
 
 - 스키마(`20260928130000_add_country_activity_and_subscription_events`): `User.countryCode`, `signupPlatform`,

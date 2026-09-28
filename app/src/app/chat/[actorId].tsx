@@ -20,7 +20,7 @@ import { QuoteBlock } from '@/components/quote-block';
 import { VoiceMessage } from '@/components/voice-message';
 import { saveMedia } from '@/lib/save-media';
 import { useActor } from '@/hooks/use-actors';
-import { useActorMessages, useSendReply, type ChatMessage } from '@/hooks/use-messages';
+import { useActorMessages, useReplyQuota, useSendReply, type ChatMessage } from '@/hooks/use-messages';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
@@ -121,6 +121,9 @@ export default function ChatRoomScreen() {
   };
   // 버블 방식: 팬 답장은 가장 최근 스타 메시지에 붙음 — 구독 후 스타 메시지가 아직 없으면 답장할 곳이 없어서 입력창 대신 안내
   const canReply = !!messages?.some((message) => message.senderType === 'ARTIST');
+  // 스타 메시지 하나당 답장 수 제한(기본 3) — 다 쓰면 다음 메시지까지 입력창 대신 안내
+  const { data: quota } = useReplyQuota(actorId, canReply);
+  const outOfReplies = !!quota && quota.remaining === 0;
 
   return (
     <KeyboardAvoidingView
@@ -170,29 +173,36 @@ export default function ChatRoomScreen() {
           </ThemedText>
         )}
 
-        {isLoading || isError ? null : !canReply ? (
+        {isLoading || isError ? null : !canReply || outOfReplies ? (
           <ThemedText
             type="small"
             themeColor="textSecondary"
             style={[styles.waitingBar, { borderTopColor: theme.backgroundElement }]}>
-            {t('chat.replyAfterFirst')}
+            {canReply ? t('chat.noRepliesLeft', { limit: quota?.limit }) : t('chat.replyAfterFirst')}
           </ThemedText>
         ) : (
-          <ThemedView style={[styles.inputRow, { borderTopColor: theme.backgroundElement }]}>
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              placeholder={t('chat.replyPlaceholder')}
-              placeholderTextColor={theme.textSecondary}
-              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
-              multiline
-            />
-            <Pressable
-              onPress={handleSend}
-              disabled={sendReply.isPending || !draft.trim()}
-              style={[styles.sendButton, { backgroundColor: theme.tint, opacity: draft.trim() ? 1 : 0.5 }]}>
-              <ThemedText style={styles.sendButtonText}>{t('chat.send')}</ThemedText>
-            </Pressable>
+          <ThemedView style={[styles.inputArea, { borderTopColor: theme.backgroundElement }]}>
+            {quota && (
+              <ThemedText type="small" themeColor="textSecondary" style={styles.quota}>
+                {t('chat.repliesLeft', { count: quota.remaining })}
+              </ThemedText>
+            )}
+            <ThemedView style={styles.inputRow}>
+              <TextInput
+                value={draft}
+                onChangeText={setDraft}
+                placeholder={t('chat.replyPlaceholder')}
+                placeholderTextColor={theme.textSecondary}
+                style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+                multiline
+              />
+              <Pressable
+                onPress={handleSend}
+                disabled={sendReply.isPending || !draft.trim()}
+                style={[styles.sendButton, { backgroundColor: theme.tint, opacity: draft.trim() ? 1 : 0.5 }]}>
+                <ThemedText style={styles.sendButtonText}>{t('chat.send')}</ThemedText>
+              </Pressable>
+            </ThemedView>
           </ThemedView>
         )}
       </SafeAreaView>
@@ -212,13 +222,14 @@ const styles = StyleSheet.create({
   notice: { textAlign: 'center', paddingVertical: Spacing.one },
   endedBox: { alignItems: 'center', gap: Spacing.three, marginTop: Spacing.six, paddingHorizontal: Spacing.four, backgroundColor: 'transparent' },
   endedText: { textAlign: 'center' },
+  inputArea: { borderTopWidth: StyleSheet.hairlineWidth },
+  quota: { paddingHorizontal: Spacing.three, paddingTop: Spacing.one },
   waitingBar: { textAlign: 'center', padding: Spacing.three, borderTopWidth: 1 },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: Spacing.two,
     padding: Spacing.three,
-    borderTopWidth: StyleSheet.hairlineWidth,
   },
   input: { flex: 1, borderRadius: 20, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, fontSize: 16, maxHeight: 100 },
   sendButton: { borderRadius: 20, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
