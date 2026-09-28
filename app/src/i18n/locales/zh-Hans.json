@@ -47,7 +47,6 @@
     "noConversation": "还没有消息"
   },
   "chat": {
-    "voiceMessage": "🎧 语音消息",
     "loadFailed": "无法加载聊天。请确认你是否已订阅该演员。",
     "replyPlaceholder": "发送回复（仅限文字）",
     "send": "发送"

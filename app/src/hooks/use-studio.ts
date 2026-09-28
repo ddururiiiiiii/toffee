@@ -35,6 +35,9 @@ export interface Attachment {
   mediaType: UploadMediaType;
   uri: string;
   contentType?: string;
+  /** 음성 녹음일 때 — 카톡식 음파 표시용 */
+  durationMs?: number;
+  waveform?: number[];
 }
 
 // 미디어가 있으면 먼저 저장소에 올리고(uploadMedia) 받은 키로 발송
@@ -43,12 +46,19 @@ export function useStudioSend(actorId: string) {
   return useMutation({
     mutationFn: async ({ body, attachment }: { body: string; attachment: Attachment | null }) => {
       const mediaKey = attachment
-        ? await uploadMedia(actorId, { purpose: 'message', ...attachment })
+        ? await uploadMedia(actorId, {
+            purpose: 'message',
+            mediaType: attachment.mediaType,
+            uri: attachment.uri,
+            contentType: attachment.contentType,
+          })
         : undefined;
       return apiClient.post<ChatMessage>(`/actors/${actorId}/messages/broadcast`, {
         mediaType: attachment?.mediaType ?? 'TEXT',
         body: body || undefined,
         mediaKey,
+        durationMs: attachment?.durationMs,
+        waveform: attachment?.waveform,
       });
     },
     onSuccess: () => {

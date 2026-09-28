@@ -235,6 +235,10 @@ model Message {
   // mediaUrl. 응답에서는 mediaKey를 그때그때 서명된 임시 URL로 바꿔 mediaUrl로 내려줌(MediaService).
   mediaUrl         String?
   mediaKey         String?
+  // 음성 메시지 표시용(카톡처럼 음파 + 길이) — 녹음할 때 앱이 측정한 음량을 0~1로 줄여 보냄(최대 64칸).
+  // 없으면 앱이 메시지 id로 만든 모양을 대신 그림.
+  mediaDurationMs  Int?
+  waveform         Json?
   // 어떤 메시지에 대한 답장인지 — 팬 답장은 서버가 "보낸 시점의 가장 최근 스타 메시지"로 자동 지정
   // (버블 방식, 2026-09-28 확정). 스타의 인용 답장(예정)은 인용한 팬 메시지를 가리킴.
   // 원본이 지워지면 null(앱에서 "삭제된 메시지"로 표시).

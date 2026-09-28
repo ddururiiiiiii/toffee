@@ -82,6 +82,20 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
 
+## 음성 메시지 음파·재생 (2026-09-28)
+
+- `Message.mediaDurationMs Int?`, `Message.waveform Json?`(0~1, 최대 64칸 — `SendBroadcastDto`에서
+  `@ArrayMaxSize(64)`, 각 값 0~1 검증), 음성일 때만 저장. 마이그레이션 `20260928050000_add_voice_waveform`.
+- 스튜디오 녹음: `RecordingPresets.HIGH_QUALITY + isMeteringEnabled`, `useAudioRecorderState(recorder, 100)`로
+  100ms마다 dB를 받아 `dbToLevel`(-50dB~0 → 0~1)로 모았다가 보낼 때 `resample`로 48칸(칸별 최대값).
+  웹(MediaRecorder + AnalyserNode)도 metering 지원.
+- 재생: `components/voice-message.tsx` — `useAudioPlayer(null)`로 빈 플레이어를 만들고 처음 누를 때
+  `replace({ uri })`(목록의 모든 음성을 미리 받지 않게, 서명 URL이 바뀌면 다시 연결), 모듈 변수로
+  "재생 중인 것 하나만" 유지, `didJustFinish`에 처음으로 되감기. 음파 데이터가 없는 옛 메시지는
+  id 해시로 만든 고정 모양(`fallbackWaveform`).
+- 검증: 브라우저 가짜 마이크로 4초 녹음 → DB에 48칸·3,990ms 저장 → 팬 화면 재생 중 ❚❚·진행 표시,
+  끝나면 ▶로 복귀(Playwright).
+
 ## 파일 업로드(미디어 저장소) — 서버 구현 완료 (2026-09-28)
 
 S3 호환 오브젝트 스토리지(운영: Cloudflare R2 예정) + **비공개 버킷 + 서명 URL** 방식. 코드는

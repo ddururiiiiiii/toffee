@@ -1,4 +1,17 @@
-import { IsEnum, IsNotEmpty, IsString, MaxLength, ValidateIf } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  ValidateIf,
+} from 'class-validator';
 import { MessageMediaType } from '../../generated/prisma/enums.js';
 
 export class SendBroadcastDto {
@@ -17,4 +30,19 @@ export class SendBroadcastDto {
   @IsString()
   @IsNotEmpty()
   mediaKey?: string;
+
+  // 음성 메시지 부가 정보(선택) — 음성일 때만 저장, 그 외 형식이면 무시
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(30 * 60 * 1000)
+  durationMs?: number;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(64)
+  @IsNumber({}, { each: true })
+  @Min(0, { each: true })
+  @Max(1, { each: true })
+  waveform?: number[];
 }

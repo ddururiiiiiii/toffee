@@ -47,7 +47,6 @@
     "noConversation": "아직 대화가 없어요"
   },
   "chat": {
-    "voiceMessage": "🎧 음성 메시지",
     "loadFailed": "대화를 불러오지 못했어요. 구독 중인 배우인지 확인해주세요.",
     "replyPlaceholder": "답장 보내기 (텍스트만 가능)",
     "send": "전송"

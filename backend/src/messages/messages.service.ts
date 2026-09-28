@@ -84,7 +84,16 @@ export class MessagesService {
     if (mediaKey) await this.mediaService.verifyForAttach(actorId, 'message', dto.mediaType as Exclude<MessageMediaType, 'TEXT'>, mediaKey);
 
     const created = await this.prisma.message.create({
-      data: { actorId, senderType: MessageSenderType.ARTIST, mediaType: dto.mediaType, body: dto.body, mediaKey },
+      data: {
+        actorId,
+        senderType: MessageSenderType.ARTIST,
+        mediaType: dto.mediaType,
+        body: dto.body,
+        mediaKey,
+        ...(dto.mediaType === MessageMediaType.AUDIO
+          ? { mediaDurationMs: dto.durationMs ?? null, waveform: dto.waveform ?? undefined }
+          : {}),
+      },
     });
     const message = await this.mediaService.withReadUrl(created);
 

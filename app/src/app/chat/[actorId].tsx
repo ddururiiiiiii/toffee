@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { VoiceMessage } from '@/components/voice-message';
 import { useActor } from '@/hooks/use-actors';
 import { useActorMessages, useSendReply, type ChatMessage } from '@/hooks/use-messages';
 import { useTheme } from '@/hooks/use-theme';
@@ -22,7 +23,6 @@ import { Spacing } from '@/constants/theme';
 
 function MessageBubble({ message }: { message: ChatMessage }) {
   const theme = useTheme();
-  const { t } = useTranslation();
   const isArtist = message.senderType === 'ARTIST';
   const bubbleColor = isArtist ? theme.backgroundElement : theme.tint;
   const textColor = isArtist ? theme.text : '#fff';
@@ -33,7 +33,13 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         {message.mediaType === 'PHOTO' && message.mediaUrl ? (
           <Image source={{ uri: message.mediaUrl }} style={styles.bubbleImage} />
         ) : message.mediaType === 'AUDIO' ? (
-          <ThemedText style={{ color: textColor }}>{t('chat.voiceMessage')}</ThemedText>
+          <VoiceMessage
+            id={message.id}
+            url={message.mediaUrl}
+            durationMs={message.mediaDurationMs}
+            waveform={message.waveform}
+            tone={isArtist ? 'dark' : 'light'}
+          />
         ) : null}
         {message.body && <ThemedText style={{ color: textColor }}>{message.body}</ThemedText>}
       </ThemedView>
@@ -110,7 +116,8 @@ export default function ChatRoomScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   list: { padding: Spacing.three, gap: Spacing.two },
-  bubbleRow: { flexDirection: 'row' },
+  // 행 컨테이너는 배경 없이(ThemedView 기본 흰 배경이 회색 화면 위에 띠처럼 보였음)
+  bubbleRow: { flexDirection: 'row', backgroundColor: 'transparent' },
   bubbleRowLeft: { justifyContent: 'flex-start' },
   bubbleRowRight: { justifyContent: 'flex-end' },
   bubble: { maxWidth: '78%', borderRadius: 16, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: 4 },

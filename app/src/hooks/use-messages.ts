@@ -9,6 +9,9 @@ export interface ChatMessage {
   mediaType: 'TEXT' | 'PHOTO' | 'AUDIO' | 'VIDEO';
   body: string | null;
   mediaUrl: string | null;
+  // 음성 메시지일 때만(없을 수도 있음)
+  mediaDurationMs?: number | null;
+  waveform?: number[] | null;
   createdAt: string;
 }
 

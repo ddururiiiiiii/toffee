@@ -47,7 +47,6 @@
     "noConversation": "No messages yet"
   },
   "chat": {
-    "voiceMessage": "🎧 Voice message",
     "loadFailed": "Couldn't load this chat. Please check that you're subscribed to this actor.",
     "replyPlaceholder": "Send a reply (text only)",
     "send": "Send"

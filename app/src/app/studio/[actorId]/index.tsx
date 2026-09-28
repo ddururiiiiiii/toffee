@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -23,10 +23,16 @@ import {
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { VoiceMessage } from '@/components/voice-message';
 import { useActor } from '@/hooks/use-actors';
 import { useStudioMessages, useStudioSend, type Attachment, type StudioMessage } from '@/hooks/use-studio';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
+import { dbToLevel, resample } from '@/lib/waveform';
+
+// 음량 측정(metering)을 켜서 녹음 중 음파 모양을 모음 — 보낼 때 48칸으로 줄여서 같이 보냄
+const RECORDING_OPTIONS = { ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true };
+const WAVEFORM_BARS = 48;
 
 // 앨범/카메라에서 고른 파일 → 첨부물. iOS는 HEIC 대신 호환 형식(JPEG)으로 받아서 안드로이드·웹 팬도 볼 수 있게.
 const PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
@@ -50,6 +56,14 @@ function MyMessage({ message, onOpenReplies }: { message: StudioMessage; onOpenR
       <ThemedView style={[styles.bubble, { backgroundColor: theme.tint }]}>
         {message.mediaType === 'PHOTO' && message.mediaUrl ? (
           <Image source={{ uri: message.mediaUrl }} style={styles.bubbleImage} />
+        ) : message.mediaType === 'AUDIO' ? (
+          <VoiceMessage
+            id={message.id}
+            url={message.mediaUrl}
+            durationMs={message.mediaDurationMs}
+            waveform={message.waveform}
+            tone="light"
+          />
         ) : message.mediaType !== 'TEXT' ? (
           <ThemedText style={styles.bubbleText}>{t(`studio.media.${message.mediaType}`)}</ThemedText>
         ) : null}
@@ -80,8 +94,13 @@ export default function StudioChannelScreen() {
   const { data: actor } = useActor(actorId);
   const { data: messages, isLoading } = useStudioMessages(actorId);
   const send = useStudioSend(actorId);
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const recorderState = useAudioRecorderState(recorder);
+  const recorder = useAudioRecorder(RECORDING_OPTIONS);
+  const recorderState = useAudioRecorderState(recorder, 100);
+  const levels = useRef<number[]>([]);
+
+  useEffect(() => {
+    if (recorderState.isRecording) levels.current.push(dbToLevel(recorderState.metering));
+  }, [recorderState.isRecording, recorderState.metering, recorderState.durationMillis]);
   const [draft, setDraft] = useState('');
   const [attachment, setAttachment] = useState<Attachment | null>(null);
   const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null);
@@ -108,9 +127,13 @@ export default function StudioChannelScreen() {
 
   const toggleRecording = async () => {
     if (recorderState.isRecording) {
+      const durationMs = recorderState.durationMillis;
       await recorder.stop();
       await setAudioModeAsync({ allowsRecording: false });
-      if (recorder.uri) setAttachment({ mediaType: 'AUDIO', uri: recorder.uri });
+      if (recorder.uri) {
+        const waveform = resample(levels.current, WAVEFORM_BARS).map((level) => Math.round(level * 100) / 100);
+        setAttachment({ mediaType: 'AUDIO', uri: recorder.uri, durationMs, waveform });
+      }
       return;
     }
     const permission = await requestRecordingPermissionsAsync();
@@ -120,6 +143,7 @@ export default function StudioChannelScreen() {
     }
     await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
     await recorder.prepareToRecordAsync();
+    levels.current = [];
     recorder.record();
     setAttachment(null);
   };
@@ -250,11 +274,11 @@ const styles = StyleSheet.create({
   loading: { marginTop: Spacing.six },
   list: { padding: Spacing.three, gap: Spacing.three },
   empty: { textAlign: 'center', marginTop: Spacing.four, transform: [{ scaleY: -1 }] },
-  messageRow: { alignItems: 'flex-end', gap: 4 },
+  messageRow: { alignItems: 'flex-end', gap: 4, backgroundColor: 'transparent' },
   bubble: { maxWidth: '80%', borderRadius: 16, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: 4 },
   bubbleText: { color: '#fff' },
   bubbleImage: { width: 200, height: 200, borderRadius: 10 },
-  messageMeta: { flexDirection: 'row', gap: Spacing.three, alignItems: 'center' },
+  messageMeta: { flexDirection: 'row', gap: Spacing.three, alignItems: 'center', backgroundColor: 'transparent' },
   notice: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one, textAlign: 'center' },
   attachmentBar: {
     flexDirection: 'row',

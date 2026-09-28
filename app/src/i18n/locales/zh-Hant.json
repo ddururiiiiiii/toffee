@@ -47,7 +47,6 @@
     "noConversation": "還沒有訊息"
   },
   "chat": {
-    "voiceMessage": "🎧 語音訊息",
     "loadFailed": "無法載入聊天。請確認你是否已訂閱這位演員。",
     "replyPlaceholder": "傳送回覆（僅限文字）",
     "send": "傳送"

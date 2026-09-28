@@ -47,7 +47,6 @@
     "noConversation": "まだメッセージがありません"
   },
   "chat": {
-    "voiceMessage": "🎧 ボイスメッセージ",
     "loadFailed": "トークを読み込めませんでした。この俳優を購読しているか確認してください。",
     "replyPlaceholder": "返信する（テキストのみ）",
     "send": "送信"
