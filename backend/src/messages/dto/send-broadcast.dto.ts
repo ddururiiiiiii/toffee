@@ -31,6 +31,12 @@ export class SendBroadcastDto {
   @IsNotEmpty()
   mediaKey?: string;
 
+  // 영상 썸네일(선택) — 영상을 올릴 때 같이 올린 첫 장면 사진의 objectKey(purpose message, PHOTO). 영상이 아니면 무시
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  thumbnailKey?: string;
+
   // 부가 정보(선택) — 길이는 음성·영상, 음파는 음성일 때만 저장, 그 외엔 무시
   @IsOptional()
   @IsInt()

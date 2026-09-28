@@ -10,7 +10,10 @@ const SNIFF_BYTES = 4100;
 interface HasMedia {
   mediaUrl: string | null;
   mediaKey: string | null;
+  thumbnailKey?: string | null;
 }
+
+type WithReadUrl<T> = Omit<T, 'mediaKey' | 'thumbnailKey'> & { thumbnailUrl?: string | null };
 
 /**
  * 업로드 흐름: ① createUpload로 임시 업로드 URL 발급 → ② 앱이 저장소에 직접 PUT →
@@ -64,14 +67,17 @@ export class MediaService {
     }
   }
 
-  /** mediaKey가 있으면 임시 조회 URL로 바꿔서 mediaUrl에 넣고, 응답에서 mediaKey는 뺌 */
-  async withReadUrl<T extends HasMedia>(item: T): Promise<Omit<T, 'mediaKey'>> {
-    const { mediaKey, ...rest } = item;
-    if (!mediaKey) return rest;
-    return { ...rest, mediaUrl: await this.storage.createReadUrl(mediaKey) };
+  /** mediaKey(와 영상 썸네일 thumbnailKey)가 있으면 임시 조회 URL로 바꿔서 mediaUrl/thumbnailUrl에 넣고, 키는 응답에서 뺌 */
+  async withReadUrl<T extends HasMedia>(item: T): Promise<WithReadUrl<T>> {
+    const { mediaKey, thumbnailKey, ...rest } = item;
+    const [mediaUrl, thumbnailUrl] = await Promise.all([
+      mediaKey ? this.storage.createReadUrl(mediaKey) : Promise.resolve(rest.mediaUrl),
+      thumbnailKey ? this.storage.createReadUrl(thumbnailKey) : Promise.resolve(null),
+    ]);
+    return { ...rest, mediaUrl, ...(thumbnailKey !== undefined ? { thumbnailUrl } : {}) };
   }
 
-  withReadUrls<T extends HasMedia>(items: T[]): Promise<Omit<T, 'mediaKey'>[]> {
+  withReadUrls<T extends HasMedia>(items: T[]): Promise<WithReadUrl<T>[]> {
     return Promise.all(items.map((item) => this.withReadUrl(item)));
   }
 

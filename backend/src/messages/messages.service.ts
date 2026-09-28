@@ -196,6 +196,8 @@ export class MessagesService {
       if (!quoted) throw new BadRequestException('이 채널의 팬 메시지만 인용할 수 있어요.');
     }
     if (mediaKey) await this.mediaService.verifyForAttach(actorId, 'message', dto.mediaType as Exclude<MessageMediaType, 'TEXT'>, mediaKey);
+    const thumbnailKey = dto.mediaType === MessageMediaType.VIDEO && dto.thumbnailKey ? dto.thumbnailKey : null;
+    if (thumbnailKey) await this.mediaService.verifyForAttach(actorId, 'message', MessageMediaType.PHOTO, thumbnailKey);
 
     const created = await this.prisma.message.create({
       data: {
@@ -204,6 +206,7 @@ export class MessagesService {
         mediaType: dto.mediaType,
         body: dto.body,
         mediaKey,
+        thumbnailKey,
         replyToMessageId: dto.replyToMessageId ?? null,
         // 길이는 음성·영상 모두(말풍선에 표시), 음파는 음성만
         ...(dto.mediaType === MessageMediaType.AUDIO || dto.mediaType === MessageMediaType.VIDEO
@@ -305,15 +308,18 @@ export class MessagesService {
     await ensureIsActorSelf(this.prisma, requesterId, actorId);
     const message = await this.prisma.message.findFirst({
       where: { id: messageId, actorId, senderType: MessageSenderType.ARTIST },
-      select: { id: true, deletedAt: true, mediaKey: true, _count: { select: { reports: true } } },
+      select: { id: true, deletedAt: true, mediaKey: true, thumbnailKey: true, _count: { select: { reports: true } } },
     });
     if (!message) throw new NotFoundException('메시지를 찾을 수 없어요.');
     if (message.deletedAt) return;
     const keepFile = message._count.reports > 0;
     await this.prisma.message.update({
       where: { id: messageId },
-      data: { deletedAt: new Date(), ...(keepFile ? {} : { mediaKey: null }) },
+      data: { deletedAt: new Date(), ...(keepFile ? {} : { mediaKey: null, thumbnailKey: null }) },
     });
-    if (!keepFile) await this.mediaService.deleteQuietly(message.mediaKey);
+    if (!keepFile) {
+      await this.mediaService.deleteQuietly(message.mediaKey);
+      await this.mediaService.deleteQuietly(message.thumbnailKey);
+    }
   }
 }

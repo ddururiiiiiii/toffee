@@ -21,13 +21,13 @@ export class UploadCleanupService {
   /** DB 어디선가 쓰고 있는 저장소 키 전부 — 파일럿 규모라 한 번에 읽음(커지면 prefix별로 나눠 확인) */
   async referencedKeys(): Promise<Set<string>> {
     const [messages, stories, actors, agencies] = await Promise.all([
-      this.prisma.message.findMany({ where: { mediaKey: { not: null } }, select: { mediaKey: true } }),
-      this.prisma.story.findMany({ where: { mediaKey: { not: null } }, select: { mediaKey: true } }),
+      this.prisma.message.findMany({ where: { mediaKey: { not: null } }, select: { mediaKey: true, thumbnailKey: true } }),
+      this.prisma.story.findMany({ where: { mediaKey: { not: null } }, select: { mediaKey: true, thumbnailKey: true } }),
       this.prisma.actor.findMany({ select: { officialProfileImageUrl: true, chatProfileImageUrl: true } }),
       this.prisma.agency.findMany({ select: { logoUrl: true } }),
     ]);
     const keys = [
-      ...messages.map((m) => m.mediaKey),
+      ...messages.flatMap((m) => [m.mediaKey, m.thumbnailKey]),
       ...stories.map((s) => s.mediaKey),
       ...actors.flatMap((a) => [a.officialProfileImageUrl, a.chatProfileImageUrl]),
       ...agencies.map((a) => a.logoUrl),

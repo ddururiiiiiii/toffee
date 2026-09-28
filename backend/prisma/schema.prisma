@@ -308,6 +308,8 @@ model Message {
   // mediaUrl. 응답에서는 mediaKey를 그때그때 서명된 임시 URL로 바꿔 mediaUrl로 내려줌(MediaService).
   mediaUrl         String?
   mediaKey         String?
+  // 영상 썸네일(첫 장면 사진) — 스타 앱이 영상을 보낼 때 같이 올림(purpose message의 PHOTO). 없으면 앱이 어두운 타일로
+  thumbnailKey     String?
   // 음성·영상 길이(말풍선 표시용)와 음성 음파(카톡처럼) — 음파는 녹음할 때 앱이 측정한 음량을 0~1로
   // 줄여 보냄(최대 64칸). 없으면 앱이 메시지 id로 만든 모양을 대신 그림.
   mediaDurationMs  Int?

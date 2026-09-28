@@ -8,7 +8,7 @@ const hoursAgo = (h: number) => new Date(NOW.getTime() - h * 3600_000);
 
 function setup(objects: { key: string; lastModified: Date }[]) {
   const prisma = {
-    message: { findMany: vi.fn().mockResolvedValue([{ mediaKey: 'actors/a1/message/used.jpg' }]) },
+    message: { findMany: vi.fn().mockResolvedValue([{ mediaKey: 'actors/a1/message/used.jpg', thumbnailKey: 'actors/a1/message/thumb.jpg' }]) },
     story: { findMany: vi.fn().mockResolvedValue([]) },
     actor: { findMany: vi.fn().mockResolvedValue([{ officialProfileImageUrl: 'https://placehold.co/x', chatProfileImageUrl: 'actors/a1/profile/p.jpg' }]) },
     agency: { findMany: vi.fn().mockResolvedValue([{ logoUrl: null }]) },
@@ -32,6 +32,7 @@ describe('UploadCleanupService', () => {
   it('하루 지난 미사용 파일만 지우고, 쓰는 파일·막 올린 파일은 남김', async () => {
     const { service, deleted } = setup([
       { key: 'actors/a1/message/used.jpg', lastModified: hoursAgo(48) },
+      { key: 'actors/a1/message/thumb.jpg', lastModified: hoursAgo(48) },
       { key: 'actors/a1/message/orphan.jpg', lastModified: hoursAgo(48) },
       { key: 'actors/a1/message/fresh.jpg', lastModified: hoursAgo(2) },
       { key: 'actors/a1/profile/p.jpg', lastModified: hoursAgo(72) },
