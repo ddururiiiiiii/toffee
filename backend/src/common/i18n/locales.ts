@@ -14,11 +14,16 @@ const TRADITIONAL_CHINESE_REGIONS = new Set(['tw', 'hk', 'mo']);
  * 직접 열면 "ko-KR,ko;q=0.9" 같은 값이 와서 첫 번째 항목만 봄. 중국어는 스크립트(Hant/Hans) 우선, 없으면 지역.
  */
 export function localeFromAcceptLanguage(header: string | string[] | undefined): SupportedLocale {
+  return matchAcceptLanguage(header) ?? DEFAULT_LOCALE;
+}
+
+/** 지원하는 언어면 그 언어, 아니면(없거나 프랑스어 등) null — 다른 단서(자녀 계정 언어)로 넘어갈 때 씀 */
+export function matchAcceptLanguage(header: string | string[] | undefined): SupportedLocale | null {
   const first = (Array.isArray(header) ? header[0] : header)?.split(',')[0]?.split(';')[0]?.trim().toLowerCase();
-  if (!first) return DEFAULT_LOCALE;
+  if (!first) return null;
   const [language, ...rest] = first.split('-');
   if (language === 'zh') {
     return rest.includes('hant') || rest.some((part) => TRADITIONAL_CHINESE_REGIONS.has(part)) ? 'zh-Hant' : 'zh-Hans';
   }
-  return resolveLocale(language);
+  return (SUPPORTED_LOCALES as readonly string[]).includes(language) ? (language as SupportedLocale) : null;
 }

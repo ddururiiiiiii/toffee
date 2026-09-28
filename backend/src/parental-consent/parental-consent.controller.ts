@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Patch, Post, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { ParentalConsentService } from './parental-consent.service.js';
 import { SetBirthDateDto } from './dto/set-birth-date.dto.js';
@@ -7,6 +7,8 @@ import { AcceptTermsDto } from './dto/accept-terms.dto.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Public } from '../common/decorators/public.decorator.js';
 import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
+import { matchAcceptLanguage, SUPPORTED_LOCALES, type SupportedLocale } from '../common/i18n/locales.js';
+import { consentPage } from './consent-texts.js';
 
 @Controller()
 export class ParentalConsentController {
@@ -32,17 +34,41 @@ export class ParentalConsentController {
     return this.parentalConsentService.requestConsent(user.id, dto.parentEmail);
   }
 
-  // 부모가 이메일로 받는 링크 — 앱 로그인 없이 브라우저에서 그냥 열림
+  // 부모가 이메일로 받는 링크 — 앱 로그인 없이 브라우저에서 열림. 안내 페이지만 보여주고(동의 처리 X), 부모가
+  // "동의합니다"를 누르면 아래 POST로 동의. 언어: 페이지의 언어 선택(lang) → 부모 브라우저 → 자녀 계정 언어 → 영어
   @Public()
   @Get('parental-consent/confirm')
-  async confirm(@Query('token') token: string, @Res() res: Response): Promise<void> {
+  async confirmPage(
+    @Query('token') token: string | undefined,
+    @Query('lang') lang: string | undefined,
+    @Headers('accept-language') acceptLanguage: string | undefined,
+    @Res() res: Response,
+  ): Promise<void> {
+    const { state, childLocale } = await this.parentalConsentService.consentPageState(token);
+    const locale = pickLocale(lang, acceptLanguage, childLocale);
+    sendPage(res, state === 'invalid' ? 400 : 200, consentPage(state, locale, state === 'ask' ? token : undefined));
+  }
+
+  @Public()
+  @Post('parental-consent/confirm')
+  @HttpCode(HttpStatus.OK)
+  async confirm(@Body('token') token: string | undefined, @Body('lang') lang: string | undefined, @Res() res: Response): Promise<void> {
+    const locale = pickLocale(lang, undefined, null);
     try {
-      await this.parentalConsentService.confirm(token);
-      res
-        .type('html')
-        .send('<html><body><h1>동의가 완료됐어요</h1><p>이제 자녀분이 앱을 계속 이용할 수 있어요.</p></body></html>');
+      await this.parentalConsentService.confirm(String(token ?? ''));
+      sendPage(res, 200, consentPage('done', locale));
     } catch {
-      res.status(400).type('html').send('<html><body><h1>링크가 유효하지 않거나 만료됐어요</h1></body></html>');
+      sendPage(res, 400, consentPage('invalid', locale));
     }
   }
+}
+
+function pickLocale(lang: string | undefined, acceptLanguage: string | undefined, fallback: SupportedLocale | null): SupportedLocale {
+  if (lang && (SUPPORTED_LOCALES as readonly string[]).includes(lang)) return lang as SupportedLocale;
+  return matchAcceptLanguage(acceptLanguage) ?? fallback ?? 'en';
+}
+
+// 링크에 토큰이 들어 있어서 캐시·리퍼러로 새지 않게
+function sendPage(res: Response, status: number, html: string): void {
+  res.status(status).set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' }).type('html').send(html);
 }

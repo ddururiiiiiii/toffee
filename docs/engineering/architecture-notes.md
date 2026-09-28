@@ -925,3 +925,13 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
 - 확인: 로컬 Postgres + 시드 + 웹(Playwright)으로 답장 줄 순서, 채팅 화면 방향, 새 답장 버튼, 맨 아래 따라가기,
   ⋯ 메뉴까지 실제 화면으로 확인. 인라인 확인 중 답장 화면 상단 스타 메시지에 `{{name}}`이 그대로 보이던 것도 수정
   (`showNameToken`).
+
+## 부모 동의 메일·페이지 다국어, 두 단계 동의 (2026-09-28)
+
+- `parental-consent/consent-texts.ts`: 6개 언어 문구 + 메일 HTML(`consentEmail`) + 페이지 HTML(`consentPage`). 메일은 자녀
+  언어(`childLocale`: User.locale → countryCode → en) + 영어.
+- `GET /parental-consent/confirm?token&lang`: 상태만 보여줌(`consentPageState`: ask/done/invalid) — 동의 처리 X. 언어는
+  `lang` → `matchAcceptLanguage`(지원 언어 아니면 null) → 자녀 언어 → en. `Cache-Control: no-store`, `Referrer-Policy:
+  no-referrer`(URL에 토큰).
+- `POST /parental-consent/confirm`(form: token, lang): 실제 동의. 이미 동의했으면 시각을 덮어쓰지 않음.
+- 이유: 예전엔 GET 자체가 동의 처리라 Gmail/Outlook 링크 보안 검사(미리 열기)만으로 부모가 누르지 않아도 동의될 수 있었음.

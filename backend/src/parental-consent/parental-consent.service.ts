@@ -8,6 +8,8 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailService } from '../notifications/email.service.js';
 import { ParentalConsentStatus, Role } from '../generated/prisma/enums.js';
 import { appError } from '../common/i18n/app-error.js';
+import type { SupportedLocale } from '../common/i18n/locales.js';
+import { childLocale, consentEmail, type ConsentPageState } from './consent-texts.js';
 
 // 동의가 필요한 나이는 국가별(minor-age.ts) — 가입 때 저장한 기기 지역(User.countryCode) 기준
 const CONSENT_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -107,22 +109,38 @@ export class ParentalConsentService {
     ]);
 
     const apiPublicUrl = this.configService.getOrThrow<string>('API_PUBLIC_URL');
+    // 링크엔 언어를 넣지 않음 — 페이지는 부모 브라우저 언어를 먼저 따름(메일은 자녀 앱 언어 + 영어)
     const confirmUrl = `${apiPublicUrl}/parental-consent/confirm?token=${token}`;
-    await this.emailService.send(
-      parentEmail,
-      'Toffee 자녀 계정 이용 동의 요청',
-      `<p>자녀분이 Toffee 서비스 가입을 위해 법정대리인 동의를 요청했어요.</p>
-       <p>아래 링크를 눌러 동의를 완료해주세요(7일 내 유효):</p>
-       <p><a href="${confirmUrl}">${confirmUrl}</a></p>`,
-    );
+    const { subject, html } = consentEmail(childLocale(user), confirmUrl);
+    await this.emailService.send(parentEmail, subject, html);
   }
 
-  // 부모가 이메일 링크를 클릭했을 때 — 인증 불필요(토큰 자체가 자격증명)
+  /**
+   * 부모가 링크를 열었을 때 보여줄 상태 — 여기선 동의 처리를 하지 않음(메일 보안 검사기가 링크를 미리 열어 보면
+   * 부모가 누르지 않았는데 동의되는 문제가 있어서, 동의는 페이지의 "동의합니다" 버튼(POST)으로만).
+   * childLocale은 부모 브라우저 언어를 모를 때 쓸 자녀 계정 언어.
+   */
+  async consentPageState(token: string | undefined): Promise<{ state: ConsentPageState; childLocale: SupportedLocale | null }> {
+    const consent = token
+      ? await this.prisma.parentalConsent.findUnique({
+          where: { token },
+          select: { expiresAt: true, confirmedAt: true, user: { select: { locale: true, countryCode: true } } },
+        })
+      : null;
+    if (!consent) return { state: 'invalid', childLocale: null };
+    const locale = childLocale(consent.user);
+    if (consent.confirmedAt) return { state: 'done', childLocale: locale };
+    return { state: consent.expiresAt < new Date() ? 'invalid' : 'ask', childLocale: locale };
+  }
+
+  // 부모가 동의 페이지에서 "동의합니다"를 눌렀을 때 — 인증 불필요(토큰 자체가 자격증명)
   async confirm(token: string): Promise<void> {
     const consent = await this.prisma.parentalConsent.findUnique({ where: { token } });
     if (!consent || consent.expiresAt < new Date()) {
       throw new BadRequestException(appError('CONSENT_LINK_INVALID'));
     }
+    // 이미 동의했으면(버튼을 두 번 누름 등) 그대로 완료 — 동의 시각을 덮어쓰지 않음
+    if (consent.confirmedAt) return;
 
     await this.prisma.$transaction([
       this.prisma.parentalConsent.update({ where: { token }, data: { confirmedAt: new Date() } }),
