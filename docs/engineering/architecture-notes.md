@@ -154,13 +154,17 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
 3. **팬 채팅방 렌더/다운로드**: 사진 전체화면 뷰어, `expo-audio` 재생 바, `expo-video`
    플레이어, `expo-file-system` 다운로드 → `expo-media-library`로 갤러리 저장(웹은
    `<a download>`). 저장 권한 요청 문구는 i18n과 같이.
-4. **인용 답장**: `Message.replyToMessageId String?`(self-relation, `onDelete: SetNull` —
-   원본이 지워지면 "삭제된 메시지"로 표시) 추가. 공개 범위 결정에 따라
-   - 1:1이면 `Message.recipientUserId`(배우→특정 팬) 추가 + `listForFan` 필터에 포함,
-     구독자 수 통계/모니터링 조회에서 방송과 구분.
-   - 전체 공개면 필드만 추가하고 응답에 인용 원문 요약(`replyTo { id, body 앞부분,
-     mediaType, senderType, 팬 표시명 }`) 포함.
-   신고/모더레이션: 인용된 팬 메시지가 신고·삭제되면 인용 미리보기도 가려야 함.
+4. **인용 답장** — 공개 범위 **전체 공개로 확정(2026-09-28)**, 1:1 수신자 필드는 불필요.
+   `Message.replyToMessageId String?`(self-relation, `onDelete: SetNull` — 원본이
+   지워지면 "삭제된 메시지"로 표시) 추가, 응답에 인용 원문 요약(`replyTo { id, body 앞부분,
+   mediaType, senderType, fanNickname }`) 포함. 인용된 팬 메시지가 신고 처리됐거나 작성자가
+   정지/차단이면 `replyTo` 본문을 가려서 내려줄 것.
+   **선행 작업 — `User.nickname`**: 지금 `displayName`은 소셜 로그인 이름
+   (`auth.service.ts`에서 Google/Apple/LINE `name`, 네이버/카카오 `nickname`)이라 실명일
+   수 있음. `nickname String?`(중복 허용, 금칙어 검사) 추가 + 온보딩에서 필수 입력,
+   `{{name}}` 치환(`messages.service.ts`)과 `replyTo.fanNickname` 둘 다 닉네임 사용,
+   소속사 답장 모아보기도 닉네임으로 교체(로드맵의 "팬 이름이 닉네임인지 실명인지"
+   미확인 항목도 이걸로 해소).
 
 ## 관리자(ADMIN) 전용 UI — 아직 전혀 없음 (2026-09-18 확인)
 
