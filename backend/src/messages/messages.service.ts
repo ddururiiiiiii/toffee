@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PushService } from '../notifications/push.service.js';
 import { pushStrings } from '../notifications/push-messages.js';
 import { ModerationService } from '../moderation/moderation.service.js';
 import { MediaService } from '../storage/media.service.js';
-import { MessageMediaType, MessageSenderType } from '../generated/prisma/enums.js';
+import { MessageMediaType, MessageSenderType, ReportStatus, UserStatus } from '../generated/prisma/enums.js';
 import { ensureCanViewActor, ensureIsActorSelf } from '../common/authorization/actor-access.js';
 import { ensureActiveSubscription } from '../common/authorization/ensure-active-subscription.js';
 import { fanTag } from '../common/nickname/nickname.js';
@@ -12,6 +12,51 @@ import type { SendReplyDto } from './dto/send-reply.dto.js';
 import type { SendBroadcastDto } from './dto/send-broadcast.dto.js';
 
 const NAME_PLACEHOLDER = '{{name}}';
+const QUOTE_PREVIEW_LENGTH = 120;
+
+// 스타의 인용 답장이 가리키는 팬 메시지 — 화면에 보여줄 요약만 가져옴
+const QUOTE_INCLUDE = {
+  replyTo: {
+    select: {
+      id: true,
+      senderType: true,
+      body: true,
+      mediaType: true,
+      fanUser: { select: { nickname: true, status: true } },
+      reports: { where: { status: ReportStatus.RESOLVED }, select: { id: true }, take: 1 },
+    },
+  },
+} as const;
+
+interface QuotedSource {
+  id: string;
+  senderType: MessageSenderType;
+  body: string | null;
+  mediaType: MessageMediaType;
+  fanUser: { nickname: string | null; status: UserStatus } | null;
+  reports: { id: string }[];
+}
+
+/**
+ * 인용 표시용 요약 — 스타가 팬 메시지를 인용한 경우만(팬 답장이 자동으로 묶인 스타 메시지는 인용이 아니라서
+ * 안 보여줌, 버블 방식). 인용된 팬이 정지·차단됐거나 그 메시지가 신고 처리(RESOLVED)됐으면 내용을 가림.
+ * 인용 답장은 전체 구독자에게 보이므로 팬은 닉네임으로만(2026-09-28 확정).
+ */
+export function toQuote(source: QuotedSource | null) {
+  if (!source || source.senderType !== MessageSenderType.FAN) return null;
+  const hidden = !source.fanUser || source.fanUser.status !== UserStatus.ACTIVE || source.reports.length > 0;
+  return {
+    id: source.id,
+    hidden,
+    nickname: hidden ? null : (source.fanUser?.nickname ?? null),
+    body: hidden || !source.body ? null : source.body.slice(0, QUOTE_PREVIEW_LENGTH),
+  };
+}
+
+function withQuote<T extends { replyTo: QuotedSource | null }>(message: T) {
+  const { replyTo, ...rest } = message;
+  return { ...rest, replyTo: toQuote(replyTo) };
+}
 const PUSH_PREVIEW_LENGTH = 60;
 
 function personalize(body: string, fanName: string): string {
@@ -36,12 +81,13 @@ export class MessagesService {
         createdAt: { gte: subscription.startedAt },
         OR: [{ senderType: MessageSenderType.ARTIST }, { fanUserId: userId }],
       },
+      include: QUOTE_INCLUDE,
       orderBy: { createdAt: 'asc' },
     });
 
     const fan = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     return this.mediaService.withReadUrls(
-      messages.map((message) => ({
+      messages.map(withQuote).map((message) => ({
         ...message,
         body:
           message.senderType === MessageSenderType.ARTIST && message.body
@@ -82,6 +128,14 @@ export class MessagesService {
   async sendBroadcast(actorSelfUserId: string, actorId: string, dto: SendBroadcastDto) {
     await ensureIsActorSelf(this.prisma, actorSelfUserId, actorId);
     const mediaKey = dto.mediaType === MessageMediaType.TEXT ? null : dto.mediaKey!;
+    // 인용 답장: 같은 배우 채널의 팬 메시지만 인용 가능(다른 채널 메시지·스타 메시지 인용 불가)
+    if (dto.replyToMessageId) {
+      const quoted = await this.prisma.message.findFirst({
+        where: { id: dto.replyToMessageId, actorId, senderType: MessageSenderType.FAN },
+        select: { id: true },
+      });
+      if (!quoted) throw new BadRequestException('이 채널의 팬 메시지만 인용할 수 있어요.');
+    }
     if (mediaKey) await this.mediaService.verifyForAttach(actorId, 'message', dto.mediaType as Exclude<MessageMediaType, 'TEXT'>, mediaKey);
 
     const created = await this.prisma.message.create({
@@ -91,14 +145,16 @@ export class MessagesService {
         mediaType: dto.mediaType,
         body: dto.body,
         mediaKey,
+        replyToMessageId: dto.replyToMessageId ?? null,
         // 길이는 음성·영상 모두(말풍선에 표시), 음파는 음성만
         ...(dto.mediaType === MessageMediaType.AUDIO || dto.mediaType === MessageMediaType.VIDEO
           ? { mediaDurationMs: dto.durationMs ?? null }
           : {}),
         ...(dto.mediaType === MessageMediaType.AUDIO ? { waveform: dto.waveform ?? undefined } : {}),
       },
+      include: QUOTE_INCLUDE,
     });
-    const message = await this.mediaService.withReadUrl(created);
+    const message = await this.mediaService.withReadUrl(withQuote(created));
 
     const activeSubscriptions = await this.prisma.subscription.findMany({
       where: { actorId, cancelledAt: null },
@@ -164,10 +220,10 @@ export class MessagesService {
     const messages = await this.prisma.message.findMany({
       where: { actorId, senderType: MessageSenderType.ARTIST },
       orderBy: { createdAt: 'desc' },
-      include: { _count: { select: { replies: { where: { senderType: MessageSenderType.FAN } } } } },
+      include: { ...QUOTE_INCLUDE, _count: { select: { replies: { where: { senderType: MessageSenderType.FAN } } } } },
     });
     return this.mediaService.withReadUrls(
-      messages.map(({ _count, ...message }) => ({ ...message, replyCount: _count.replies })),
+      messages.map(({ _count, ...message }) => ({ ...withQuote(message), replyCount: _count.replies })),
     );
   }
 }

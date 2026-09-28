@@ -24,6 +24,7 @@ import {
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MediaTile } from '@/components/media-tile';
+import { QuoteBlock } from '@/components/quote-block';
 import { VoiceMessage } from '@/components/voice-message';
 import { useActor } from '@/hooks/use-actors';
 import { useStudioMessages, useStudioSend, type Attachment, type StudioMessage } from '@/hooks/use-studio';
@@ -60,6 +61,7 @@ function MyMessage({ message, onOpenReplies }: { message: StudioMessage; onOpenR
   return (
     <ThemedView style={styles.messageRow}>
       <ThemedView style={[styles.bubble, { backgroundColor: theme.tint }]}>
+        {message.replyTo && <QuoteBlock quote={message.replyTo} tone="light" />}
         {message.mediaType === 'PHOTO' || message.mediaType === 'VIDEO' ? (
           <MediaTile id={message.id} url={message.mediaUrl} mediaType={message.mediaType} durationMs={message.mediaDurationMs} />
         ) : message.mediaType === 'AUDIO' ? (
@@ -94,7 +96,14 @@ export default function StudioChannelScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const navigation = useNavigation();
-  const { actorId } = useLocalSearchParams<{ actorId: string }>();
+  // 팬 답장 모아보기에서 "답장하기"를 누르면 인용할 팬 메시지 정보를 들고 이 화면으로 옴
+  const { actorId, quoteId, quoteNickname, quoteBody } = useLocalSearchParams<{
+    actorId: string;
+    quoteId?: string;
+    quoteNickname?: string;
+    quoteBody?: string;
+  }>();
+  const clearQuote = () => router.setParams({ quoteId: undefined, quoteNickname: undefined, quoteBody: undefined });
   const { data: actor } = useActor(actorId);
   const { data: messages, isLoading } = useStudioMessages(actorId);
   const send = useStudioSend(actorId);
@@ -157,11 +166,12 @@ export default function StudioChannelScreen() {
     if (!body && !attachment) return;
     setNotice(null);
     send.mutate(
-      { body, attachment },
+      { body, attachment, replyToMessageId: quoteId },
       {
         onSuccess: () => {
           setDraft('');
           setAttachment(null);
+          if (quoteId) clearQuote();
         },
         onError: () => setNotice({ text: t('studio.sendFailed'), error: true }),
       },
@@ -203,6 +213,27 @@ export default function StudioChannelScreen() {
             onPress={() => setNotice(null)}>
             {notice.text}
           </ThemedText>
+        )}
+
+        {quoteId && (
+          <ThemedView type="tintSoft" style={styles.quoteBar}>
+            <ThemedView style={styles.quoteBarText}>
+              <ThemedText type="smallBold">↩ {t('quote.replyTo', { nickname: quoteNickname ?? '' })}</ThemedText>
+              {quoteBody ? (
+                <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                  {quoteBody}
+                </ThemedText>
+              ) : null}
+              <ThemedText type="small" themeColor="textSecondary">
+                {t('quote.publicNotice')}
+              </ThemedText>
+            </ThemedView>
+            <Pressable onPress={clearQuote} hitSlop={8}>
+              <ThemedText type="smallBold" themeColor="danger">
+                ✕
+              </ThemedText>
+            </Pressable>
+          </ThemedView>
         )}
 
         {(attachment || recorderState.isRecording) && (
@@ -291,6 +322,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: Spacing.two,
   },
+  quoteBar: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginHorizontal: Spacing.three, marginBottom: Spacing.two, borderRadius: 12, padding: Spacing.two },
+  quoteBarText: { flex: 1, gap: 2, backgroundColor: 'transparent' },
   attachmentThumb: { width: 44, height: 44, borderRadius: 8 },
   attachmentLabel: { flex: 1 },
   tools: { flexDirection: 'row', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingTop: Spacing.two, borderTopWidth: StyleSheet.hairlineWidth },

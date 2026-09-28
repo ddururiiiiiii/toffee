@@ -45,4 +45,11 @@ export class SendBroadcastDto {
   @Min(0, { each: true })
   @Max(1, { each: true })
   waveform?: number[];
+
+  // 인용 답장(선택) — 같은 배우 채널의 팬 메시지 id. 전체 구독자에게 보이고 팬은 닉네임으로 표시됨.
+  // 참조 ID라 @IsUUID 대신 @IsString
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  replyToMessageId?: string;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { MessagesService } from './messages.service.js';
+import { MessagesService, toQuote } from './messages.service.js';
 import { MessageMediaType, Role } from '../generated/prisma/enums.js';
 import type { ComposePush } from '../notifications/push.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
@@ -57,5 +57,33 @@ describe('MessagesService.sendBroadcast 푸시 문구', () => {
 
     expect(fanPushes[0]({ locale: 'th', displayName: 'fan' }).body).toBe('ส่งรูปภาพ');
     expect(fanPushes[0]({ locale: null, displayName: 'fan' }).body).toBe('Sent a photo');
+  });
+});
+
+describe('인용 답장 요약(toQuote)', () => {
+  const base = {
+    id: 'q1',
+    senderType: 'FAN' as const,
+    body: '오늘도 화이팅!',
+    mediaType: 'TEXT' as const,
+    fanUser: { nickname: '캐러멜바라기', status: 'ACTIVE' as const },
+    reports: [],
+  };
+
+  it('팬 메시지는 닉네임 + 본문 앞부분', () => {
+    expect(toQuote(base)).toEqual({ id: 'q1', hidden: false, nickname: '캐러멜바라기', body: '오늘도 화이팅!' });
+    expect(toQuote({ ...base, body: 'a'.repeat(300) })?.body).toHaveLength(120);
+  });
+
+  it('정지·차단된 팬이거나 신고 처리된 메시지면 내용과 닉네임을 가림', () => {
+    const hidden = { id: 'q1', hidden: true, nickname: null, body: null };
+    expect(toQuote({ ...base, fanUser: { nickname: 'x', status: 'BANNED' } })).toEqual(hidden);
+    expect(toQuote({ ...base, fanUser: { nickname: 'x', status: 'SUSPENDED' } })).toEqual(hidden);
+    expect(toQuote({ ...base, reports: [{ id: 'r1' }] })).toEqual(hidden);
+  });
+
+  it('스타 메시지(팬 답장이 자동으로 묶인 경우)는 인용이 아님', () => {
+    expect(toQuote({ ...base, senderType: 'ARTIST', fanUser: null })).toBeNull();
+    expect(toQuote(null)).toBeNull();
   });
 });

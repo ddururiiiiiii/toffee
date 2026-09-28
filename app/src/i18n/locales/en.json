@@ -164,5 +164,11 @@
     "change": "Change",
     "nextChange": "You can change it after {{date}}",
     "rule": "It's fine if someone else has the same one. After changing it, you can change it again in 7 days."
+  },
+  "quote": {
+    "replyTo": "Replying to {{nickname}}",
+    "hidden": "This message is hidden",
+    "action": "Reply",
+    "publicNotice": "Visible to all subscribers; the fan is shown by nickname."
   }
 }

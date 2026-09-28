@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 
+export interface MessageQuote {
+  id: string;
+  hidden: boolean;
+  nickname: string | null;
+  body: string | null;
+}
+
 export interface ChatMessage {
   id: string;
   actorId: string;
@@ -12,6 +19,8 @@ export interface ChatMessage {
   // 음성 메시지일 때만(없을 수도 있음)
   mediaDurationMs?: number | null;
   waveform?: number[] | null;
+  // 스타의 인용 답장이면 인용한 팬 메시지 요약(전체 공개, 닉네임만)
+  replyTo?: MessageQuote | null;
   createdAt: string;
 }
 

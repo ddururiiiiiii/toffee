@@ -164,5 +164,11 @@
     "change": "修改",
     "nextChange": "{{date}} 之後可以修改",
     "rule": "和別人重複也沒關係。修改後需等 7 天才能再次修改。"
+  },
+  "quote": {
+    "replyTo": "回覆 {{nickname}}",
+    "hidden": "這則訊息已被隱藏",
+    "action": "回覆",
+    "publicNotice": "所有訂閱者都看得到，粉絲以暱稱顯示。"
   }
 }

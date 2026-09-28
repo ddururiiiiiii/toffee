@@ -44,7 +44,16 @@ export interface Attachment {
 export function useStudioSend(actorId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ body, attachment }: { body: string; attachment: Attachment | null }) => {
+    mutationFn: async ({
+      body,
+      attachment,
+      replyToMessageId,
+    }: {
+      body: string;
+      attachment: Attachment | null;
+      /** 인용 답장할 팬 메시지 */
+      replyToMessageId?: string;
+    }) => {
       const mediaKey = attachment
         ? await uploadMedia(actorId, {
             purpose: 'message',
@@ -59,6 +68,7 @@ export function useStudioSend(actorId: string) {
         mediaKey,
         durationMs: attachment?.durationMs,
         waveform: attachment?.waveform,
+        replyToMessageId,
       });
     },
     onSuccess: () => {

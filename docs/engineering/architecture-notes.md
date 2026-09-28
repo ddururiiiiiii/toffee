@@ -82,6 +82,22 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   (지금은 API만 존재). 팬 개인정보 노출 범위(답장의 "팬 이름"이 닉네임/실명인지)도
   여전히 미확인.
 
+## 인용 답장 (2026-09-28)
+
+- 스키마 변경 없음 — 기존 `Message.replyToMessageId`(팬 답장 자동 연결용으로 이미 추가)를 스타 메시지에도 사용.
+  스타 메시지의 `replyToMessageId`가 **FAN 메시지**를 가리키면 인용, 팬 메시지가 스타 메시지를 가리키는 건 자동
+  연결(인용 아님).
+- `SendBroadcastDto.replyToMessageId?` — 같은 `actorId`의 `senderType=FAN` 메시지만 허용(아니면 400).
+- 응답: `QUOTE_INCLUDE`로 `replyTo`(본문·닉네임·팬 상태·RESOLVED 신고 1건)를 같이 읽고 `toQuote`로
+  `{ id, hidden, nickname, body(120자) }`만 내려줌. 팬 정지·차단(`status !== ACTIVE`), 신고 RESOLVED,
+  팬 계정 없음이면 `hidden: true`로 닉네임·본문 null. 스타 메시지를 가리키는 경우는 `null`(팬 화면에 자동
+  연결이 인용처럼 보이지 않게). `listForFan`·`listBroadcasts`·`sendBroadcast` 응답 모두 적용.
+- 앱: `components/quote-block.tsx`(말풍선 위 인용), 스튜디오 답장 모아보기의 "답장하기" →
+  `router.dismissTo`로 **기존 스튜디오 화면으로 돌아가며** 인용 정보를 params로 전달(처음엔 `navigate`를
+  썼다가 스튜디오 화면이 하나 더 쌓여 입력창이 2개 생기는 문제를 테스트에서 발견해 수정), 보내면 params 정리.
+- 검증: 단위 테스트(`toQuote` 3개) + 브라우저(스타가 답장하기 → 인용 바 → 전송 → 다른 팬 화면에 "캐러멜바라기님에게
+  답장" 표시) + 실서버(인용된 팬 차단 시 hidden 전환, 해제 후 복구, 잘못된 인용 대상 400).
+
 ## 닉네임 (2026-09-28)
 
 - `User.nickname String?`, `User.nicknameChangedAt DateTime?`(마이그레이션 `20260928070000_add_user_nickname`).

@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MediaTile } from '@/components/media-tile';
+import { QuoteBlock } from '@/components/quote-block';
 import { VoiceMessage } from '@/components/voice-message';
 import { saveMedia } from '@/lib/save-media';
 import { useActor } from '@/hooks/use-actors';
@@ -31,6 +32,7 @@ function MessageBubble({ message, onSaveVoice }: { message: ChatMessage; onSaveV
   return (
     <ThemedView style={[styles.bubbleRow, isArtist ? styles.bubbleRowLeft : styles.bubbleRowRight]}>
       <ThemedView style={[styles.bubble, { backgroundColor: bubbleColor }]}>
+        {message.replyTo && <QuoteBlock quote={message.replyTo} tone={isArtist ? 'dark' : 'light'} />}
         {message.mediaType === 'PHOTO' || message.mediaType === 'VIDEO' ? (
           <MediaTile id={message.id} url={message.mediaUrl} mediaType={message.mediaType} durationMs={message.mediaDurationMs} />
         ) : message.mediaType === 'AUDIO' ? (

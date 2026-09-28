@@ -1,6 +1,6 @@
-import { ActivityIndicator, FlatList, StyleSheet } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
@@ -13,6 +13,7 @@ import { Spacing } from '@/constants/theme';
 // 팬 답장은 서버가 "보낸 시점의 최신 스타 메시지"로 자동으로 묶어둠.
 export default function MessageRepliesScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const { t, i18n } = useTranslation();
   const { actorId, messageId } = useLocalSearchParams<{ actorId: string; messageId: string }>();
   const { data: messages } = useStudioMessages(actorId);
@@ -45,9 +46,31 @@ export default function MessageRepliesScreen() {
             <ThemedView style={[styles.reply, { backgroundColor: theme.backgroundElement }]}>
               <ThemedText type="smallBold">{item.fanUser ? `${item.fanUser.nickname ?? t('console.noNickname')} ${item.fanUser.tag}` : t('console.deletedFan')}</ThemedText>
               <ThemedText type="small">{item.body}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {new Date(item.createdAt).toLocaleString(i18n.language)}
-              </ThemedText>
+              <ThemedView style={styles.replyFooter}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {new Date(item.createdAt).toLocaleString(i18n.language)}
+                </ThemedText>
+                {item.fanUser && (
+                  <Pressable
+                    hitSlop={8}
+                    onPress={() =>
+                      // 새 화면을 쌓지 않고 아래에 있던 스튜디오 화면으로 돌아가면서 인용 정보를 넘김
+                      router.dismissTo({
+                        pathname: '/studio/[actorId]',
+                        params: {
+                          actorId,
+                          quoteId: item.id,
+                          quoteNickname: item.fanUser?.nickname ?? '',
+                          quoteBody: (item.body ?? '').slice(0, 120),
+                        },
+                      })
+                    }>
+                    <ThemedText type="smallBold" style={{ color: theme.tint }}>
+                      ↩ {t('quote.action')}
+                    </ThemedText>
+                  </Pressable>
+                )}
+              </ThemedView>
             </ThemedView>
           )}
         />
@@ -63,4 +86,5 @@ const styles = StyleSheet.create({
   list: { padding: Spacing.three, gap: Spacing.two },
   empty: { textAlign: 'center', marginTop: Spacing.four },
   reply: { borderRadius: 12, padding: Spacing.three, gap: 2 },
+  replyFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'transparent' },
 });
