@@ -4,9 +4,20 @@
     "logout": "ログアウト",
     "requestFailed": "リクエストに失敗しました（{{status}}）"
   },
-  "tabs": { "actors": "俳優", "chats": "トーク", "my": "マイ" },
-  "screens": { "console": "コンソール", "terms": "利用規約", "privacy": "プライバシーポリシー" },
-  "price": { "perMonth": "฿{{price}}/月", "amount": "฿{{price}}" },
+  "tabs": {
+    "actors": "俳優",
+    "chats": "トーク",
+    "my": "マイ"
+  },
+  "screens": {
+    "console": "コンソール",
+    "terms": "利用規約",
+    "privacy": "プライバシーポリシー"
+  },
+  "price": {
+    "perMonth": "฿{{price}}/月",
+    "amount": "฿{{price}}"
+  },
   "login": {
     "tagline": "好きな俳優と1対1でトークしよう",
     "demoTitle": "メールアドレスでデモログイン",
@@ -57,9 +68,21 @@
     "title": "担当している俳優",
     "empty": "担当している俳優はいません。",
     "monitoring": "{{name}}をモニタリング中",
-    "tabs": { "monitor": "モニタリング", "replies": "返信", "stats": "統計" },
-    "media": { "PHOTO": "写真", "AUDIO": "音声", "VIDEO": "動画", "TEXT": "テキスト" },
-    "kind": { "story": "ストーリー", "message": "メッセージ" },
+    "tabs": {
+      "monitor": "モニタリング",
+      "replies": "返信",
+      "stats": "統計"
+    },
+    "media": {
+      "PHOTO": "写真",
+      "AUDIO": "音声",
+      "VIDEO": "動画",
+      "TEXT": "テキスト"
+    },
+    "kind": {
+      "story": "ストーリー",
+      "message": "メッセージ"
+    },
     "monitorEmpty": "俳優が送信したメッセージ・ストーリーはまだありません。",
     "repliesEmpty": "ファンからの返信はまだありません。",
     "deletedFan": "退会したファン",
@@ -85,5 +108,39 @@
     "draftTitle": "この文書は草案です",
     "draftBody": "正式リリース前に必ず弁護士の確認を受ける必要があり、現時点では法的効力はありません。",
     "koreanOnly": "この草案は現在、韓国語版のみご用意しています。"
+  },
+  "studio": {
+    "screen": "スタジオ",
+    "repliesScreen": "ファンからの返信",
+    "pickActor": "メッセージを送るチャンネルを選んでください",
+    "noActor": "連携している俳優アカウントがありません。運営にお問い合わせください。",
+    "empty": "まだメッセージを送っていません。ファンに最初のメッセージを送ってみましょう！",
+    "inputPlaceholder": "ファンにメッセージを送る",
+    "send": "送信",
+    "sending": "送信中…",
+    "attachLibrary": "写真・動画",
+    "camera": "カメラ",
+    "record": "ボイス録音",
+    "recording": "録音中 {{seconds}}秒",
+    "stopRecording": "録音を終了",
+    "attached": {
+      "PHOTO": "写真を添付しました",
+      "AUDIO": "ボイスを添付しました",
+      "VIDEO": "動画を添付しました"
+    },
+    "removeAttachment": "添付を取り消す",
+    "sendFailed": "送信できませんでした。もう一度お試しください。",
+    "replies": "ファンからの返信 {{count}}件",
+    "noReplies": "まだ返信はありません",
+    "repliesEmpty": "このメッセージへのファンからの返信はまだありません。",
+    "postStory": "ストーリーを投稿",
+    "storyPosted": "ストーリーを投稿しました。24時間表示されます。",
+    "storyFailed": "ストーリーを投稿できませんでした。",
+    "permissionDenied": "許可が必要です。設定から許可してください。",
+    "media": {
+      "PHOTO": "📷 写真",
+      "AUDIO": "🎧 ボイスメッセージ",
+      "VIDEO": "🎬 動画"
+    }
   }
 }

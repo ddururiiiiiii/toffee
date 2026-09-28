@@ -4,9 +4,20 @@
     "logout": "退出登录",
     "requestFailed": "请求失败（{{status}}）"
   },
-  "tabs": { "actors": "演员", "chats": "聊天", "my": "我的" },
-  "screens": { "console": "控制台", "terms": "服务条款", "privacy": "隐私政策" },
-  "price": { "perMonth": "฿{{price}}/月", "amount": "฿{{price}}" },
+  "tabs": {
+    "actors": "演员",
+    "chats": "聊天",
+    "my": "我的"
+  },
+  "screens": {
+    "console": "控制台",
+    "terms": "服务条款",
+    "privacy": "隐私政策"
+  },
+  "price": {
+    "perMonth": "฿{{price}}/月",
+    "amount": "฿{{price}}"
+  },
   "login": {
     "tagline": "和你喜欢的演员一对一聊天",
     "demoTitle": "使用邮箱进行演示登录",
@@ -57,9 +68,21 @@
     "title": "我管理的演员",
     "empty": "你还没有负责的演员。",
     "monitoring": "正在监控 {{name}}",
-    "tabs": { "monitor": "监控", "replies": "回复", "stats": "统计" },
-    "media": { "PHOTO": "照片", "AUDIO": "语音", "VIDEO": "视频", "TEXT": "文字" },
-    "kind": { "story": "限时动态", "message": "消息" },
+    "tabs": {
+      "monitor": "监控",
+      "replies": "回复",
+      "stats": "统计"
+    },
+    "media": {
+      "PHOTO": "照片",
+      "AUDIO": "语音",
+      "VIDEO": "视频",
+      "TEXT": "文字"
+    },
+    "kind": {
+      "story": "限时动态",
+      "message": "消息"
+    },
     "monitorEmpty": "演员还没有发送消息或限时动态。",
     "repliesEmpty": "还没有粉丝回复。",
     "deletedFan": "已注销的粉丝",
@@ -85,5 +108,39 @@
     "draftTitle": "本文件为草案",
     "draftBody": "正式上线前必须经过律师审核，目前不具有法律效力。",
     "koreanOnly": "此草案目前仅提供韩语版本。"
+  },
+  "studio": {
+    "screen": "工作室",
+    "repliesScreen": "粉丝回复",
+    "pickActor": "请选择要发送消息的频道",
+    "noActor": "没有关联的演员账号，请联系运营人员。",
+    "empty": "你还没有发送过消息，给粉丝们发第一条消息吧！",
+    "inputPlaceholder": "给粉丝发消息",
+    "send": "发送",
+    "sending": "发送中…",
+    "attachLibrary": "照片·视频",
+    "camera": "相机",
+    "record": "录音",
+    "recording": "录音中 {{seconds}} 秒",
+    "stopRecording": "结束录音",
+    "attached": {
+      "PHOTO": "已添加照片",
+      "AUDIO": "已添加语音",
+      "VIDEO": "已添加视频"
+    },
+    "removeAttachment": "取消附件",
+    "sendFailed": "发送失败，请重试。",
+    "replies": "粉丝回复 {{count}} 条",
+    "noReplies": "暂无回复",
+    "repliesEmpty": "这条消息还没有粉丝回复。",
+    "postStory": "发布限时动态",
+    "storyPosted": "限时动态已发布，将显示 24 小时。",
+    "storyFailed": "限时动态发布失败。",
+    "permissionDenied": "需要权限，请在设置中允许。",
+    "media": {
+      "PHOTO": "📷 照片",
+      "AUDIO": "🎧 语音消息",
+      "VIDEO": "🎬 视频"
+    }
   }
 }

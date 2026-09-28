@@ -225,22 +225,30 @@ model Message {
   // 아티스트 메시지는 구독자 전체에게 방송되는 한 건이라(fanUserId가 없음), 팬 이름
   // 하나를 필드로 못 박아둘 수 없음 — 대신 body에 "{{name}}" 플레이스홀더를 넣어두면
   // 조회 시점에 요청한 팬 본인의 displayName으로 치환해서 내려줌(Bubble 개인화 메시지 방식)
-  id         String            @id @default(uuid())
-  actorId    String
-  senderType MessageSenderType
-  fanUserId  String?
-  mediaType  MessageMediaType  @default(TEXT)
-  body       String?
+  id               String            @id @default(uuid())
+  actorId          String
+  senderType       MessageSenderType
+  fanUserId        String?
+  mediaType        MessageMediaType  @default(TEXT)
+  body             String?
   // 미디어 위치: 우리 스토리지(R2 등)에 올린 파일이면 mediaKey(객체 키), 외부 주소(시드 데이터 등)면
   // mediaUrl. 응답에서는 mediaKey를 그때그때 서명된 임시 URL로 바꿔 mediaUrl로 내려줌(MediaService).
-  mediaUrl   String?
-  mediaKey   String?
-  createdAt  DateTime          @default(now())
+  mediaUrl         String?
+  mediaKey         String?
+  // 어떤 메시지에 대한 답장인지 — 팬 답장은 서버가 "보낸 시점의 가장 최근 스타 메시지"로 자동 지정
+  // (버블 방식, 2026-09-28 확정). 스타의 인용 답장(예정)은 인용한 팬 메시지를 가리킴.
+  // 원본이 지워지면 null(앱에서 "삭제된 메시지"로 표시).
+  replyToMessageId String?
+  createdAt        DateTime          @default(now())
 
   actor        Actor                @relation(fields: [actorId], references: [id], onDelete: Cascade)
   fanUser      User?                @relation("FanMessages", fields: [fanUserId], references: [id])
+  replyTo      Message?             @relation("MessageReplies", fields: [replyToMessageId], references: [id], onDelete: SetNull)
+  replies      Message[]            @relation("MessageReplies")
   translations MessageTranslation[]
   reports      Report[]
+
+  @@index([replyToMessageId])
 }
 
 // 원문은 한 번만 저장, 언어별 번역본은 필요할 때 생성해서 여기 캐싱 (lazy translation)

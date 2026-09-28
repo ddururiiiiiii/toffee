@@ -4,9 +4,20 @@
     "logout": "Log out",
     "requestFailed": "Request failed ({{status}})"
   },
-  "tabs": { "actors": "Actors", "chats": "Chats", "my": "My" },
-  "screens": { "console": "Console", "terms": "Terms of Service", "privacy": "Privacy Policy" },
-  "price": { "perMonth": "฿{{price}}/mo", "amount": "฿{{price}}" },
+  "tabs": {
+    "actors": "Actors",
+    "chats": "Chats",
+    "my": "My"
+  },
+  "screens": {
+    "console": "Console",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy"
+  },
+  "price": {
+    "perMonth": "฿{{price}}/mo",
+    "amount": "฿{{price}}"
+  },
   "login": {
     "tagline": "Chat one-on-one with the actors you love",
     "demoTitle": "Demo login with email",
@@ -57,9 +68,21 @@
     "title": "Actors I manage",
     "empty": "You don't manage any actors yet.",
     "monitoring": "Monitoring {{name}}",
-    "tabs": { "monitor": "Monitoring", "replies": "Replies", "stats": "Stats" },
-    "media": { "PHOTO": "Photo", "AUDIO": "Voice", "VIDEO": "Video", "TEXT": "Text" },
-    "kind": { "story": "Story", "message": "Message" },
+    "tabs": {
+      "monitor": "Monitoring",
+      "replies": "Replies",
+      "stats": "Stats"
+    },
+    "media": {
+      "PHOTO": "Photo",
+      "AUDIO": "Voice",
+      "VIDEO": "Video",
+      "TEXT": "Text"
+    },
+    "kind": {
+      "story": "Story",
+      "message": "Message"
+    },
     "monitorEmpty": "The actor hasn't sent any messages or stories yet.",
     "repliesEmpty": "No fan replies yet.",
     "deletedFan": "Deleted user",
@@ -85,5 +108,39 @@
     "draftTitle": "This document is a draft",
     "draftBody": "It must be reviewed by a lawyer before launch and currently has no legal effect.",
     "koreanOnly": "This draft is currently available in Korean only."
+  },
+  "studio": {
+    "screen": "Studio",
+    "repliesScreen": "Fan replies",
+    "pickActor": "Choose a channel to send messages from",
+    "noActor": "No actor account is linked. Please contact the operator.",
+    "empty": "You haven't sent any messages yet. Send your fans a first message!",
+    "inputPlaceholder": "Message your fans",
+    "send": "Send",
+    "sending": "Sending…",
+    "attachLibrary": "Photo/Video",
+    "camera": "Camera",
+    "record": "Voice",
+    "recording": "Recording {{seconds}}s",
+    "stopRecording": "Stop recording",
+    "attached": {
+      "PHOTO": "Photo attached",
+      "AUDIO": "Voice message attached",
+      "VIDEO": "Video attached"
+    },
+    "removeAttachment": "Remove attachment",
+    "sendFailed": "Couldn't send. Please try again.",
+    "replies": "{{count}} fan replies",
+    "noReplies": "No replies yet",
+    "repliesEmpty": "No fan replies to this message yet.",
+    "postStory": "Post a story",
+    "storyPosted": "Story posted. It will be visible for 24 hours.",
+    "storyFailed": "Couldn't post the story.",
+    "permissionDenied": "Permission is required. Please allow it in Settings.",
+    "media": {
+      "PHOTO": "📷 Photo",
+      "AUDIO": "🎧 Voice message",
+      "VIDEO": "🎬 Video"
+    }
   }
 }

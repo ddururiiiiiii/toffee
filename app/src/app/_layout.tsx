@@ -27,9 +27,9 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 // 토큰 없이 진입 시 /login으로. 로그인 후엔 온보딩(생년월일 → 필요시 법정대리인 동의)부터
-// 끝내야 하고, 그다음 role 따라 운영자는 /admin, 소속사 스태프는 /console, 나머지(팬)는
+// 끝내야 하고(팬만 해당), 그다음 role 따라 운영자는 /admin, 소속사 스태프는 /console, 나머지(팬)는
 // 기본 탭으로 — 전부 로딩(토큰+role+온보딩 상태 조회) 끝난 뒤에만 판단.
-// ACTOR(배우 본인) 전용 화면은 아직 없어서 지금은 팬 탭으로 빠짐(별도 트래킹 중)
+// 배우 본인(ACTOR)은 /studio(발송 화면)로.
 function AuthGate({ children }: { children: ReactNode }) {
   const { token, role, isLoading } = useAuth();
   const { data: onboarding, isLoading: onboardingLoading } = useOnboardingStatus();
@@ -55,10 +55,12 @@ function AuthGate({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (onLoginScreen || onOnboardingScreen) {
-      if (role === 'ADMIN') router.replace('/admin');
-      else if (role === 'AGENCY_STAFF') router.replace('/console');
-      else router.replace('/');
+    // 역할별 첫 화면 — 로그인/온보딩 직후뿐 아니라 저장된 로그인으로 앱을 다시 켰을 때 팬 탭으로
+    // 떨어진 경우에도 제 화면으로 보냄(예전엔 로그인 직후에만 분기해서 재실행 시 팬 탭에 머물렀음)
+    const home = role === 'ADMIN' ? '/admin' : role === 'AGENCY_STAFF' ? '/console' : role === 'ACTOR' ? '/studio' : '/';
+    const onFanTabs = segments[0] === '(tabs)';
+    if (onLoginScreen || onOnboardingScreen || (onFanTabs && home !== '/')) {
+      router.replace(home);
     }
   }, [token, role, isLoading, onboarding, onboardingLoading, segments, router]);
 
@@ -92,6 +94,12 @@ function RootLayout() {
               <Stack.Screen name="login" />
               <Stack.Screen name="actor/[id]" options={{ headerShown: true, title: '' }} />
               <Stack.Screen name="chat/[actorId]" options={{ headerShown: true, title: '' }} />
+              <Stack.Screen name="studio/index" options={{ headerShown: true, title: t('studio.screen') }} />
+              <Stack.Screen name="studio/[actorId]/index" options={{ headerShown: true, title: '' }} />
+              <Stack.Screen
+                name="studio/[actorId]/replies/[messageId]"
+                options={{ headerShown: true, title: t('studio.repliesScreen') }}
+              />
               <Stack.Screen name="console/index" options={{ headerShown: true, title: t('screens.console') }} />
               <Stack.Screen name="console/[actorId]" options={{ headerShown: true, title: '' }} />
               {/* 운영자 화면은 운영자(한국어) 전용이라 의도적으로 다국어 처리 안 함 */}

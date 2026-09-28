@@ -51,11 +51,24 @@ export class MessagesService {
   }
 
   async sendReply(userId: string, actorId: string, dto: SendReplyDto) {
-    await ensureActiveSubscription(this.prisma, userId, actorId);
+    const subscription = await ensureActiveSubscription(this.prisma, userId, actorId);
     await this.moderationService.assertNoBannedWords(dto.body);
+    // 버블 방식: 팬은 대상을 고르지 않고, 지금 팬 화면에 보이는 가장 최근 스타 메시지에 대한 답장이 됨
+    // (구독 전 메시지는 팬에게 안 보이므로 제외). 스타 화면은 이걸로 메시지별 답장을 묶어 보여줌.
+    const latestArtistMessage = await this.prisma.message.findFirst({
+      where: { actorId, senderType: MessageSenderType.ARTIST, createdAt: { gte: subscription.startedAt } },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    });
     const [message] = await this.prisma.$transaction([
       this.prisma.message.create({
-        data: { actorId, senderType: MessageSenderType.FAN, fanUserId: userId, body: dto.body },
+        data: {
+          actorId,
+          senderType: MessageSenderType.FAN,
+          fanUserId: userId,
+          body: dto.body,
+          replyToMessageId: latestArtistMessage?.id ?? null,
+        },
       }),
       this.prisma.subscription.update({
         where: { userId_actorId: { userId, actorId } },
@@ -111,11 +124,12 @@ export class MessagesService {
     return message;
   }
 
-  // 콘솔 "구독자 답장 모아보기" — 스태프/배우 본인/관리자
-  async listReplies(requesterId: string, actorId: string) {
+  // 콘솔 "구독자 답장 모아보기" — 스태프/배우 본인/관리자. messageId를 주면 그 스타 메시지에 달린 답장만
+  // (스타 화면의 "메시지별 팬 답장")
+  async listReplies(requesterId: string, actorId: string, messageId?: string) {
     await ensureCanViewActor(this.prisma, requesterId, actorId);
     return this.prisma.message.findMany({
-      where: { actorId, senderType: MessageSenderType.FAN },
+      where: { actorId, senderType: MessageSenderType.FAN, ...(messageId ? { replyToMessageId: messageId } : {}) },
       include: { fanUser: { select: { id: true, displayName: true } } },
       orderBy: { createdAt: 'desc' },
     });
@@ -127,7 +141,10 @@ export class MessagesService {
     const messages = await this.prisma.message.findMany({
       where: { actorId, senderType: MessageSenderType.ARTIST },
       orderBy: { createdAt: 'desc' },
+      include: { _count: { select: { replies: { where: { senderType: MessageSenderType.FAN } } } } },
     });
-    return this.mediaService.withReadUrls(messages);
+    return this.mediaService.withReadUrls(
+      messages.map(({ _count, ...message }) => ({ ...message, replyCount: _count.replies })),
+    );
   }
 }

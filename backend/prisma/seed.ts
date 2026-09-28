@@ -161,6 +161,7 @@ async function main() {
       actorId: caramel.id,
       senderType: MessageSenderType.FAN,
       fanUserId: fan1.id,
+      replyToMessageId: recentBroadcast.id,
       body: '오빠 오늘도 화이팅!',
       createdAt: daysAgo(1),
     },

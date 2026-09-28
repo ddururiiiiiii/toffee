@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { MessagesService } from './messages.service.js';
+import { ListRepliesQueryDto } from './dto/list-replies-query.dto.js';
 import { SendReplyDto } from './dto/send-reply.dto.js';
 import { SendBroadcastDto } from './dto/send-broadcast.dto.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
@@ -39,8 +40,12 @@ export class MessagesController {
   // 'replies'가 아무 :id 라우트보다 먼저 매칭될 필요는 없음 — 형제 라우트가 reply/broadcast뿐이라 충돌 없음
   @Roles(Role.AGENCY_STAFF, Role.ACTOR, Role.ADMIN)
   @Get('replies')
-  listReplies(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string) {
-    return this.messagesService.listReplies(user.id, actorId);
+  listReplies(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('actorId') actorId: string,
+    @Query() query: ListRepliesQueryDto,
+  ) {
+    return this.messagesService.listReplies(user.id, actorId, query.messageId);
   }
 
   // 소속사 모니터링용 — 배우가 실제로 보낸 메시지를 읽기 전용으로 확인

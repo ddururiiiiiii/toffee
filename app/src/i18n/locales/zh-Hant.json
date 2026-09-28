@@ -4,9 +4,20 @@
     "logout": "登出",
     "requestFailed": "請求失敗（{{status}}）"
   },
-  "tabs": { "actors": "演員", "chats": "聊天", "my": "我的" },
-  "screens": { "console": "控制台", "terms": "服務條款", "privacy": "隱私權政策" },
-  "price": { "perMonth": "฿{{price}}/月", "amount": "฿{{price}}" },
+  "tabs": {
+    "actors": "演員",
+    "chats": "聊天",
+    "my": "我的"
+  },
+  "screens": {
+    "console": "控制台",
+    "terms": "服務條款",
+    "privacy": "隱私權政策"
+  },
+  "price": {
+    "perMonth": "฿{{price}}/月",
+    "amount": "฿{{price}}"
+  },
   "login": {
     "tagline": "和你喜歡的演員一對一聊天",
     "demoTitle": "使用電子郵件進行示範登入",
@@ -57,9 +68,21 @@
     "title": "我管理的演員",
     "empty": "你還沒有負責的演員。",
     "monitoring": "正在監看 {{name}}",
-    "tabs": { "monitor": "監看", "replies": "回覆", "stats": "統計" },
-    "media": { "PHOTO": "照片", "AUDIO": "語音", "VIDEO": "影片", "TEXT": "文字" },
-    "kind": { "story": "限時動態", "message": "訊息" },
+    "tabs": {
+      "monitor": "監看",
+      "replies": "回覆",
+      "stats": "統計"
+    },
+    "media": {
+      "PHOTO": "照片",
+      "AUDIO": "語音",
+      "VIDEO": "影片",
+      "TEXT": "文字"
+    },
+    "kind": {
+      "story": "限時動態",
+      "message": "訊息"
+    },
     "monitorEmpty": "演員還沒有傳送訊息或限時動態。",
     "repliesEmpty": "還沒有粉絲回覆。",
     "deletedFan": "已刪除帳號的粉絲",
@@ -85,5 +108,39 @@
     "draftTitle": "本文件為草案",
     "draftBody": "正式上線前必須經過律師審閱，目前不具法律效力。",
     "koreanOnly": "此草案目前僅提供韓文版本。"
+  },
+  "studio": {
+    "screen": "工作室",
+    "repliesScreen": "粉絲回覆",
+    "pickActor": "請選擇要傳送訊息的頻道",
+    "noActor": "沒有連結的演員帳號，請聯絡營運人員。",
+    "empty": "你還沒有傳送過訊息，傳第一則訊息給粉絲吧！",
+    "inputPlaceholder": "傳訊息給粉絲",
+    "send": "傳送",
+    "sending": "傳送中…",
+    "attachLibrary": "照片·影片",
+    "camera": "相機",
+    "record": "錄音",
+    "recording": "錄音中 {{seconds}} 秒",
+    "stopRecording": "結束錄音",
+    "attached": {
+      "PHOTO": "已附加照片",
+      "AUDIO": "已附加語音",
+      "VIDEO": "已附加影片"
+    },
+    "removeAttachment": "取消附件",
+    "sendFailed": "傳送失敗，請再試一次。",
+    "replies": "粉絲回覆 {{count}} 則",
+    "noReplies": "尚無回覆",
+    "repliesEmpty": "這則訊息還沒有粉絲回覆。",
+    "postStory": "發布限時動態",
+    "storyPosted": "已發布限時動態，將顯示 24 小時。",
+    "storyFailed": "限時動態發布失敗。",
+    "permissionDenied": "需要權限，請在設定中允許。",
+    "media": {
+      "PHOTO": "📷 照片",
+      "AUDIO": "🎧 語音訊息",
+      "VIDEO": "🎬 影片"
+    }
   }
 }

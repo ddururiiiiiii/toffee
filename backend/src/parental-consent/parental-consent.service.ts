@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailService } from '../notifications/email.service.js';
-import { ParentalConsentStatus } from '../generated/prisma/enums.js';
+import { ParentalConsentStatus, Role } from '../generated/prisma/enums.js';
 
 // 한국 개인정보보호법 기준 — 만 14세 미만은 법정대리인 동의 필요 (Bubble도 같은 방식)
 const MINIMUM_AGE_WITHOUT_CONSENT = 14;
@@ -30,8 +30,10 @@ export class ParentalConsentService {
   async getOnboardingStatus(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { birthDate: true, parentalConsentStatus: true },
+      select: { birthDate: true, parentalConsentStatus: true, role: true },
     });
+    // 연령 확인은 구독하는 팬(USER)에게만 필요 — 배우 본인/소속사/운영자 계정은 온보딩 없이 바로 진입
+    if (user.role !== Role.USER) return { needsBirthDate: false, parentalConsentStatus: user.parentalConsentStatus };
     return { needsBirthDate: !user.birthDate, parentalConsentStatus: user.parentalConsentStatus };
   }
 
