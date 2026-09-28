@@ -205,3 +205,59 @@ describe('MessagesService 답장 횟수 제한', () => {
   });
 });
 
+
+describe('MessagesService.listBroadcasts 팬 답장 흐름 미리보기', () => {
+  const broadcast = (id: string, replies: number, deletedAt: Date | null = null) => ({
+    id,
+    mediaKey: null,
+    mediaUrl: null,
+    deletedAt,
+    replyTo: null,
+    _count: { replies },
+  });
+
+  function previewSetup(broadcasts: ReturnType<typeof broadcast>[]) {
+    const findMany = vi.fn((args: { where: { senderType: string; replyToMessageId?: string } }) =>
+      args.where.senderType === 'ARTIST'
+        ? Promise.resolve(broadcasts)
+        : // 최신 순으로 옴
+          Promise.resolve([
+            { id: `${args.where.replyToMessageId}-r2`, body: '두 번째', createdAt: new Date(2), fanUser: { nickname: '민지' } },
+            { id: `${args.where.replyToMessageId}-r1`, body: '첫 번째', createdAt: new Date(1), fanUser: null },
+          ]),
+    );
+    const prisma = {
+      user: { findUniqueOrThrow: vi.fn().mockResolvedValue({ role: Role.ADMIN }) },
+      message: { findMany },
+    } as unknown as PrismaService;
+    const media = { withReadUrls: vi.fn((items: object[]) => Promise.resolve(items)) } as unknown as MediaService;
+    const service = new MessagesService(prisma, {} as PushService, {} as ModerationService, media, config());
+    return { service, findMany };
+  }
+
+  it('답장이 있는 메시지에 최근 답장을 오래된 것 → 최신 순으로 붙임', async () => {
+    const { service, findMany } = previewSetup([broadcast('m1', 2), broadcast('m2', 0), broadcast('m3', 5, new Date())]);
+    const result = (await service.listBroadcasts('admin', 'actor-1')) as unknown as {
+      id: string;
+      recentReplies: { id: string; nickname: string | null; body: string }[];
+    }[];
+
+    expect(result[0].recentReplies.map((r) => r.body)).toEqual(['첫 번째', '두 번째']);
+    expect(result[0].recentReplies[1]).toMatchObject({ nickname: '민지' });
+    // 답장 없는 메시지·삭제한 메시지는 조회하지 않음
+    expect(result[1].recentReplies).toEqual([]);
+    expect(result[2].recentReplies).toEqual([]);
+    expect(findMany).toHaveBeenCalledTimes(2);
+    // 정지·탈퇴·차단·신고 처리된 답장 제외 조건
+    expect(findMany.mock.calls[1][0]).toMatchObject({
+      where: { fanUser: { status: 'ACTIVE', deletedAt: null }, reports: { none: { status: 'RESOLVED' } } },
+      take: 5,
+    });
+  });
+
+  it('최근 메시지 10개까지만 미리보기', async () => {
+    const { service, findMany } = previewSetup(Array.from({ length: 15 }, (_, i) => broadcast(`m${i}`, 1)));
+    await service.listBroadcasts('admin', 'actor-1');
+    expect(findMany).toHaveBeenCalledTimes(11);
+  });
+});

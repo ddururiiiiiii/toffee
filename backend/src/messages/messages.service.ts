@@ -80,6 +80,10 @@ function withQuote<T extends { replyTo: QuotedSource | null }>(message: T) {
   return { ...rest, replyTo: toQuote(replyTo) };
 }
 const PUSH_PREVIEW_LENGTH = 60;
+// 스타 화면 "팬 답장 흐름" 미리보기 — 최근 스타 메시지 몇 개에만, 메시지당 최근 답장 몇 개만(오래된 메시지는 숫자만)
+const REPLY_PREVIEW_MESSAGES = 10;
+const REPLY_PREVIEW_PER_MESSAGE = 5;
+const REPLY_PREVIEW_LENGTH = 80;
 
 function personalize(body: string, fanName: string): string {
   return body.replaceAll(NAME_PLACEHOLDER, fanName);
@@ -312,9 +316,49 @@ export class MessagesService {
         _count: { select: { replies: { where: { senderType: MessageSenderType.FAN, fanUser: notBlockedIn(actorId) } } } },
       },
     });
-    return this.mediaService.withReadUrls(
-      messages.map(({ _count, ...message }) => ({ ...withQuote(message), replyCount: _count.replies })),
+    const previews = await this.recentReplyPreviews(
+      actorId,
+      messages.filter((m) => !m.deletedAt && m._count.replies > 0).slice(0, REPLY_PREVIEW_MESSAGES).map((m) => m.id),
     );
+    return this.mediaService.withReadUrls(
+      messages.map(({ _count, ...message }) => ({
+        ...withQuote(message),
+        replyCount: _count.replies,
+        recentReplies: previews.get(message.id) ?? [],
+      })),
+    );
+  }
+
+  /**
+   * 메시지별 최근 팬 답장(오래된 것 → 최신 순) — 스타 화면에서 답장이 한 줄씩 넘어가며 보이는 박스용. 눈에 잘 띄는
+   * 자리라 답장 목록보다 엄격하게: 이 채널에서 차단됐거나 정지·탈퇴한 팬, 신고 처리된 답장은 뺌. 닉네임만(태그 없음).
+   * 메시지마다 따로 조회(각각 인덱스 + LIMIT) — include의 take는 전체 답장을 읽은 뒤 자를 수 있어서.
+   */
+  private async recentReplyPreviews(actorId: string, messageIds: string[]) {
+    const entries = await Promise.all(
+      messageIds.map(async (messageId) => {
+        const replies = await this.prisma.message.findMany({
+          where: {
+            replyToMessageId: messageId,
+            actorId,
+            senderType: MessageSenderType.FAN,
+            deletedAt: null,
+            fanUser: { ...notBlockedIn(actorId), status: UserStatus.ACTIVE, deletedAt: null },
+            reports: { none: { status: ReportStatus.RESOLVED } },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: REPLY_PREVIEW_PER_MESSAGE,
+          select: { id: true, body: true, createdAt: true, fanUser: { select: { nickname: true } } },
+        });
+        const preview = replies.reverse().map(({ fanUser, body, ...reply }) => ({
+          ...reply,
+          nickname: fanUser?.nickname ?? null,
+          body: (body ?? '').slice(0, REPLY_PREVIEW_LENGTH),
+        }));
+        return [messageId, preview] as const;
+      }),
+    );
+    return new Map(entries);
   }
 
   /**

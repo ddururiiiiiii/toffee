@@ -904,3 +904,16 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   X)면, 일반 발송 목록에서 빼고 `sendToUser`로 `quotedReplyTitle` 알림 한 건(data `type: 'QUOTED_REPLY'`).
 - 앱: 알림 열기 시 팬은 `/chat/[actorId]?focus=<messageId>` — 채팅방이 그 메시지로 `scrollToIndex` 후 2.5초 테두리
   강조. 사진 로딩 등으로 목록 높이가 바뀌며 맨 아래로 내려가는 걸 막으려고 1.5초 동안은 focus에 고정.
+
+## 스타 화면 팬 답장 흐름 미리보기 (2026-09-28)
+
+- `GET /actors/:id/messages/broadcasts`(스튜디오·소속사 모니터링 공용) 응답에 `recentReplies`
+  (`{ id, nickname, body(80자), createdAt }[]`, 오래된 것 → 최신) 추가. 삭제 안 된 최근 스타 메시지 중 답장이 있는 것
+  10개에만(`REPLY_PREVIEW_MESSAGES`), 메시지당 5개(`REPLY_PREVIEW_PER_MESSAGE`).
+- 조회는 메시지마다 `findMany({ where: { replyToMessageId }, take: 5 })`를 병렬로 — `include`의 중첩 `take`는 Prisma
+  기본 전략(query)에서 전체 답장을 읽은 뒤 메모리에서 자를 수 있어서. `@@index([replyToMessageId])` 사용.
+- 필터: 차단(`notBlockedIn`) + `fanUser.status ACTIVE`·`deletedAt null` + `reports none RESOLVED` + `deletedAt null`.
+  `replyCount`는 기존대로 차단만 뺀 숫자라 미리보기 개수와 다를 수 있음(의도).
+- 앱 `components/reply-ticker.tsx`: 2.5초마다 한 칸, `Animated` 슬라이드(웹은 JS 드라이버), 새 답장(latestId 변경)이면
+  최신부터, `AccessibilityInfo.isReduceMotionEnabled`면 애니메이션 없이. 폴링: 스튜디오 목록 10초 → 5초, 메시지별
+  답장 목록 10초 → 3초.

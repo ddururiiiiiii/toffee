@@ -24,6 +24,7 @@ import {
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MediaTile } from '@/components/media-tile';
+import { ReplyTicker } from '@/components/reply-ticker';
 import { QuoteBlock } from '@/components/quote-block';
 import { VoiceMessage } from '@/components/voice-message';
 import { useActor } from '@/hooks/use-actors';
@@ -69,6 +70,7 @@ function MyMessage({
   const theme = useTheme();
   const { t, i18n } = useTranslation();
   const hiddenByAdmin = !!message.deletedAt && message.deletedByAdmin;
+  const hasPreview = (message.recentReplies?.length ?? 0) > 0;
   return (
     <ThemedView style={styles.messageRow}>
       {hiddenByAdmin && (
@@ -102,12 +104,16 @@ function MyMessage({
             </ThemedText>
           </Pressable>
         )}
-        <Pressable onPress={onOpenReplies} hitSlop={8}>
-          <ThemedText type="smallBold" style={{ color: theme.tint }}>
-            {message.replyCount > 0 ? `${t('studio.replies', { count: message.replyCount })} ›` : t('studio.noReplies')}
-          </ThemedText>
-        </Pressable>
+        {!hasPreview && (
+          <Pressable onPress={onOpenReplies} hitSlop={8}>
+            <ThemedText type="smallBold" style={{ color: theme.tint }}>
+              {message.replyCount > 0 ? `${t('studio.replies', { count: message.replyCount })} ›` : t('studio.noReplies')}
+            </ThemedText>
+          </Pressable>
+        )}
       </ThemedView>
+      {/* 최근 메시지는 팬 답장이 한 줄씩 넘어가며 보임(버블·위버스 방식), 오래된 메시지는 숫자만 */}
+      {hasPreview && <ReplyTicker replies={message.recentReplies ?? []} count={message.replyCount} onPress={onOpenReplies} />}
     </ThemedView>
   );
 }

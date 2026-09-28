@@ -8,8 +8,17 @@ import type { ChatMessage } from './use-messages';
 
 // 배우 본인 화면("스튜디오") — 내가 보낸 메시지(+메시지별 팬 답장 수), 발송
 
+/** 스타 화면 "팬 답장 흐름" 미리보기 한 줄 — 서버가 최근 메시지 몇 개에만, 오래된 것 → 최신 순으로 줌 */
+export interface ReplyPreview {
+  id: string;
+  nickname: string | null;
+  body: string;
+  createdAt: string;
+}
+
 export interface StudioMessage extends ChatMessage {
   replyCount: number;
+  recentReplies?: ReplyPreview[];
 }
 
 export function useStudioMessages(actorId: string) {
@@ -18,7 +27,8 @@ export function useStudioMessages(actorId: string) {
     // 서버는 최신순으로 줌 — 화면은 inverted 리스트라 그대로 씀
     queryFn: () => apiClient.get<StudioMessage[]>(`/actors/${actorId}/messages/broadcasts`),
     enabled: !!actorId,
-    refetchInterval: 10000,
+    // 팬 답장 흐름이 거의 실시간처럼 보이게(실시간 연결은 호스팅 결정 후)
+    refetchInterval: 5000,
   });
 }
 
@@ -28,7 +38,8 @@ export function useMessageReplies(actorId: string, messageId: string) {
     queryFn: () =>
       apiClient.get<FanReply[]>(`/actors/${actorId}/messages/replies?messageId=${encodeURIComponent(messageId)}`),
     enabled: !!actorId && !!messageId,
-    refetchInterval: 10000,
+    // 답장 목록을 열어 두면 새 답장이 곧바로 위에 쌓이게
+    refetchInterval: 3000,
   });
 }
 
