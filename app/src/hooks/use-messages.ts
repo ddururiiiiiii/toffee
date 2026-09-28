@@ -19,6 +19,8 @@ export interface ChatMessage {
   // 음성 메시지일 때만(없을 수도 있음)
   mediaDurationMs?: number | null;
   waveform?: number[] | null;
+  // 영상 첫 장면 사진(없을 수도 있음 — 예전 메시지, 캡처 실패)
+  thumbnailUrl?: string | null;
   // 스타의 인용 답장이면 인용한 팬 메시지 요약(전체 공개, 닉네임만)
   replyTo?: MessageQuote | null;
   // 스타·소속사 화면용(팬 화면엔 지워진 메시지가 아예 안 옴) — 스타가 삭제했거나 운영자가 신고 승인으로 가림

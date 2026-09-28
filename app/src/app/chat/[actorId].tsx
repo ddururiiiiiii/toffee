@@ -36,7 +36,7 @@ function MessageBubble({ message, onSaveVoice }: { message: ChatMessage; onSaveV
       <ThemedView style={[styles.bubble, { backgroundColor: bubbleColor }]}>
         {message.replyTo && <QuoteBlock quote={message.replyTo} tone={isArtist ? 'dark' : 'light'} />}
         {message.mediaType === 'PHOTO' || message.mediaType === 'VIDEO' ? (
-          <MediaTile id={message.id} url={message.mediaUrl} mediaType={message.mediaType} durationMs={message.mediaDurationMs} />
+          <MediaTile id={message.id} url={message.mediaUrl} mediaType={message.mediaType} durationMs={message.mediaDurationMs} thumbnailUrl={message.thumbnailUrl} />
         ) : message.mediaType === 'AUDIO' ? (
           <VoiceMessage
             id={message.id}

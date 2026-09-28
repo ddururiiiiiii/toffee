@@ -317,6 +317,11 @@ S3 호환 오브젝트 스토리지(운영: Cloudflare R2 예정) + **비공개 
 컨테이너라 판별 결과가 `video/mp4`여도 허용), 영상 mp4/mov/webm 200MB. 스타 앱에서 영상 압축을
 붙인 뒤 실제 크기를 보고 조정.
 
+**영상 썸네일(2026-09-28)**: `Message.thumbnailKey`(선택) — 스타 앱이 영상을 보낼 때 첫 장면을 JPEG로 만들어
+(`lib/video-thumbnail.native.ts`는 expo-video-thumbnails, `lib/video-thumbnail.ts`는 웹 `<video>`+canvas)
+같은 업로드 경로로 PHOTO로 올리고 발송 API에 `thumbnailKey`로 넘김. 서버는 영상일 때만 받아서 PHOTO로 검증,
+응답엔 서명된 `thumbnailUrl`. 메시지 삭제 시 같이 지우고, 고아 파일 정리는 참조 중인 키로 취급. 스토리엔 아직 없음.
+
 **설정**: `STORAGE_ENDPOINT/REGION/BUCKET/ACCESS_KEY_ID/SECRET_ACCESS_KEY/FORCE_PATH_STYLE`
 (`.env.example` 참고). 없으면 업로드·첨부는 503(조용히 넘어가지 않음).
 

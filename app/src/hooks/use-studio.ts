@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api-client';
 import { uploadMedia, type UploadMediaType } from '@/lib/upload-media';
+import { createVideoThumbnail } from '@/lib/video-thumbnail';
 import type { FanReply } from './use-console';
 import type { ChatMessage } from './use-messages';
 
@@ -40,7 +41,21 @@ export interface Attachment {
   waveform?: number[];
 }
 
-// 미디어가 있으면 먼저 저장소에 올리고(uploadMedia) 받은 키로 발송
+// 영상 첫 장면을 사진으로 올림 — 썸네일은 선택이라 만들기·올리기가 실패해도 영상은 그대로 보냄
+async function uploadVideoThumbnail(actorId: string, videoUri: string): Promise<string | undefined> {
+  const uri = await createVideoThumbnail(videoUri);
+  if (!uri) return undefined;
+  try {
+    return await uploadMedia(actorId, { purpose: 'message', mediaType: 'PHOTO', uri, contentType: 'image/jpeg' });
+  } catch {
+    return undefined;
+  } finally {
+    // 웹은 캡처 결과가 blob: 주소라 올린 뒤 메모리 해제
+    if (uri.startsWith('blob:')) URL.revokeObjectURL(uri);
+  }
+}
+
+// 미디어가 있으면 먼저 저장소에 올리고(uploadMedia) 받은 키로 발송 — 영상이면 첫 장면 썸네일도 같이
 export function useStudioSend(actorId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -54,18 +69,22 @@ export function useStudioSend(actorId: string) {
       /** 인용 답장할 팬 메시지 */
       replyToMessageId?: string;
     }) => {
-      const mediaKey = attachment
-        ? await uploadMedia(actorId, {
-            purpose: 'message',
-            mediaType: attachment.mediaType,
-            uri: attachment.uri,
-            contentType: attachment.contentType,
-          })
-        : undefined;
+      const [mediaKey, thumbnailKey] = await Promise.all([
+        attachment
+          ? uploadMedia(actorId, {
+              purpose: 'message',
+              mediaType: attachment.mediaType,
+              uri: attachment.uri,
+              contentType: attachment.contentType,
+            })
+          : undefined,
+        attachment?.mediaType === 'VIDEO' ? uploadVideoThumbnail(actorId, attachment.uri) : undefined,
+      ]);
       return apiClient.post<ChatMessage>(`/actors/${actorId}/messages/broadcast`, {
         mediaType: attachment?.mediaType ?? 'TEXT',
         body: body || undefined,
         mediaKey,
+        thumbnailKey,
         durationMs: attachment?.durationMs,
         waveform: attachment?.waveform,
         replyToMessageId,

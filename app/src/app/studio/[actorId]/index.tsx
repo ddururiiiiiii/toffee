@@ -79,7 +79,7 @@ function MyMessage({
       <ThemedView style={[styles.bubble, { backgroundColor: theme.tint }, hiddenByAdmin && styles.hiddenBubble]}>
         {message.replyTo && <QuoteBlock quote={message.replyTo} tone="light" />}
         {message.mediaType === 'PHOTO' || message.mediaType === 'VIDEO' ? (
-          <MediaTile id={message.id} url={message.mediaUrl} mediaType={message.mediaType} durationMs={message.mediaDurationMs} />
+          <MediaTile id={message.id} url={message.mediaUrl} mediaType={message.mediaType} durationMs={message.mediaDurationMs} thumbnailUrl={message.thumbnailUrl} />
         ) : message.mediaType === 'AUDIO' ? (
           <VoiceMessage
             id={message.id}

@@ -22,7 +22,7 @@ export class UploadCleanupService {
   async referencedKeys(): Promise<Set<string>> {
     const [messages, stories, actors, agencies] = await Promise.all([
       this.prisma.message.findMany({ where: { mediaKey: { not: null } }, select: { mediaKey: true, thumbnailKey: true } }),
-      this.prisma.story.findMany({ where: { mediaKey: { not: null } }, select: { mediaKey: true, thumbnailKey: true } }),
+      this.prisma.story.findMany({ where: { mediaKey: { not: null } }, select: { mediaKey: true } }),
       this.prisma.actor.findMany({ select: { officialProfileImageUrl: true, chatProfileImageUrl: true } }),
       this.prisma.agency.findMany({ select: { logoUrl: true } }),
     ]);

@@ -22,6 +22,20 @@
 
 ---
 
+## 2026-09-28 (이어서) — 영상 썸네일 앱 쪽 마무리 (다른 계정 세션에서 이어받음)
+
+- 다른 계정 세션의 `claude/serene-planck-asni5s` 작업을 이 세션 브랜치로 그대로 가져와서 이어서 진행.
+- 앱: `lib/video-thumbnail.native.ts`(expo-video-thumbnails, 0초 지점) / `lib/video-thumbnail.ts`(웹 — `<video>`를
+  0.1초로 옮긴 뒤 canvas로 JPEG 캡처, 최대 가로 640, 10초 타임아웃). `useStudioSend`가 영상이면 첫 장면을 PHOTO로
+  같이 올려 `thumbnailKey`로 전달 — 썸네일 만들기·올리기가 실패해도 영상 발송은 그대로 진행. `MediaTile`은
+  `thumbnailUrl`이 있으면 사진 위에 ▶·길이(그림자 추가)를 표시, 없으면 기존 어두운 타일.
+- 정정: 직전 커밋의 "안 쓰는 업로드 파일 정리"가 `story.findMany`에서 `Story`에 없는 `thumbnailKey`를 select하고
+  있었음(tsc는 통과했지만 Prisma는 실행 시 알 수 없는 필드로 거부함) → 스토리는 `mediaKey`만 보도록 되돌림.
+- 남은 일: 실기기(iOS·안드로이드)에서 썸네일 생성 확인. 웹 캡처는 브라우저가 영상 코덱을 못 읽으면(예: 일부 .mov)
+  썸네일 없이 발송됨 — 의도된 동작.
+
+---
+
 ## 2026-09-28 (이어서) — 2차 작업: 통계·알림 끄기·1년 보존·파일 정리·영상 썸네일(진행 중)
 
 - 사용자 결정: 아티스트 게시판은 보류, 나머지 진행.
