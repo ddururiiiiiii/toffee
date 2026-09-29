@@ -35,6 +35,7 @@ export function checkEnv(env: Env): EnvCheckResult {
     ['애플 로그인', ['APPLE_CLIENT_ID']],
     ['라인 로그인', ['LINE_CHANNEL_ID']],
     ['카카오 토큰 앱 확인', ['KAKAO_APP_ID']],
+    ['메시지 번역(Claude)', ['ANTHROPIC_API_KEY']],
     ['PC 웹 소셜 로그인(카카오·네이버·LINE)', ['WEB_LOGIN_ORIGINS']],
     ['애플 결제 확인', ['APPLE_BUNDLE_ID', 'APPLE_APP_ID']],
     ['구글 결제 알림(갱신·만료·환불)', ['GOOGLE_RTDN_AUDIENCE', 'GOOGLE_RTDN_SERVICE_ACCOUNT_EMAIL']],

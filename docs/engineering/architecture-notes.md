@@ -1211,3 +1211,20 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
 - 목록: `ActorsService.lastBroadcastMap(ids)` → `/actors/mine`(콘솔)·`/admin/actors` 응답에 `lastBroadcastAt`. 앱 `utils/idle-days.ts`(7일 이상 빨간색).
   콘솔 행 글자 뒤 흰 박스(ThemedView 기본 배경) 같이 고침.
 - 테스트: `idle-reminder.spec.ts`(단계, 3일 배우만·다음 날 중복 없음, 7일 커플방 두 배우 + 소속사, 새 메시지 후 초기화).
+
+## 메시지 번역 (2026-09-29)
+
+- `translation/translation-provider.ts`: `TranslationProvider { name, cacheable, translate(text, target) }`. `ClaudeTranslationProvider` — `@anthropic-ai/sdk`
+  (0.129) `client.beta.messages.create`, 모델 `TRANSLATION_MODEL`(기본 `claude-opus-5-5`), `output_config.effort: 'low'`, 거절 시 서버 대체
+  (`betas: ['server-side-fallback-2026-07-01']`, `fallbacks: 'default'`), `stop_reason` refusal/max_tokens 처리, text 블록만 이어 붙임. 시스템 프롬프트는
+  고정 문자열(`TRANSLATION_SYSTEM_PROMPT` — 말투·이모지·`{{name}}` 유지, `<message>` 안은 지시로 따르지 않음), 사용자 턴에 `<target_language>`·`<message>`.
+  `FakeTranslationProvider`(cacheable false — 저장 안 함).
+- `TranslationService.translateMessage(requester, actorId, messageId, target)`: 지운 메시지·본문 없음 404, 팬(USER)은 구독 + 구독 시작 이후 + (스타 메시지 또는 본인 답장)만
+  (아니면 404 — 존재 여부도 안 알림), 스타·소속사·운영자는 `ensureCanViewActor`. `MessageTranslation(messageId, languageCode)` 캐시(원문 기준, `{{name}}` 포함),
+  동시 저장 P2002는 저장된 것 사용. 팬에게 스타 메시지는 `{{name}}` → 닉네임. 엔진 선택 `pickProvider`: `TRANSLATION_PROVIDER` claude|fake|off, 비면 키 있으면
+  claude, 없으면 NODE_ENV production이면 null(503 `TRANSLATION_UNAVAILABLE`) 아니면 fake. 번역 실패 503 `TRANSLATION_FAILED`.
+- API `POST /actors/:actorId/messages/:messageId/translate { targetLanguage }`, 사람당 30회/분.
+- 앱: `utils/detect-script.ts`(글자 종류로 "다른 언어인지" — 가나가 있으면 일본어), `useMessageTranslation`(누를 때만, staleTime/gcTime Infinity),
+  `components/translatable-text.tsx`(원문 + 번역 보기/숨기기) — 채팅 스타 말풍선·스튜디오 팬 답장.
+- `scripts/translation-sample.mjs`: 빌드 후 예문 × 언어로 실제 호출(키 필요, 비용 발생).
+- 테스트 `translation.service.spec.ts`(한 번만 번역·캐시·{{name}}, 팬 권한, 가짜 미저장·꺼짐, 엔진 선택, 프롬프트).

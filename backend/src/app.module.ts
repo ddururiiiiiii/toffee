@@ -18,6 +18,7 @@ import { StorageModule } from './storage/storage.module.js';
 import { BlocksModule } from './blocks/blocks.module.js';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
 import { SettlementsModule } from './settlements/settlements.module.js';
+import { TranslationModule } from './translation/translation.module.js';
 import { ModerationModule } from './moderation/moderation.module.js';
 import { AdminModule } from './admin/admin.module.js';
 import { ParentalConsentModule } from './parental-consent/parental-consent.module.js';
@@ -50,6 +51,7 @@ import { LegalModule } from './legal/legal.module.js';
     BlocksModule,
     SubscriptionsModule,
     SettlementsModule,
+    TranslationModule,
     BundlesModule,
     LegalModule,
     ModerationModule,

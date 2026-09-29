@@ -465,6 +465,22 @@ export const ERROR_MESSAGES = {
     'zh-Hans': (p) => `请先取消之后月份（${p.month}）的结账。`,
     'zh-Hant': (p) => `請先取消之後月份（${p.month}）的結帳。`,
   },
+  TRANSLATION_UNAVAILABLE: {
+    ko: '번역 기능을 준비 중이에요.',
+    en: 'Translation is not available yet.',
+    th: 'ฟีเจอร์แปลภาษายังไม่พร้อมใช้งาน',
+    ja: '翻訳機能は準備中です。',
+    'zh-Hans': '翻译功能正在准备中。',
+    'zh-Hant': '翻譯功能正在準備中。',
+  },
+  TRANSLATION_FAILED: {
+    ko: '지금은 번역하지 못했어요. 잠시 후 다시 시도해 주세요.',
+    en: "Couldn't translate right now. Please try again in a moment.",
+    th: 'แปลไม่สำเร็จในขณะนี้ กรุณาลองใหม่อีกครั้ง',
+    ja: '今は翻訳できませんでした。しばらくしてからもう一度お試しください。',
+    'zh-Hans': '暂时无法翻译，请稍后重试。',
+    'zh-Hant': '暫時無法翻譯，請稍後再試。',
+  },
   NOT_FOR_COUPLE: {
     ko: '커플방에는 할 수 없는 설정이에요(소속사·본인 계정은 멤버 배우 쪽에서 정해져요).',
     en: "This setting isn't available for couple rooms (agency and account come from the member actors).",

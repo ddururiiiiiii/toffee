@@ -25,6 +25,7 @@ import { Icon } from '@/components/ui/icon';
 import { IconButton } from '@/components/ui/icon-button';
 import { MediaTile } from '@/components/media-tile';
 import { QuoteBlock } from '@/components/quote-block';
+import { TranslatableText } from '@/components/translatable-text';
 import { VoiceMessage } from '@/components/voice-message';
 import { ApiError } from '@/lib/api-client';
 import { saveMedia } from '@/lib/save-media';
@@ -503,7 +504,7 @@ function MessageRow({
           />
           {message.body ? (
             <View style={[styles.bubble, { backgroundColor: theme.backgroundElement }]}>
-              <ThemedText>{message.body}</ThemedText>
+              <TranslatableText actorId={actorId} messageId={message.id} text={message.body} />
             </View>
           ) : null}
         </View>
@@ -521,7 +522,8 @@ function MessageRow({
               nextId={nextVoiceId}
             />
           ) : null}
-          {message.body ? <ThemedText>{message.body}</ThemedText> : null}
+          {/* 스타 메시지는 다른 언어면 "번역 보기"(내 답장은 번역 안 함) */}
+          {message.body ? isArtist ? <TranslatableText actorId={actorId} messageId={message.id} text={message.body} /> : <ThemedText>{message.body}</ThemedText> : null}
         </View>
       )}
     </Pressable>

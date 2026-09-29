@@ -140,3 +140,18 @@ export function useChatSearch(actorId: string | undefined, query: string) {
     staleTime: 30_000,
   });
 }
+
+/**
+ * 메시지 번역(2026-09-29) — "번역 보기"를 누른 메시지만 서버에 요청(서버가 메시지 × 언어마다 한 번 번역해 저장). 결과는 다시 받을 필요가
+ * 없어서 앱 켜져 있는 동안 계속 씀.
+ */
+export function useMessageTranslation(actorId: string, messageId: string, language: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['translation', messageId, language],
+    queryFn: () => apiClient.post<{ text: string }>(`/actors/${actorId}/messages/${messageId}/translate`, { targetLanguage: language }),
+    enabled,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    retry: false,
+  });
+}

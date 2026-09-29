@@ -525,5 +525,10 @@
     "openCurrent": "Current month — figures keep changing. You can close it after the month ends.",
     "openPast": "Not closed yet — figures may change if refunds arrive. Close it before paying out.",
     "closeFailed": "Couldn't complete that"
+  },
+  "translate": {
+    "show": "See translation",
+    "hide": "Hide translation",
+    "failed": "Couldn't translate"
   }
 }
