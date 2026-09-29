@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { PrismaService } from '../prisma/prisma.service.js';
 import { IapVerificationService } from './iap-verification.service.js';
 import { ChargeSource, MessageSenderType, ParentalConsentStatus, SubscriptionEventType } from '../generated/prisma/enums.js';
-import type { Prisma } from '../generated/prisma/client.js';
+import { Prisma } from '../generated/prisma/client.js';
 import type { VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
 import { MediaService } from '../storage/media.service.js';
 import { appError } from '../common/i18n/app-error.js';
@@ -19,11 +19,22 @@ const LAST_MESSAGE_PREVIEW = 80;
 
 type Db = Prisma.TransactionClient | PrismaService;
 
+/** 스토어 상품 ID로 찾은 우리 상품(배우·커플방 또는 묶음) */
+interface StoreTargetInfo {
+  productId: string;
+  actorId: string | undefined;
+  bundleId: string | undefined;
+  priceCents: number;
+  actorIds: string[];
+  prices: Map<string, number>;
+}
+
 /** 스토어 알림을 우리 쪽 사건으로 옮긴 것(store-events.ts가 애플·구글 알림을 이걸로 바꿈) */
 export type StoreEvent =
   | { kind: 'PAID'; transaction: StoreTransaction }
   | { kind: 'GRACE'; originalTransactionId: string; until: Date }
-  | { kind: 'EXPIRED'; originalTransactionId: string }
+  // expiresAt: 알림이 말하는 만료 시각 — 우리가 아는 만료일이 더 뒤면(그 사이 갱신됨) 늦게 온 옛 알림이라 무시
+  | { kind: 'EXPIRED'; originalTransactionId: string; expiresAt?: Date }
   | { kind: 'REFUNDED'; originalTransactionId: string; storeTransactionId?: string }
   | { kind: 'IGNORED'; reason: string };
 
@@ -275,7 +286,11 @@ export class SubscriptionsService {
    * 스토어 구매를 우리 구매로 — 같은 구독 인스턴스(originalTransactionId)가 있으면 만료일만 늘리고(갱신·복원), 없으면 새로(새 상품이면
    * 판매 중인지 확인). 결제 기록은 스토어 결제 id로 한 번만. 다른 계정에 이미 연결된 영수증이면 409.
    */
-  private async upsertStorePurchase(userId: string, verified: StoreTransaction, target: NonNullable<Awaited<ReturnType<SubscriptionsService['storeTarget']>>>) {
+  private async upsertStorePurchase(
+    userId: string,
+    verified: StoreTransaction,
+    target: StoreTargetInfo,
+  ): Promise<{ purchaseId: string; actorIds: string[]; target: StoreTargetInfo }> {
     const existing = await this.prisma.purchase.findUnique({ where: { iapTransactionId: verified.originalTransactionId } });
     if (existing && existing.userId !== userId) throw new ConflictException(appError('IAP_RECEIPT_IN_USE'));
     if (!existing) {
@@ -291,7 +306,28 @@ export class SubscriptionsService {
       storeCurrency: verified.storeCurrency,
     };
     const iap = { iapPlatform: verified.platform, iapTransactionId: verified.originalTransactionId, iapExpiresAt: verified.expiresAt };
-    const purchaseId = await this.prisma.$transaction(async (tx) => {
+    let purchaseId: string;
+    try {
+      purchaseId = await this.writeStorePurchase(userId, verified, target, existing, iap, charge);
+    } catch (error) {
+      // 같은 영수증 확인이 동시에 두 번 오면(앱 재시도·스토어 알림과 겹침) 한쪽이 고유 제약에 걸림 — 예전엔 500. 이미 생긴 구매로 다시 처리
+      if (!existing && error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        return this.upsertStorePurchase(userId, verified, target);
+      }
+      throw error;
+    }
+    return { purchaseId, actorIds: target.actorIds, target };
+  }
+
+  private async writeStorePurchase(
+    userId: string,
+    verified: StoreTransaction,
+    target: StoreTargetInfo,
+    existing: { id: string; iapExpiresAt: Date | null } | null,
+    iap: { iapPlatform: 'IOS' | 'ANDROID'; iapTransactionId: string; iapExpiresAt: Date },
+    charge: Parameters<ChargeLedgerService['record']>[2],
+  ): Promise<string> {
+    return this.prisma.$transaction(async (tx) => {
       let id: string;
       if (existing) {
         // 만료일은 늘리기만(늦게 온 옛 영수증이 줄이지 않게)
@@ -309,7 +345,6 @@ export class SubscriptionsService {
       await this.syncAccess(tx, userId, target.actorIds, target.prices);
       return id;
     });
-    return { purchaseId, actorIds: target.actorIds, target };
   }
 
   /**
@@ -341,6 +376,11 @@ export class SubscriptionsService {
         await this.prisma.purchase.update({ where: { id: purchase.id }, data: { iapExpiresAt: event.until } });
       }
       return { applied: true };
+    }
+    // 스토어 알림은 순서가 뒤바뀌어 올 수 있음 — 예전 만료 알림이 갱신 뒤에 도착하면 결제한 팬의 방을 닫게 됨(2026-09-29 점검)
+    if (event.kind === 'EXPIRED' && event.expiresAt) {
+      if (event.expiresAt.getTime() > Date.now()) return { applied: false };
+      if (purchase.iapExpiresAt && purchase.iapExpiresAt > event.expiresAt) return { applied: false };
     }
     // EXPIRED · REFUNDED — 아직 열려 있으면 닫음
     if (!purchase.cancelledAt) await this.closePurchase(purchase);

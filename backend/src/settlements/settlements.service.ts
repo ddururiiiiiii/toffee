@@ -300,7 +300,9 @@ export class SettlementsService {
       ),
     );
     const escape = (value: string | number) => {
-      const text = String(value);
+      let text = String(value);
+      // 이름이 =, +, -, @로 시작하면 엑셀이 수식으로 실행할 수 있음(CSV 수식 주입) — 숫자가 아닌 글자는 앞에 '를 붙여 글자로(2026-09-29 점검)
+      if (typeof value === 'string' && /^[=+\-@\t\r]/.test(text) && !/^-?\d+(\.\d+)?$/.test(text)) text = `'${text}`;
       return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
     };
     return '﻿' + [header, ...rows].map((row) => row.map(escape).join(',')).join('\n') + '\n';

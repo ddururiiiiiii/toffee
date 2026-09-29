@@ -136,3 +136,52 @@ describe('정산 마감', () => {
     expect(t.audits).toEqual(['SETTLEMENT_CLOSE', 'SETTLEMENT_CLOSE', 'SETTLEMENT_REOPEN']);
   });
 });
+
+describe('정산 CSV', () => {
+  it('=·+·-·@로 시작하는 이름은 엑셀 수식으로 실행되지 않게 글자로(음수 금액은 그대로)', () => {
+    const { service } = setup([]);
+    const csv = service.toCsv({
+      month: '2026-09',
+      currency: 'THB',
+      storeFeePercent: 15,
+      defaultSharePercent: 70,
+      includesSandbox: false,
+      sandboxEnabled: false,
+      closed: null,
+      totals: { grossCents: 0, adjustmentCents: 0, storeFeeCents: 0, netCents: 0, payoutCents: 0, platformCents: 0, refundedCents: 0 },
+      agencies: [
+        {
+          agencyId: 'ag',
+          name: '=HYPERLINK("http://evil")',
+          sharePercent: 70,
+          grossCents: 0,
+          adjustmentCents: -9900,
+          storeFeeCents: 0,
+          netCents: 0,
+          payoutCents: 0,
+          platformCents: 0,
+          refundedCents: 0,
+          actors: [
+            {
+              actorId: 'a1',
+              name: '@Nawin',
+              chargeCount: 0,
+              grossCents: 0,
+              adjustmentCents: -9900,
+              storeFeeCents: 0,
+              netCents: 0,
+              payoutCents: 0,
+              platformCents: 0,
+              refundedCents: 0,
+              rooms: [],
+            },
+          ],
+        },
+      ],
+    });
+    const row = csv.trim().split('\n')[1];
+    expect(row).toContain(`"'=HYPERLINK(""http://evil"")"`);
+    expect(row).toContain(",'@Nawin,");
+    expect(row).toContain(',-99.00,');
+  });
+});

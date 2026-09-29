@@ -221,6 +221,19 @@ describe('스토어 알림 반영', () => {
     expect(r.open('a1')).toBeUndefined();
   });
 
+  it('순서가 뒤바뀌어 늦게 온 옛 만료 알림은 무시(그 사이 갱신된 구독을 닫지 않음)', async () => {
+    const t = setup();
+    t.receipt();
+    await t.service.verifyPurchase('u', 'a1', t.iosDto);
+    const oldExpiry = new Date(Date.now() - DAY);
+    expect(await t.service.applyStoreEvent({ kind: 'EXPIRED', originalTransactionId: 'orig-1', expiresAt: oldExpiry })).toEqual({ applied: false });
+    // 아직 만료 전인데 온 만료 알림도 무시
+    expect(await t.service.applyStoreEvent({ kind: 'EXPIRED', originalTransactionId: 'orig-1', expiresAt: new Date(Date.now() + DAY) })).toEqual({
+      applied: false,
+    });
+    expect(t.open('a1')).toBeTruthy();
+  });
+
   it('결제 실패 유예 기간엔 만료일을 유예 끝까지 늘려 둠', async () => {
     const t = setup();
     t.receipt();
@@ -254,7 +267,7 @@ describe('스토어 알림 해석', () => {
   it('애플', () => {
     expect(appleStoreEvent({ type: 'DID_RENEW', transaction: tx }).kind).toBe('PAID');
     expect(appleStoreEvent({ type: 'SUBSCRIBED', subtype: 'RESUBSCRIBE', transaction: tx }).kind).toBe('PAID');
-    expect(appleStoreEvent({ type: 'EXPIRED', subtype: 'VOLUNTARY', transaction: tx })).toEqual({ kind: 'EXPIRED', originalTransactionId: 'o' });
+    expect(appleStoreEvent({ type: 'EXPIRED', subtype: 'VOLUNTARY', transaction: tx })).toEqual({ kind: 'EXPIRED', originalTransactionId: 'o', expiresAt: tx.expiresAt });
     expect(appleStoreEvent({ type: 'REFUND', transaction: tx })).toEqual({ kind: 'REFUNDED', originalTransactionId: 'o', storeTransactionId: 't' });
     const until = new Date();
     expect(appleStoreEvent({ type: 'DID_FAIL_TO_RENEW', subtype: 'GRACE_PERIOD', transaction: tx, gracePeriodExpiresAt: until })).toEqual({
@@ -271,8 +284,8 @@ describe('스토어 알림 해석', () => {
     const sub = (notificationType: number) => ({ subscriptionNotification: { notificationType, purchaseToken: 'pt', subscriptionId: 'p' } });
     expect((await googleStoreEvent(sub(2), fetch)).kind).toBe('PAID');
     expect((await googleStoreEvent(sub(6), fetch)).kind).toBe('GRACE');
-    expect(await googleStoreEvent(sub(13), fetch)).toEqual({ kind: 'EXPIRED', originalTransactionId: 'pt' });
-    expect(await googleStoreEvent(sub(5), fetch)).toEqual({ kind: 'EXPIRED', originalTransactionId: 'pt' });
+    expect(await googleStoreEvent(sub(13), fetch)).toMatchObject({ kind: 'EXPIRED', originalTransactionId: 'pt', expiresAt: tx.expiresAt });
+    expect(await googleStoreEvent(sub(5), fetch)).toMatchObject({ kind: 'EXPIRED', originalTransactionId: 'pt' });
     expect((await googleStoreEvent(sub(3), fetch)).kind).toBe('IGNORED');
     expect(await googleStoreEvent({ voidedPurchaseNotification: { purchaseToken: 'pt', orderId: 'GPA.1..2' } }, fetch)).toEqual({
       kind: 'REFUNDED',

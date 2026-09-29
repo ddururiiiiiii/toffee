@@ -21,7 +21,7 @@ export function appleStoreEvent(notification: AppleNotification): StoreEvent {
         : { kind: 'IGNORED', reason: 'DID_FAIL_TO_RENEW(유예 없음) — 만료 알림을 기다림' };
     case 'EXPIRED':
     case 'GRACE_PERIOD_EXPIRED':
-      return { kind: 'EXPIRED', originalTransactionId: transaction.originalTransactionId };
+      return { kind: 'EXPIRED', originalTransactionId: transaction.originalTransactionId, expiresAt: transaction.expiresAt };
     case 'REFUND':
     case 'REVOKE':
       return { kind: 'REFUNDED', originalTransactionId: transaction.originalTransactionId, storeTransactionId: transaction.storeTransactionId };
@@ -64,7 +64,11 @@ export async function googleStoreEvent(
       ? { kind: 'GRACE', originalTransactionId: purchaseToken, until: transaction.expiresAt }
       : { kind: 'PAID', transaction };
   }
-  if (notificationType === 5 || notificationType === 13) return { kind: 'EXPIRED', originalTransactionId: purchaseToken };
+  // 만료·보류도 최신 상태를 다시 받아서 — 늦게 온 옛 알림이면 만료일이 아직 미래라 닫지 않음
+  if (notificationType === 5 || notificationType === 13) {
+    const transaction = await fetchTransaction(purchaseToken, subscriptionId);
+    return { kind: 'EXPIRED', originalTransactionId: purchaseToken, expiresAt: transaction.expiresAt };
+  }
   if (notificationType === 12) return { kind: 'REFUNDED', originalTransactionId: purchaseToken };
   return { kind: 'IGNORED', reason: `google type ${notificationType}` };
 }

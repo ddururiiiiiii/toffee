@@ -1186,3 +1186,16 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
   `EXPO_PUBLIC_WEB_NAVER_CLIENT_ID`·`EXPO_PUBLIC_WEB_LINE_CHANNEL_ID`. 브라우저 확인: 버튼 → 카카오 authorize URL(client_id·redirect_uri·state),
   위조 state 거절(서버 호출 없음), 맞는 state면 code 1회 전송.
 - 애플 웹은 Services ID + client secret(JWT, .p8 서명)가 필요해서 보류.
+
+## 보안 점검 (2026-09-29)
+
+범위: 인증(JWT 전략·역할 가드·공개 경로 21개), 운영자 컨트롤러 역할, 공개 배우 응답 필드, 스토리·신고 접근, 법률 HTML 이스케이프, 결제·스토어
+알림, 정산, 웹 로그인, 의존성.
+- 문제없음: JWT는 매 요청 DB에서 역할·정지·탈퇴 재확인, 운영자 경로 전부 `@Roles(ADMIN)`, 공개 배우 응답에 계정·이메일 없음, 스토리·신고는
+  구독/열람 권한 확인, 법률 페이지 escapeHtml, 정산 소속사 범위 강제, 웹 로그인 state·허용 origin.
+- 고침: ① **스토어 알림 순서** — 애플·구글 알림은 순서 보장이 없어서 옛 EXPIRED가 갱신 뒤에 오면 결제한 팬의 방을 닫았을 것 → EXPIRED에
+  알림의 만료 시각을 싣고(구글은 API로 최신 상태 재조회), 아직 미래거나 우리가 아는 만료일보다 옛날이면 무시. ② **동시 결제 확인** — 같은
+  영수증이 동시에 두 번 오면 `iapTransactionId` 고유 제약으로 500 → P2002면 기존 구매 경로로 한 번 더. ③ **정산 CSV 수식 주입** — =,+,-,@로
+  시작하는 글자 칸 앞에 `'`(숫자는 제외). ④ 의존성: `npm audit fix`(비파괴)로 multer(업로드 DoS)·firebase-admin 계열 갱신. 남은 4건은 Prisma
+  CLI 쪽(mysql2·deepmerge-ts — Postgres 런타임과 무관, 고치려면 Prisma 메이저 다운그레이드라 보류). 앱은 high/critical 없음(moderate 21, Expo 빌드 도구).
+- 알고 두는 위험: 웹은 로그인 토큰을 localStorage에 둠(XSS가 나면 탈취 가능 — 사용자 입력을 HTML로 그리는 곳 없음, React가 이스케이프).
