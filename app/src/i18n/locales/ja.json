@@ -122,7 +122,10 @@
     "lastBroadcast": "最終送信日",
     "noBroadcast": "送信履歴なし",
     "noNickname": "（ニックネームなし）",
-    "deletedByActor": "スターが削除したメッセージ（ファンには見えません）"
+    "deletedByActor": "スターが削除したメッセージ（ファンには見えません）",
+    "lastMessageDays": "最後のメッセージ：{{count}}日前",
+    "noMessagesYet": "まだメッセージなし",
+    "lastMessageToday": "今日メッセージ送信済み"
   },
   "onboarding": {
     "birthDateTitle": "生年月日を入力してください",

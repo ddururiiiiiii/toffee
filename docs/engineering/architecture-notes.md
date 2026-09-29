@@ -1199,3 +1199,15 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
   시작하는 글자 칸 앞에 `'`(숫자는 제외). ④ 의존성: `npm audit fix`(비파괴)로 multer(업로드 DoS)·firebase-admin 계열 갱신. 남은 4건은 Prisma
   CLI 쪽(mysql2·deepmerge-ts — Postgres 런타임과 무관, 고치려면 Prisma 메이저 다운그레이드라 보류). 앱은 high/critical 없음(moderate 21, Expo 빌드 도구).
 - 알고 두는 위험: 웹은 로그인 토큰을 localStorage에 둠(XSS가 나면 탈취 가능 — 사용자 입력을 HTML로 그리는 곳 없음, React가 이스케이프).
+
+## 스타 장기 미발송 알림 (2026-09-29)
+
+- `notifications/idle-reminder.ts`: `idleStage(days, rule)` — 3일 → 3, 7~13 → 7, 14~20 → 14 …(firstDays/escalateDays/repeatDays).
+- `IdleReminderService.run(now)`(cron `5 12 * * *` Asia/Bangkok, `IDLE_REMINDER_ENABLED=false`면 끔): 구독자가 있고 활동 종료 아닌 방(멤버 포함) →
+  `message.groupBy`로 마지막 ARTIST 메시지(없으면 방 createdAt) → 단계. `Actor.idleReminderStage`·`idleReminderFor`(기준 시각)로 같은 단계 한 번만,
+  `updateMany`의 조건부 갱신이 여러 서버 사이 잠금 역할(count 0이면 다른 서버가 이미 보냄). 배우: selfUserId(커플방은 멤버들), 단계 ≥ escalate면
+  `notifyActorStaff`. 푸시 data `{type:'idle-reminder', actorId}` — 앱의 기존 알림 라우팅(역할별 스튜디오/콘솔)을 그대로 씀. 문구 6개 언어
+  `push-messages.ts`. 마이그레이션 `20260929170000_actor_idle_reminder`.
+- 목록: `ActorsService.lastBroadcastMap(ids)` → `/actors/mine`(콘솔)·`/admin/actors` 응답에 `lastBroadcastAt`. 앱 `utils/idle-days.ts`(7일 이상 빨간색).
+  콘솔 행 글자 뒤 흰 박스(ThemedView 기본 배경) 같이 고침.
+- 테스트: `idle-reminder.spec.ts`(단계, 3일 배우만·다음 날 중복 없음, 7일 커플방 두 배우 + 소속사, 새 메시지 후 초기화).

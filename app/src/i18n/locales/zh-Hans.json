@@ -122,7 +122,10 @@
     "lastBroadcast": "最近发送日期",
     "noBroadcast": "暂无发送记录",
     "noNickname": "（无昵称）",
-    "deletedByActor": "明星已删除的消息（粉丝看不到）"
+    "deletedByActor": "明星已删除的消息（粉丝看不到）",
+    "lastMessageDays": "上次消息：{{count}} 天前",
+    "noMessagesYet": "尚未发送消息",
+    "lastMessageToday": "今天已发送消息"
   },
   "onboarding": {
     "birthDateTitle": "请填写你的出生日期",

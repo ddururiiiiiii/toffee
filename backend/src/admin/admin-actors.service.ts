@@ -70,7 +70,8 @@ export class AdminActorsService {
       select: ADMIN_ACTOR_SELECT,
       orderBy: { legalName: 'asc' },
     });
-    return Promise.all(rows.map((row) => this.toResponse(row)));
+    const last = await this.actors.lastBroadcastMap(rows.map((row) => row.id));
+    return Promise.all(rows.map(async (row) => ({ ...(await this.toResponse(row)), lastBroadcastAt: last.get(row.id) ?? null })));
   }
 
   async findOne(id: string) {

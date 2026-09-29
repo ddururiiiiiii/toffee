@@ -122,7 +122,10 @@
     "lastBroadcast": "ส่งล่าสุด",
     "noBroadcast": "ยังไม่เคยส่ง",
     "noNickname": "(ไม่มีชื่อเล่น)",
-    "deletedByActor": "ศิลปินลบข้อความแล้ว (แฟนมองไม่เห็น)"
+    "deletedByActor": "ศิลปินลบข้อความแล้ว (แฟนมองไม่เห็น)",
+    "lastMessageDays": "ข้อความล่าสุด {{count}} วันที่แล้ว",
+    "noMessagesYet": "ยังไม่เคยส่งข้อความ",
+    "lastMessageToday": "ส่งข้อความวันนี้แล้ว"
   },
   "onboarding": {
     "birthDateTitle": "กรุณาระบุวันเกิดของคุณ",

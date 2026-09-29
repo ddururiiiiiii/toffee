@@ -94,7 +94,20 @@ export class ActorsService {
       select: LIST_SELECT,
       orderBy: { legalName: 'asc' },
     });
-    return Promise.all(actors.map((actor) => this.withImageUrls(actor)));
+    const last = await this.lastBroadcastMap(actors.map((actor) => actor.id));
+    // 마지막 스타 메시지 시각 — 소속사 목록의 "N일째 미발송" 표시(2026-09-29)
+    return Promise.all(actors.map(async (actor) => ({ ...(await this.withImageUrls(actor)), lastBroadcastAt: last.get(actor.id) ?? null })));
+  }
+
+  /** 방별 마지막 스타 메시지 시각(지운 메시지 제외) */
+  async lastBroadcastMap(actorIds: string[]): Promise<Map<string, Date | null>> {
+    if (actorIds.length === 0) return new Map();
+    const rows = await this.prisma.message.groupBy({
+      by: ['actorId'],
+      where: { actorId: { in: actorIds }, senderType: MessageSenderType.ARTIST, deletedAt: null },
+      _max: { createdAt: true },
+    });
+    return new Map(rows.map((row) => [row.actorId, row._max.createdAt]));
   }
 
   async getStats(userId: string, actorId: string) {

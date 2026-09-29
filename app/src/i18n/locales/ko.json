@@ -122,7 +122,10 @@
     "lastBroadcast": "마지막 발송일",
     "noBroadcast": "발송 이력 없음",
     "noNickname": "(닉네임 없음)",
-    "deletedByActor": "배우가 삭제한 메시지(팬에게 보이지 않음)"
+    "deletedByActor": "배우가 삭제한 메시지(팬에게 보이지 않음)",
+    "lastMessageDays": "마지막 메시지 {{count}}일 전",
+    "noMessagesYet": "아직 보낸 메시지 없음",
+    "lastMessageToday": "오늘 메시지 보냄"
   },
   "onboarding": {
     "birthDateTitle": "생년월일을 알려주세요",

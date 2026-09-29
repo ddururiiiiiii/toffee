@@ -198,6 +198,8 @@ export interface AdminActor {
   agency: { id: string; name: string; logoUrl: string | null } | null;
   selfUser: { id: string; displayName: string; email: string | null } | null;
   activeSubscriberCount: number;
+  /** 마지막 스타 메시지 시각(목록에서만, 없으면 null) — "N일째 미발송" 표시 */
+  lastBroadcastAt?: string | null;
 }
 
 export interface AgencyHistoryEntry {

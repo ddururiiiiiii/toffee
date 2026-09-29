@@ -202,6 +202,10 @@ model Actor {
   // 커플방은 소속사(agencyId)·본인 계정(selfUserId)이 없고 권한은 멤버 배우를 통해 판단(actor-access.ts).
   id                      String    @id @default(uuid())
   kind                    ActorKind @default(SOLO)
+  // 장기 미발송 알림(2026-09-29) — 마지막으로 알린 단계(3일·7일·14일…)와 그때의 기준 시각(마지막 메시지 시각). 새 메시지를 보내면 기준 시각이
+  // 바뀌어 처음부터 다시 셈. 같은 단계를 두 번 보내지 않게 기록만 함
+  idleReminderStage       Int?
+  idleReminderFor         DateTime?
   legalName               String
   officialProfileImageUrl String?
   chatDisplayName         String

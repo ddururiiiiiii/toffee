@@ -11,8 +11,9 @@ import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 import type { Actor } from '@/hooks/use-actors';
 import { useWideLayout } from '@/components/wide-shell';
+import { IDLE_WARN_DAYS, idleDays } from '@/utils/idle-days';
 
-function ActorRow({ actor, onPress }: { actor: Actor; onPress: () => void }) {
+function ActorRow({ actor, onPress }: { actor: Actor & { lastBroadcastAt?: string | null }; onPress: () => void }) {
   const theme = useTheme();
   const { t } = useTranslation();
   return (
@@ -26,6 +27,16 @@ function ActorRow({ actor, onPress }: { actor: Actor; onPress: () => void }) {
         <ThemedText type="small" themeColor="textSecondary">
           {actor.kind === 'COUPLE' ? `${t('couple.roomLabel')} · ${actor.legalName}` : actor.legalName}
         </ThemedText>
+        {/* 장기 미발송(2026-09-29) — 7일 넘으면 빨간색(서버도 그때 소속사에 알림) */}
+        {actor.retiredAt ? null : (
+          <ThemedText type="caption" themeColor={(idleDays(actor.lastBroadcastAt) ?? IDLE_WARN_DAYS) >= IDLE_WARN_DAYS ? 'danger' : 'textTertiary'}>
+            {!actor.lastBroadcastAt
+              ? t('console.noMessagesYet')
+              : idleDays(actor.lastBroadcastAt) === 0
+                ? t('console.lastMessageToday')
+                : t('console.lastMessageDays', { count: idleDays(actor.lastBroadcastAt) ?? 0 })}
+          </ThemedText>
+        )}
       </ThemedView>
     </Pressable>
   );
@@ -91,7 +102,7 @@ const styles = StyleSheet.create({
   list: { padding: Spacing.four, gap: Spacing.three },
   row: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: Spacing.three, gap: Spacing.three },
   avatar: { width: 48, height: 48, borderRadius: 24 },
-  rowBody: { gap: 2 },
+  rowBody: { gap: 2, backgroundColor: 'transparent' },
   emptyMessage: { textAlign: 'center', marginTop: Spacing.four },
   loading: { marginTop: Spacing.four },
   logoutButton: {

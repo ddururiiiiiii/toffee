@@ -7,7 +7,8 @@ import type { ChatMessage } from './use-messages';
 export function useMyActors() {
   return useQuery({
     queryKey: ['my-actors'],
-    queryFn: () => apiClient.get<Actor[]>('/actors/mine'),
+    // lastBroadcastAt: 마지막 스타 메시지 시각 — 소속사 목록의 "N일째 미발송" 표시(2026-09-29)
+    queryFn: () => apiClient.get<(Actor & { lastBroadcastAt?: string | null })[]>('/actors/mine'),
   });
 }
 

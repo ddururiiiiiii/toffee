@@ -122,7 +122,10 @@
     "lastBroadcast": "Last sent",
     "noBroadcast": "Nothing sent yet",
     "noNickname": "(no nickname)",
-    "deletedByActor": "Deleted by the star (not visible to fans)"
+    "deletedByActor": "Deleted by the star (not visible to fans)",
+    "lastMessageDays": "Last message {{count}} days ago",
+    "noMessagesYet": "No messages sent yet",
+    "lastMessageToday": "Sent a message today"
   },
   "onboarding": {
     "birthDateTitle": "What's your date of birth?",
