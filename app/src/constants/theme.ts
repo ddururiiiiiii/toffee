@@ -53,8 +53,18 @@ export const Radius = {
 /**
  * 글꼴 굵기별 파일 — 커스텀 글꼴은 안드로이드에서 fontWeight만으로는 굵어지지 않아서 굵기마다 다른 파일을 씀
  * (예전엔 Regular 하나만 불러서 굵은 글씨가 전부 보통 굵기로 보였음).
+ *
+ * 2026-09-29 사용자 결정(글꼴 비교 A안): 한국어·영문 = Pretendard, 태국어 = Noto Sans Thai(브랜드 가이드 확정 글꼴 그대로),
+ * 일본어·중국어 = 기기 기본 글꼴(가나·한자까지 넣으면 앱이 20MB 넘게 커짐). 둘 다 SIL OFL 1.1.
  */
 export const FontFamily = {
+  regular: 'Pretendard_400Regular',
+  medium: 'Pretendard_500Medium',
+  semibold: 'Pretendard_600SemiBold',
+  bold: 'Pretendard_700Bold',
+} as const;
+
+export const ThaiFontFamily = {
   regular: 'NotoSansThai_400Regular',
   medium: 'NotoSansThai_500Medium',
   semibold: 'NotoSansThai_600SemiBold',
@@ -62,23 +72,30 @@ export const FontFamily = {
 } as const;
 
 export type FontWeightValue = 400 | 500 | 600 | 700;
-const FAMILY_BY_WEIGHT: Record<FontWeightValue, string> = {
-  400: FontFamily.regular,
-  500: FontFamily.medium,
-  600: FontFamily.semibold,
-  700: FontFamily.bold,
-};
-// Noto Sans Thai(가이드 확정 글꼴)엔 한글·가나·한자가 없음 — 그 언어들은 기기 기본 글꼴의 굵기를 씀(한글 글꼴 파일을
-// 넣으면 앱이 20MB 넘게 커져서). 웹은 글꼴 목록으로 섞어 쓸 수 있어서 태국어·영문은 Noto, 나머지는 시스템 글꼴로.
-const CJK_LANGUAGES = new Set(['ko', 'ja', 'zh-Hans', 'zh-Hant']);
-const WEB_FALLBACK = "system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Hiragino Sans', 'PingFang SC', sans-serif";
+type Families = Record<'regular' | 'medium' | 'semibold' | 'bold', string>;
+const byWeight = (families: Families): Record<FontWeightValue, string> => ({
+  400: families.regular,
+  500: families.medium,
+  600: families.semibold,
+  700: families.bold,
+});
+const LATIN_BY_WEIGHT = byWeight(FontFamily);
+const THAI_BY_WEIGHT = byWeight(ThaiFontFamily);
+// 네이티브 Text는 글꼴 하나만 지정할 수 있어서 앱 언어로 고름 — 태국어 화면은 Noto Sans Thai(영문 글자도 들어 있음),
+// 일본어·중국어 화면은 기기 기본 글꼴. 그 밖(한국어·영어)은 Pretendard. 웹은 글꼴 목록으로 글자마다 섞어 쓸 수 있어서
+// 한글·영문은 Pretendard, 태국어 글자는 Noto, 가나·한자는 시스템 글꼴이 맡음.
+const SYSTEM_FONT_LANGUAGES = new Set(['ja', 'zh-Hans', 'zh-Hant']);
+const WEB_FALLBACK = "system-ui, -apple-system, 'Hiragino Sans', 'PingFang SC', 'Noto Sans JP', sans-serif";
 
 /** 굵기 + 앱 언어 → 글꼴 스타일(Text·TextInput 공통) */
 export function fontFor(weight: FontWeightValue, language: string): { fontFamily?: string; fontWeight: TextWeight } {
   const fontWeight = String(weight) as TextWeight;
-  if (Platform.OS === 'web') return { fontFamily: `${FAMILY_BY_WEIGHT[weight]}, ${WEB_FALLBACK}`, fontWeight };
-  if (CJK_LANGUAGES.has(language)) return { fontFamily: undefined, fontWeight };
-  return { fontFamily: FAMILY_BY_WEIGHT[weight], fontWeight: 'normal' };
+  if (Platform.OS === 'web') {
+    return { fontFamily: `${LATIN_BY_WEIGHT[weight]}, ${THAI_BY_WEIGHT[weight]}, ${WEB_FALLBACK}`, fontWeight };
+  }
+  if (SYSTEM_FONT_LANGUAGES.has(language)) return { fontFamily: undefined, fontWeight };
+  if (language === 'th') return { fontFamily: THAI_BY_WEIGHT[weight], fontWeight: 'normal' };
+  return { fontFamily: LATIN_BY_WEIGHT[weight], fontWeight: 'normal' };
 }
 type TextWeight = 'normal' | '400' | '500' | '600' | '700';
 

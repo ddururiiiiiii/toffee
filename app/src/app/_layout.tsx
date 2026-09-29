@@ -115,7 +115,16 @@ function RootLayout() {
   const { t, i18n } = useTranslation();
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
-  const [fontsLoaded, fontError] = useFonts({ NotoSansThai_400Regular, NotoSansThai_500Medium, NotoSansThai_600SemiBold, NotoSansThai_700Bold });
+  const [fontsLoaded, fontError] = useFonts({
+    Pretendard_400Regular: require('@/../assets/fonts/Pretendard-Regular.otf'),
+    Pretendard_500Medium: require('@/../assets/fonts/Pretendard-Medium.otf'),
+    Pretendard_600SemiBold: require('@/../assets/fonts/Pretendard-SemiBold.otf'),
+    Pretendard_700Bold: require('@/../assets/fonts/Pretendard-Bold.otf'),
+    NotoSansThai_400Regular,
+    NotoSansThai_500Medium,
+    NotoSansThai_600SemiBold,
+    NotoSansThai_700Bold,
+  });
 
   if (!fontsLoaded && !fontError) return null;
 

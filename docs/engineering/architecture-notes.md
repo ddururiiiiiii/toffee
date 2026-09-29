@@ -13,7 +13,7 @@
 | 헬스체크 (`/health/live` 분리) | 미착수 |
 | 루트 `CLAUDE.md`, README 컨벤션 문서화 | **이번에 해결** (`CLAUDE.md` 신설) |
 | `Actor` 다국어 필드, 앱 i18n 라이브러리 | 앱 i18n **완료 (2026-09-28)**. `Actor`/`Agency` 같은 DB 콘텐츠 다국어는 미착수 |
-| 브랜드 팔레트/폰트 적용 | **완료** — `app/src/constants/theme.ts`, Noto Sans Thai |
+| 브랜드 팔레트/폰트 적용 | **완료** — `app/src/constants/theme.ts`, Pretendard(한·영) + Noto Sans Thai(태) |
 
 ## 배우 본인 계정 (`Role.ACTOR`) — 구현 완료 (2026-09-18)
 
@@ -610,9 +610,8 @@ UI가 없어서 지금은 API를 직접 호출해야만 씀. 곧 만들 콘텐�
 
 - `app/src/constants/theme.ts`의 `Colors`가 Charcoal(`#0F1115`)/Lavender(`#7C8CFF`)/
   Periwinkle(`#DCE1FF`)/Cloud(`#F4F6FB`)/White로 교체됨.
-- `Fonts.sans`가 `NotoSansThai_400Regular`를 가리키고 `ThemedText`의 `styles.base`에
-  전역 적용됨. 지금은 Regular(400) 굵기만 로드 — 굵기별(Bold 등) 폰트 파일 추가는 후속
-  작업.
+- (2026-09-28 이후 대체됨 — 아래 "디자인 시스템" 절의 `fontFor` 참고) ~~`Fonts.sans`가 `NotoSansThai_400Regular`를 가리키고
+  Regular(400)만 로드~~.
 - `Actor.verified Boolean @default(false)` 필드 추가됨(마이그레이션
   `20260918035538_add_actor_verified`). 배지 UI 자체(채팅 헤더, 프로필 화면)는 아직 안 붙임.
 
@@ -950,8 +949,10 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
 ## 디자인 시스템 (2026-09-28)
 
 - 토큰(`constants/theme.ts`): 공식 5색 + `textTertiary`·`border`(중립)·`primary`/`onPrimary`(Charcoal CTA), `Radius`.
-  글꼴은 Noto Sans Thai 400/500/600/700을 굵기별 파일로(`fontFor(weight, language)`) — 안드로이드는 커스텀 글꼴에 fontWeight가
-  안 먹어서. ko/ja/zh는 네이티브에서 시스템 글꼴 + fontWeight, 웹은 글꼴 목록으로 섞음. `ThemedText` 타입: display 28 · title 22 ·
+  글꼴은 굵기별 파일(400/500/600/700)로(`fontFor(weight, language)`) — 안드로이드는 커스텀 글꼴에 fontWeight가 안 먹어서.
+  2026-09-29부터: 네이티브는 앱 언어로 한 가족을 고름 — `th` → Noto Sans Thai(`ThaiFontFamily`), `ja`/`zh-*` → 시스템 글꼴 +
+  fontWeight, 그 외(ko·en) → Pretendard(`FontFamily`, `app/assets/fonts/Pretendard-*.otf`, 라이선스 `Pretendard-LICENSE.txt`).
+  웹은 `Pretendard_X, NotoSansThai_X, 시스템` 글꼴 목록으로 글자마다 섞음. 로드는 `_layout.tsx`의 `useFonts`. `ThemedText` 타입: display 28 · title 22 ·
   subtitle 19 · headline 17 · default 15 · small 13 · caption 12(+Medium/SemiBold 변형).
 - 공통 부품 `components/ui/`: Icon(Lucide), Button(primary/accent/secondary/ghost/danger), IconButton, Avatar(ring/dot),
   SearchField, Chip, CountBadge, SectionHeader, ListRow, BrandHeader(워드마크), EmptyState, TextField, Checkbox. 가입 절차 틀
