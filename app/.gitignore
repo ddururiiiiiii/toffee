@@ -42,3 +42,6 @@ example
 # generated native folders
 /ios
 /android
+
+# 끝-끝 테스트 실패 화면(npm run e2e)
+e2e/last-failure.png

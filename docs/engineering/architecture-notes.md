@@ -1228,3 +1228,16 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
   `components/translatable-text.tsx`(원문 + 번역 보기/숨기기) — 채팅 스타 말풍선·스튜디오 팬 답장.
 - `scripts/translation-sample.mjs`: 빌드 후 예문 × 언어로 실제 호출(키 필요, 비용 발생).
 - 테스트 `translation.service.spec.ts`(한 번만 번역·캐시·{{name}}, 팬 권한, 가짜 미저장·꺼짐, 엔진 선택, 프롬프트).
+
+## 앱 자동 테스트 (2026-09-29)
+
+- 단위: `app/vitest.config.ts`(`@` 별칭, `src/**/*.test.ts`, node 환경) — 화면 없이 순수 로직만(`utils/*`, 로그인 버튼 순서). 정산 달 계산은
+  `utils/month.ts`로 옮김(훅 파일이 react-native를 불러서 테스트에서 못 씀). `npm test`, CI app 잡에도 추가.
+- 끝-끝: `app/e2e/run.mjs`(Playwright 1.56, `npm run e2e`) — 서버(시드, 개발 로그인·샌드박스 구독 켜짐)·`expo start --web`을 띄운 상태에서 새 팬 가입(약관·
+  생년월일·닉네임) → 구독 → 배우 발송(API, 배우 본인 계정)이 채팅방에 닉네임으로 보임 → 답장 → 방 안 검색. 끝나면 보낸 메시지 삭제·팬 해지·탈퇴.
+  실패 화면 `e2e/last-failure.png`. CI엔 안 넣음(서버·DB·웹을 다 띄워야 해서, 필요해지면 별도 잡).
+- 발견: 웹 첫 화면이 미리 그려진 뒤 앱 코드가 붙는 동안 입력한 값이 초기값으로 되돌아감, Playwright `fill`은 RN 웹 TextInput 상태를 안 바꿀 때가 있음 →
+  `networkidle` 대기 + 한 글자씩 입력. 사람이 쓸 때는 문제없음(입력 이벤트가 정상).
+- 설치 주의: npm 10(Node 22 기본)의 의존성 계산 버그(`Cannot read properties of null (reading 'edgesOut')`)로 `npm install -D vitest`가 실패 —
+  `npx npm@11 install -D <패키지> --package-lock-only`로 잠금 파일을 만든 뒤 `npm ci`. `--legacy-peer-deps`로 설치하면 잠금 파일에서 peer 패키지가 빠져
+  CI의 `npm ci`가 실패하니 쓰지 말 것.
