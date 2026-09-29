@@ -27,7 +27,16 @@
     "demoHint": "正式的社交账号登录准备好后会显示在这里。现在只用邮箱就可以体验完整流程。",
     "namePlaceholder": "昵称（选填）",
     "submit": "登录",
-    "failed": "登录失败。"
+    "failed": "登录失败。",
+    "socialFailed": "登录失败，请重试。",
+    "signingIn": "正在登录…",
+    "continueWith": {
+      "apple": "通过 Apple 继续",
+      "google": "通过 Google 继续",
+      "line": "通过 LINE 继续",
+      "kakao": "通过 Kakao 继续",
+      "naver": "通过 NAVER 继续"
+    }
   },
   "actors": {
     "title": "寻找演员",
@@ -390,7 +399,14 @@
     "benefits": "包含权益",
     "openChat": "查看消息",
     "cancel": "取消订阅",
-    "notFound": "找不到订阅信息"
+    "notFound": "找不到订阅信息",
+    "cancelInStore": "在商店中取消",
+    "cancelInStoreBody": "此订阅通过 {{store}} 购买，请在 {{store}} 的订阅管理中取消。已付费期间结束前可继续使用。",
+    "openStore": "打开 {{store}}",
+    "restore": "恢复购买",
+    "restoreDone": "已恢复 {{count}} 个订阅",
+    "restoreNone": "没有可恢复的订阅",
+    "restoreFailed": "恢复失败，请稍后重试。"
   },
   "welcome": {
     "headline": "真实的人，\n真实的消息，\n更近的世界。",
@@ -399,7 +415,7 @@
     "media": "照片、语音和视频，由演员亲自发送",
     "paid": "付费订阅服务 · 无免费方案",
     "devTitle": "开发用邮箱登录",
-    "devHint": "接入社交登录后，这里会显示登录按钮。",
+    "devHint": "这是开发和演示用的登录方式。正式发布的应用中不会显示，只显示社交账号登录按钮。",
     "email": "邮箱",
     "continue": "继续"
   },
@@ -433,7 +449,8 @@
     "cancelConfirm": "取消 {{name}} 后，与 {{names}} 的聊天室将一起关闭（单独订阅的演员不受影响）。重新订阅也看不到之前的聊天。",
     "cancelFromActor": "该演员包含在你的 {{name}} 套餐中。取消后套餐内其他聊天室也会关闭，重新订阅也看不到之前的聊天。",
     "cancelFailed": "取消失败，请重试。",
-    "viaShort": "通过套餐使用"
+    "viaShort": "通过套餐使用",
+    "replacesSingleStore": "单独订阅的 {{names}} 的商店订阅不会自动结束——购买套餐后请在商店订阅管理中取消（聊天会继续）。"
   },
   "gallery": {
     "title": "照片和视频",

@@ -30,6 +30,9 @@ export interface ChargeInput {
   storeTransactionId?: string;
   amountCents?: number;
   currency?: string;
+  // 스토어가 실제로 청구한 금액(1/1000 단위)·통화 — 대조용
+  storeAmountMilli?: number;
+  storeCurrency?: string;
 }
 
 export function sourceOf(platform: IapPlatform | null): ChargeSource {
@@ -95,6 +98,8 @@ export class ChargeLedgerService implements OnApplicationBootstrap {
           periodEnd: input.periodEnd ?? addMonths(input.chargedAt, 1),
           source: input.source,
           storeTransactionId: input.storeTransactionId,
+          storeAmountMilli: input.storeAmountMilli,
+          storeCurrency: input.storeCurrency,
           allocations: { create: lines.map((line) => ({ ...line, agencyId: agencies.get(line.actorId) ?? null })) },
         },
       });
@@ -112,6 +117,12 @@ export class ChargeLedgerService implements OnApplicationBootstrap {
       }
       throw error;
     }
+  }
+
+  /** 스토어 환불 — 그 결제를 정산에서 빼고 환불 칸으로(이미 환불 표시된 건 그대로). 몇 건 바뀌었는지 */
+  async markRefunded(db: Db, storeTransactionId: string, at = new Date()) {
+    const { count } = await db.purchaseCharge.updateMany({ where: { storeTransactionId, refundedAt: null }, data: { refundedAt: at } });
+    return count;
   }
 
   /**

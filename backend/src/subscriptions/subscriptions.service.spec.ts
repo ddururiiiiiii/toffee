@@ -6,6 +6,7 @@ import type { IapVerificationService } from './iap-verification.service.js';
 import type { MediaService } from '../storage/media.service.js';
 import type { RealtimeService } from '../realtime/realtime.service.js';
 import type { ChargeLedgerService } from '../settlements/charge-ledger.service.js';
+import type { ConfigService } from '@nestjs/config';
 
 interface Purchase {
   id: string;
@@ -100,6 +101,7 @@ function fakeDb(user: Record<string, unknown> = DONE_USER) {
     {} as MediaService,
     { publish: () => Promise.resolve() } as unknown as RealtimeService,
     ledger as unknown as ChargeLedgerService,
+    { get: () => undefined } as unknown as ConfigService,
   );
   const open = (actorId: string) => subs.find((s) => s.actorId === actorId && !s.cancelledAt);
   return { service, purchases, subs, events, actors, bundles, open, charges };

@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { SandboxSubscribeGuard } from '../common/guards/sandbox-subscribe.guard.js';
 import { SubscriptionsService } from './subscriptions.service.js';
-import { VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
+import { RestorePurchasesDto, VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
 import { SetNotificationsDto } from './dto/set-notifications.dto.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
@@ -48,6 +48,18 @@ export class SubscriptionsController {
     @Body() dto: VerifyPurchaseDto,
   ) {
     return this.subscriptionsService.verifyPurchase(user.id, actorId, dto);
+  }
+
+  // 묶음 스토어 결제 확인
+  @Post('bundles/:bundleId/verify-purchase')
+  verifyBundlePurchase(@CurrentUser() user: AuthenticatedUser, @Param('bundleId') bundleId: string, @Body() dto: VerifyPurchaseDto) {
+    return this.subscriptionsService.verifyBundlePurchase(user.id, bundleId, dto);
+  }
+
+  // 구매 복원(기기 변경·재설치) — 스토어 심사에서 요구하는 "구매 복원" 버튼
+  @Post('me/purchases/restore')
+  restorePurchases(@CurrentUser() user: AuthenticatedUser, @Body() dto: RestorePurchasesDto) {
+    return this.subscriptionsService.restorePurchases(user.id, dto.items);
   }
 
   @Delete('actors/:actorId/subscribe')

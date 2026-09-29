@@ -34,7 +34,9 @@ export function checkEnv(env: Env): EnvCheckResult {
     ['구글 로그인', ['GOOGLE_CLIENT_ID']],
     ['애플 로그인', ['APPLE_CLIENT_ID']],
     ['라인 로그인', ['LINE_CHANNEL_ID']],
-    ['애플 결제 확인', ['APPLE_BUNDLE_ID']],
+    ['카카오 토큰 앱 확인', ['KAKAO_APP_ID']],
+    ['애플 결제 확인', ['APPLE_BUNDLE_ID', 'APPLE_APP_ID']],
+    ['구글 결제 알림(갱신·만료·환불)', ['GOOGLE_RTDN_AUDIENCE', 'GOOGLE_RTDN_SERVICE_ACCOUNT_EMAIL']],
     ['구글 결제 확인', ['GOOGLE_PLAY_PACKAGE_NAME', 'GOOGLE_PLAY_SERVICE_ACCOUNT_JSON']],
     ['고객센터 페이지 이메일', ['SUPPORT_EMAIL']],
   ];

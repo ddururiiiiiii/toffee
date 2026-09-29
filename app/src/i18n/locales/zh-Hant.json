@@ -27,7 +27,16 @@
     "demoHint": "正式的社群帳號登入準備好後會顯示在這裡。現在只用電子郵件就可以體驗完整流程。",
     "namePlaceholder": "暱稱（選填）",
     "submit": "登入",
-    "failed": "登入失敗。"
+    "failed": "登入失敗。",
+    "socialFailed": "登入失敗，請再試一次。",
+    "signingIn": "正在登入…",
+    "continueWith": {
+      "apple": "透過 Apple 繼續",
+      "google": "透過 Google 繼續",
+      "line": "透過 LINE 繼續",
+      "kakao": "透過 Kakao 繼續",
+      "naver": "透過 NAVER 繼續"
+    }
   },
   "actors": {
     "title": "尋找演員",
@@ -390,7 +399,14 @@
     "benefits": "包含權益",
     "openChat": "查看訊息",
     "cancel": "取消訂閱",
-    "notFound": "找不到訂閱資訊"
+    "notFound": "找不到訂閱資訊",
+    "cancelInStore": "在商店中取消",
+    "cancelInStoreBody": "此訂閱透過 {{store}} 購買，請在 {{store}} 的訂閱管理中取消。已付費期間結束前可繼續使用。",
+    "openStore": "開啟 {{store}}",
+    "restore": "恢復購買",
+    "restoreDone": "已恢復 {{count}} 個訂閱",
+    "restoreNone": "沒有可恢復的訂閱",
+    "restoreFailed": "恢復失敗，請稍後再試。"
   },
   "welcome": {
     "headline": "真實的人，\n真實的訊息，\n更近的世界。",
@@ -399,7 +415,7 @@
     "media": "照片、語音與影片，由演員親自傳送",
     "paid": "付費訂閱服務 · 無免費方案",
     "devTitle": "開發用信箱登入",
-    "devHint": "接入社群登入後，這裡會顯示登入按鈕。",
+    "devHint": "這是開發和展示用的登入方式。正式發布的應用程式中不會顯示，只顯示社群帳號登入按鈕。",
     "email": "信箱",
     "continue": "繼續"
   },
@@ -433,7 +449,8 @@
     "cancelConfirm": "取消 {{name}} 後，與 {{names}} 的聊天室將一起關閉（單獨訂閱的演員不受影響）。重新訂閱也看不到之前的聊天。",
     "cancelFromActor": "此演員包含在你的 {{name}} 組合中。取消後組合內其他聊天室也會關閉，重新訂閱也看不到之前的聊天。",
     "cancelFailed": "取消失敗，請再試一次。",
-    "viaShort": "透過組合使用"
+    "viaShort": "透過組合使用",
+    "replacesSingleStore": "單獨訂閱的 {{names}} 的商店訂閱不會自動結束——購買套裝後請在商店訂閱管理中取消（聊天會繼續）。"
   },
   "gallery": {
     "title": "照片和影片",

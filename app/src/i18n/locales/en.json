@@ -27,7 +27,16 @@
     "demoHint": "Social login will appear here once the real app credentials are ready. For now you can test the whole flow with just an email.",
     "namePlaceholder": "Nickname (optional)",
     "submit": "Log in",
-    "failed": "Couldn't log in."
+    "failed": "Couldn't log in.",
+    "socialFailed": "Couldn't sign in. Please try again.",
+    "signingIn": "Signing in…",
+    "continueWith": {
+      "apple": "Continue with Apple",
+      "google": "Continue with Google",
+      "line": "Continue with LINE",
+      "kakao": "Continue with Kakao",
+      "naver": "Continue with NAVER"
+    }
   },
   "actors": {
     "title": "Find actors",
@@ -390,7 +399,14 @@
     "benefits": "Included benefits",
     "openChat": "Open messages",
     "cancel": "Cancel subscription",
-    "notFound": "Subscription not found"
+    "notFound": "Subscription not found",
+    "cancelInStore": "Cancel in the store",
+    "cancelInStoreBody": "This subscription was bought through {{store}}, so cancel it in {{store}} subscription settings. You can keep using it until the paid period ends.",
+    "openStore": "Open {{store}}",
+    "restore": "Restore purchases",
+    "restoreDone": "Restored {{count}} subscription(s)",
+    "restoreNone": "No subscriptions to restore",
+    "restoreFailed": "Couldn't restore. Please try again later."
   },
   "welcome": {
     "headline": "Real people.\nReal messages.\nA closer world.",
@@ -399,7 +415,7 @@
     "media": "Photos, voice and video, straight from them",
     "paid": "Paid subscription · no free tier",
     "devTitle": "Developer email sign-in",
-    "devHint": "Social sign-in buttons appear here once connected.",
+    "devHint": "Sign-in for development and demos. The released app hides this and shows only social sign-in buttons.",
     "email": "Email",
     "continue": "Continue"
   },
@@ -433,7 +449,8 @@
     "cancelConfirm": "Cancelling {{name}} closes the chats with {{names}} (actors you subscribe to separately stay open). Previous chats won't be visible if you subscribe again.",
     "cancelFromActor": "This actor is part of your {{name}} bundle. Cancelling closes the other chats in the bundle too. Previous chats won't be visible if you subscribe again.",
     "cancelFailed": "Couldn't cancel. Please try again.",
-    "viaShort": "Included in a bundle"
+    "viaShort": "Included in a bundle",
+    "replacesSingleStore": "Your separate store subscriptions for {{names}} won't end automatically — cancel them in store subscription settings after buying the bundle (your chats continue)."
   },
   "gallery": {
     "title": "Photos & videos",

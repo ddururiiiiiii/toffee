@@ -31,7 +31,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly moderationService: ModerationService,
   ) {
-    this.googleClient = new OAuth2Client(this.configService.get<string>('GOOGLE_CLIENT_ID'));
+    this.googleClient = new OAuth2Client();
   }
 
   async issueAccessToken(user: { id: string; role: Role }): Promise<{ accessToken: string }> {
@@ -52,11 +52,17 @@ export class AuthService {
 
   // ── 소셜 토큰 검증 ──────────────────────────────────────────────
 
+  // 앱 변형(운영/개발)·플랫폼(iOS/웹)마다 클라이언트 ID가 다를 수 있어서 쉼표로 여러 개 허용(2026-09-29) — 예) 애플은 iOS 번들 ID
+  // com.toffeechat.app과 개발용 com.toffeechat.app.dev의 idToken aud가 서로 다름. 예전엔 하나만 받아서 개발 빌드 로그인이 막혔음
+  private audiences(key: string): string[] {
+    const list = (this.configService.get<string>(key) ?? '').split(',').map((value) => value.trim()).filter(Boolean);
+    if (list.length === 0) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: key }));
+    return list;
+  }
+
   async verifyGoogleToken(idToken: string): Promise<ExternalIdentity> {
-    const ticket = await this.googleClient.verifyIdToken({
-      idToken,
-      audience: this.configService.getOrThrow<string>('GOOGLE_CLIENT_ID'),
-    });
+    // 구글은 앱(iOS·안드로이드)도 웹 클라이언트 ID를 audience로 쓰게 설정함(social-sign-in의 webClientId) — 웹 로그인도 같은 값
+    const ticket = await this.googleClient.verifyIdToken({ idToken, audience: this.audiences('GOOGLE_CLIENT_ID') });
     const payload = ticket.getPayload();
     if (!payload?.sub) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'Google' }));
     return {
@@ -69,9 +75,7 @@ export class AuthService {
   }
 
   async verifyAppleToken(idToken: string): Promise<ExternalIdentity> {
-    const payload = await appleSignin.verifyIdToken(idToken, {
-      audience: this.configService.getOrThrow<string>('APPLE_CLIENT_ID'),
-    });
+    const payload = await appleSignin.verifyIdToken(idToken, { audience: this.audiences('APPLE_CLIENT_ID') });
     if (!payload?.sub) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'Apple' }));
     // 애플은 email_verified를 boolean 또는 "true" 문자열로 줌
     const verified = (payload as { email_verified?: boolean | string }).email_verified;
@@ -97,6 +101,15 @@ export class AuthService {
   }
 
   async verifyKakaoToken(accessToken: string): Promise<ExternalIdentity> {
+    // 이 토큰이 우리 앱에서 발급된 것인지 먼저 확인 — /v2/user/me만 부르면 다른 카카오 앱(사용자가 로그인했던 아무 앱)의 토큰으로도
+    // 통과해서 토큰 바꿔치기 로그인이 가능했음(2026-09-29 점검). 앱 ID(KAKAO_APP_ID, 운영·개발 앱이면 쉼표로 둘)가 설정돼 있을 때 검사
+    const allowedApps = (this.configService.get<string>('KAKAO_APP_ID') ?? '').split(',').map((value) => value.trim()).filter(Boolean);
+    if (allowedApps.length > 0) {
+      const info = await this.fetchJson<{ app_id?: number }>('https://kapi.kakao.com/v1/user/access_token_info', accessToken, 'Kakao');
+      if (info.app_id === undefined || !allowedApps.includes(String(info.app_id))) {
+        throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'Kakao' }));
+      }
+    }
     const body = await this.fetchJson<{
       id?: number;
       kakao_account?: {
@@ -119,7 +132,10 @@ export class AuthService {
   async verifyLineToken(idToken: string): Promise<ExternalIdentity> {
     // LINE은 idToken 서명 키를 직접 관리하는 대신, LINE의 verify 엔드포인트에
     // id_token + client_id를 보내 검증도 하고 클레임도 같이 받는 방식(네이버/카카오와 동일 패턴)
-    const clientId = this.configService.getOrThrow<string>('LINE_CHANNEL_ID');
+    // 채널 ID가 여러 개(운영·개발 채널)면 idToken의 aud와 맞는 것으로 — verify는 client_id가 aud와 다르면 실패하므로 하나씩 시도
+    const clientIds = this.audiences('LINE_CHANNEL_ID');
+    const tokenAudience = decodeJwtAudience(idToken);
+    const clientId = clientIds.find((id) => id === tokenAudience) ?? clientIds[0];
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     let res: Response;
@@ -306,5 +322,15 @@ export class AuthService {
   // 이 기기만 해제(로그아웃) — 다른 기기 알림은 그대로
   async unregisterPushDevice(userId: string, token: string): Promise<void> {
     await this.prisma.pushDevice.deleteMany({ where: { userId, token } });
+  }
+}
+
+// LINE idToken의 aud(채널 ID)만 꺼냄 — 서명 검증은 LINE verify 엔드포인트가 함(여기선 어떤 채널로 검증할지 고르는 용도)
+function decodeJwtAudience(token: string): string | undefined {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1] ?? '', 'base64url').toString('utf8')) as { aud?: string | string[] };
+    return Array.isArray(payload.aud) ? payload.aud[0] : payload.aud;
+  } catch {
+    return undefined;
   }
 }

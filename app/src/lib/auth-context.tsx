@@ -1,3 +1,4 @@
+import { signOutProviders } from '@/lib/social-sign-in';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { loadToken, saveToken, removeToken } from './token-storage';
@@ -70,6 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     // 로그인 토큰이 있을 때 먼저 이 기기의 푸시 등록을 해제(안 하면 같은 폰의 다음 사람에게 앞 사람 알림이 감)
     await unregisterThisDevice();
+    // 소셜 SDK 세션도 정리 — 다음 로그인 때 다른 계정을 고를 수 있게(실패해도 무시)
+    await signOutProviders().catch(() => {});
     await removeToken();
     setToken(null);
     setRole(null);

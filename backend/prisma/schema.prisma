@@ -564,6 +564,10 @@ model PurchaseCharge {
   source             ChargeSource
   // 스토어 쪽 결제 건 식별자(애플 transactionId — 갱신마다 새로 생김, 구글 orderId) — 같은 알림이 두 번 와도 한 번만
   storeTransactionId String?      @unique
+  // 스토어가 실제로 청구한 금액(1/1000 단위 — 애플 price 그대로, 구글 micros ÷ 1000)과 통화 — 나라별 가격이라 정산 기준(amountCents, 바트
+  // 정가)과 다를 수 있음. 스토어 정산 보고서와 대조용
+  storeAmountMilli   Int?
+  storeCurrency      String?
   refundedAt         DateTime?
   createdAt          DateTime     @default(now())
 

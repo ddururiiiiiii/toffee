@@ -1118,3 +1118,42 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   홈 목록과 공유.
 - 남은 일: 스토어 갱신·환불 알림으로 PurchaseCharge 기록(결제 연결 작업), 실제 결제 금액·통화(애플 JWS price/currency, 구글 orderId), 정산 마감
   (월 확정 스냅샷), 지급 처리 기록.
+
+## 스토어 결제·서버 알림, 소셜 로그인 앱 연결 (2026-09-29)
+
+**서버 — 결제**
+- `IapVerificationService`가 `StoreTransaction`(originalTransactionId = Purchase.iapTransactionId, storeTransactionId = 결제 건 id(애플
+  transactionId / 구글 orderId), productId, purchasedAt, expiresAt, accountToken(애플 appAccountToken / 구글 obfuscatedExternalAccountId),
+  storeAmountMilli·storeCurrency)을 돌려줌. 애플 `SignedDataVerifier`는 한 번 만들어 재사용, **운영 환경은 appAppleId(`APPLE_APP_ID`) 필수**
+  (예전 코드엔 없어서 운영 검증이 실패했을 것). 설정이 없으면 503(`SERVICE_UNAVAILABLE`, 예전엔 getOrThrow로 500).
+- `SubscriptionsService.verifyStorePurchase(userId, dto, expected)`: accountToken ≠ userId → 409 `IAP_RECEIPT_IN_USE`, 만료 → 400
+  `IAP_EXPIRED`, productId로 `Actor.storeProductId`/`Bundle.storeProductId` 조회(없으면 `IAP_PRODUCT_UNKNOWN`), 기대한 배우·묶음과 다르면
+  `IAP_PRODUCT_MISMATCH`(예전엔 상품 확인이 없어서 싼 상품 영수증으로 비싼 방을 열 수 있었음). `upsertStorePurchase`: 같은 구독 인스턴스면
+  만료일만 늘림(줄이지 않음), 새 구매면 판매 가능 확인. 결제 기록은 storeTransactionId로 멱등. 라우트: `POST actors/:id/verify-purchase`(기존 응답
+  모양 유지), `POST bundles/:id/verify-purchase`, `POST me/purchases/restore`(최대 20개, 건별 결과).
+- 스토어 알림: `store-notifications.controller.ts` — `POST /iap/apple/notifications`(signedPayload JWS 검증 → `appleStoreEvent`),
+  `POST /iap/google/notifications`(Pub/Sub 푸시 OIDC 토큰을 `GOOGLE_RTDN_AUDIENCE`·`GOOGLE_RTDN_SERVICE_ACCOUNT_EMAIL`로 확인, 미설정이면
+  404 → base64 data → `googleStoreEvent`, 결제·유예 알림은 Play API로 최신 상태 재조회). 둘 다 `StoreEvent`(PAID/GRACE/EXPIRED/REFUNDED/
+  IGNORED)로 바꿔 `applyStoreEvent`에 넘김. PAID인데 우리 구매가 없으면 accountToken의 사용자로 생성(앱이 결제 직후 죽은 경우), 없으면 무시.
+  REFUNDED는 `ChargeLedgerService.markRefunded(storeTransactionId)` + 구매 닫기. `sweepExpired`(매시간): `iapExpiresAt < now - IAP_EXPIRY_GRACE_HOURS(24)`.
+- 스토어 구매 해지 요청(`cancelPurchase`/`unsubscribe`)은 409 `IAP_MANAGE_IN_STORE`. `listMine().coveredBy[].iapPlatform`으로 앱이 미리 분기.
+- `PurchaseCharge.storeAmountMilli`·`storeCurrency`(마이그레이션 `20260929150000_charge_store_amount`) — 정산 금액(amountCents, 바트 정가)과
+  별개로 실제 청구액 대조용.
+- 테스트: `store-purchases.spec.ts`(메모리 DB — 상품 불일치·만료·다른 계정·묶음·복원·스토어 해지 거절·갱신 멱등·accountToken 생성·만료/환불/
+  유예·만료 정리, 애플·구글 알림 해석, 구글 orderId 갱신 판별·micros 변환).
+
+**서버 — 로그인**: `GOOGLE_CLIENT_ID`·`APPLE_CLIENT_ID`·`LINE_CHANNEL_ID` 쉼표 목록 허용(애플 idToken aud = 번들 ID라 `.dev` 빌드가 막혔음, LINE은
+idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/user/access_token_info`의 app_id를 확인(토큰 바꿔치기 방지). 설정 없으면 거절.
+
+**앱**
+- `lib/social-sign-in.ts`(네이티브, 젤리 이식 — 운영/개발 키를 `extra.isProductionVariant`로 선택, 안드로이드도 분리) / `.web.ts`(구글만) +
+  `components/social-login-buttons.tsx` / `.web.tsx`(구글 GIS `renderButton`, popup → credential = idToken). Metro 플랫폼 확장자로 웹 번들에
+  네이티브 SDK가 안 들어감. `login.tsx`: `/auth/<provider>`로 교환, 개발 로그인 카드는 `__DEV__ || EXPO_PUBLIC_ENABLE_DEV_LOGIN`. 로그아웃 시
+  `signOutProviders`.
+- `app.config.ts`: `usesAppleSignIn`, `expo-apple-authentication`·LINE 플러그인은 항상, 구글(iosUrlScheme)·카카오(nativeAppKey)·네이버(urlScheme)
+  플러그인은 키가 있을 때만(키 없이도 빌드), 카카오 maven 저장소, `extra.isProductionVariant`. `expo config --type prebuild`로 키 있는/없는 경우 해석 확인.
+  **네이티브 빌드(EAS)는 아직 안 돌려 봄** — 첫 빌드 때 SDK 링크(static frameworks + Firebase) 확인 필요.
+- `hooks/use-store-purchase.ts`(`.web.ts`는 항상 unavailable): `useIAP` + 대기 중 구매 Promise(ref), 결제창에 appAccountToken/obfuscatedAccountId
+  = 사용자 id, 성공 → verify-purchase → `finishTransaction`(서버 확인 실패면 끝내지 않아 다음 실행에 재시도), 대기 없는 거래(재실행 시 재전달)는
+  restore로. 복원은 `getAvailablePurchases()` → restore. 구독·묶음 구독 화면은 `available`이면 스토어, 아니면 샌드박스. `lib/store-subscriptions.ts`:
+  스토어 구독 관리 URL. 예전 `use-purchase.ts`(쓰이지 않던 배우 전용 훅) 삭제.

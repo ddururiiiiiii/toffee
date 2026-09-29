@@ -11,6 +11,15 @@ const IS_PRODUCTION = process.env.APP_VARIANT === 'production';
 const BUNDLE_ID = 'com.toffeechat.app';
 const APP_ID = IS_PRODUCTION ? BUNDLE_ID : `${BUNDLE_ID}.dev`;
 
+// 소셜 로그인(2026-09-29 코드 미리 작성) — 콘솔에 앱을 등록하고 받은 키를 EAS 환경변수(로컬은 .env)로 넣으면 켜짐. 키가 빌드에
+// 박히는 플러그인(카카오·네이버·구글 iOS URL scheme)은 키가 있을 때만 넣어서, 키 없이도 지금처럼 빌드됨. 토피는 안드로이드 패키지명도
+// 운영/개발이 달라서(.dev) 젤리와 달리 모든 플랫폼에서 운영·개발 앱(키)을 나눔.
+const variantEnv = (name: string) => process.env[`${name}_${IS_PRODUCTION ? 'PROD' : 'DEV'}`] ?? '';
+const KAKAO_NATIVE_APP_KEY = variantEnv('EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY');
+const NAVER_URL_SCHEME = variantEnv('EXPO_PUBLIC_NAVER_URL_SCHEME');
+// 구글 iOS 클라이언트 ID를 뒤집은 값(com.googleusercontent.apps.xxxx) — GoogleService-Info.plist의 REVERSED_CLIENT_ID
+const GOOGLE_IOS_URL_SCHEME = variantEnv('EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME');
+
 const BRAND_BACKGROUND = '#F3EFFD'; // 앱 아이콘 배경(브랜드 앱 아이콘 시안 t-icon-app-icon-light.png)
 
 const config: ExpoConfig = {
@@ -24,6 +33,8 @@ const config: ExpoConfig = {
   runtimeVersion: { policy: 'appVersion' },
   ios: {
     bundleIdentifier: APP_ID,
+    // Sign in with Apple — 다른 소셜 로그인을 넣으면 애플 심사 규칙상 같이 있어야 함
+    usesAppleSignIn: true,
     googleServicesFile: IS_PRODUCTION ? './GoogleService-Info.plist' : './GoogleService-Info.dev.plist',
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
@@ -100,11 +111,25 @@ const config: ExpoConfig = {
     '@react-native-firebase/app',
     '@react-native-firebase/messaging',
     ['expo-notifications', { color: '#7C8CFF' }],
-    ['expo-build-properties', { ios: { useFrameworks: 'static' } }],
+    // 카카오 SDK 저장소(안드로이드) — 패키지가 설치돼 있으면 키가 없어도 빌드에 필요
+    [
+      'expo-build-properties',
+      { ios: { useFrameworks: 'static' }, android: { extraMavenRepos: ['https://devrepo.kakao.com/nexus/content/groups/public/'] } },
+    ],
+    'expo-apple-authentication',
+    // LINE — 채널 ID는 런타임(JS)에서 setup, 플러그인은 URL 콜백 연결만
+    '@xmartlabs/react-native-line',
+    ...(GOOGLE_IOS_URL_SCHEME ? [['@react-native-google-signin/google-signin', { iosUrlScheme: GOOGLE_IOS_URL_SCHEME }] as [string, object]] : []),
+    ...(KAKAO_NATIVE_APP_KEY ? [['@react-native-kakao/core', { nativeAppKey: KAKAO_NATIVE_APP_KEY }] as [string, object]] : []),
+    ...(NAVER_URL_SCHEME ? [['@react-native-seoul/naver-login', { urlScheme: NAVER_URL_SCHEME }] as [string, object]] : []),
   ],
   experiments: {
     typedRoutes: true,
     reactCompiler: true,
+  },
+  extra: {
+    // 런타임에 운영/개발 빌드를 구분(소셜 로그인 키 선택) — src/lib/social-sign-in.ts
+    isProductionVariant: IS_PRODUCTION,
   },
 };
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, Sparkles } from 'lucide-react-native';
@@ -14,6 +15,8 @@ import { useCancelPurchase, useMyBundles, type MyBundle } from '@/hooks/use-bund
 import { useMySubscriptions, type Subscription } from '@/hooks/use-subscriptions';
 import { ApiError } from '@/lib/api-client';
 import { confirm } from '@/lib/confirm';
+import { openStoreSubscriptions, storeName } from '@/lib/store-subscriptions';
+import { useStorePurchase } from '@/hooks/use-store-purchase';
 import { useTheme } from '@/hooks/use-theme';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { formatPrice } from '@/utils/price';
@@ -33,6 +36,7 @@ export default function ManageSubscriptionsScreen() {
       data={subscriptions ?? []}
       keyExtractor={(item) => item.id}
       ListHeaderComponent={bundles?.length ? <MyBundlesSection bundles={bundles} /> : null}
+      ListFooterComponent={Platform.OS === 'web' ? null : <RestorePurchases />}
       renderItem={({ item }) => <SubscriptionCard sub={item} onPress={() => router.push({ pathname: '/subscriptions/[actorId]', params: { actorId: item.actorId } })} />}
       ListEmptyComponent={
         isLoading ? (
@@ -60,6 +64,14 @@ function MyBundlesSection({ bundles }: { bundles: MyBundle[] }) {
   const [error, setError] = useState<string | null>(null);
 
   const startCancel = async (item: MyBundle) => {
+    // 스토어 결제 묶음은 스토어에서 해지
+    if (item.iapPlatform) {
+      const store = storeName(item.iapPlatform);
+      if (await confirm(t('manage.cancelInStore'), t('manage.cancelInStoreBody', { store }), t('manage.openStore', { store }), t('common.cancel'))) {
+        void openStoreSubscriptions();
+      }
+      return;
+    }
     const names = item.bundle.actors.map((actor) => actor.chatDisplayName).join(', ');
     const ok = await confirm(t('bundle.cancelTitle'), t('bundle.cancelConfirm', { name: item.bundle.name, names }), t('bundle.cancel'), t('common.cancel'));
     if (!ok) return;
@@ -94,6 +106,26 @@ function MyBundlesSection({ bundles }: { bundles: MyBundle[] }) {
       <ThemedText type="headline" style={styles.roomsTitle}>
         {t('bundle.rooms')}
       </ThemedText>
+    </View>
+  );
+}
+
+/**
+ * 구매 복원(스토어 심사 필수 항목) — 폰을 바꾸거나 앱을 다시 깔았을 때 스토어에 남아 있는 구독을 이 계정으로 다시 연결. 다른 계정에
+ * 이미 연결된 구독은 서버가 거절(영수증 공유 방지).
+ */
+function RestorePurchases() {
+  const { t } = useTranslation();
+  const store = useStorePurchase({ kind: 'actor', id: '', sku: null });
+  const restore = useMutation({ mutationFn: store.restore });
+  return (
+    <View style={styles.restore}>
+      <Button title={t('manage.restore')} variant="ghost" size="md" loading={restore.isPending} onPress={() => restore.mutate()} />
+      {restore.isSuccess || restore.isError ? (
+        <ThemedText type="small" themeColor={restore.isError ? 'danger' : 'textSecondary'} style={styles.center}>
+          {restore.isError ? t('manage.restoreFailed') : restore.data ? t('manage.restoreDone', { count: restore.data }) : t('manage.restoreNone')}
+        </ThemedText>
+      ) : null}
     </View>
   );
 }
@@ -142,4 +174,6 @@ const styles = StyleSheet.create({
   bundleCard: { borderRadius: Radius.lg, padding: Spacing.three, gap: Spacing.two },
   bundleHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   roomsTitle: { marginTop: Spacing.two },
+  restore: { marginTop: Spacing.four, gap: Spacing.two },
+  center: { textAlign: 'center' },
 });
