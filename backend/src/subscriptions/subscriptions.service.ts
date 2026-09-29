@@ -8,6 +8,7 @@ import { MediaService } from '../storage/media.service.js';
 import { appError } from '../common/i18n/app-error.js';
 import { CURRENT_TERMS_VERSION } from '../common/legal/terms.js';
 import { allocateBundlePrice } from './allocate-price.js';
+import { roomRetired } from '../common/authorization/actor-access.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
 
 const LAST_MESSAGE_PREVIEW = 80;
@@ -280,9 +281,13 @@ export class SubscriptionsService {
   }
 
   private async ensureActorAvailable(actorId: string) {
-    const actor = await this.prisma.actor.findUnique({ where: { id: actorId }, select: { id: true, monthlyPriceCents: true, retiredAt: true } });
+    const actor = await this.prisma.actor.findUnique({
+      where: { id: actorId },
+      select: { id: true, monthlyPriceCents: true, retiredAt: true, coupleMembers: { select: { member: { select: { retiredAt: true } } } } },
+    });
     if (!actor) throw new NotFoundException(appError('ACTOR_NOT_FOUND'));
-    if (actor.retiredAt) throw new BadRequestException(appError('ACTOR_RETIRED'));
+    // 커플방은 멤버 배우 중 한 명이라도 활동 종료면 새 구독 중지(기존 팬은 유지)
+    if (roomRetired(actor)) throw new BadRequestException(appError('ACTOR_RETIRED'));
     return actor;
   }
 
@@ -294,11 +299,15 @@ export class SubscriptionsService {
         id: true,
         priceCents: true,
         active: true,
-        actors: { select: { actor: { select: { id: true, monthlyPriceCents: true, retiredAt: true } } } },
+        actors: {
+          select: {
+            actor: { select: { id: true, monthlyPriceCents: true, retiredAt: true, coupleMembers: { select: { member: { select: { retiredAt: true } } } } } },
+          },
+        },
       },
     });
     if (!bundle) throw new NotFoundException(appError('BUNDLE_NOT_FOUND'));
-    if (!bundle.active || bundle.actors.length < 2 || bundle.actors.some((item) => item.actor.retiredAt)) {
+    if (!bundle.active || bundle.actors.length < 2 || bundle.actors.some((item) => roomRetired(item.actor))) {
       throw new BadRequestException(appError('BUNDLE_UNAVAILABLE'));
     }
     return bundle;

@@ -56,7 +56,18 @@ function toAttachment(result: ImagePicker.ImagePickerResult): Attachment | null 
   };
 }
 
-function MyMessage({ message, onOpenReplies, onDelete }: { message: StudioMessage; onOpenReplies: () => void; onDelete: () => void }) {
+// senderName: 커플방이면 누가 보낸 메시지인지(두 멤버가 같은 화면을 봄) — 1인 방은 null
+function MyMessage({
+  message,
+  onOpenReplies,
+  onDelete,
+  senderName,
+}: {
+  message: StudioMessage;
+  onOpenReplies: () => void;
+  onDelete: () => void;
+  senderName?: string | null;
+}) {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
   const hiddenByAdmin = !!message.deletedAt && message.deletedByAdmin;
@@ -89,6 +100,7 @@ function MyMessage({ message, onOpenReplies, onDelete }: { message: StudioMessag
       </View>
       <View style={styles.meta}>
         <ThemedText type="caption" themeColor="textTertiary">
+          {senderName ? `${senderName} · ` : ''}
           {new Date(message.createdAt).toLocaleString(i18n.language, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
         </ThemedText>
         {!hiddenByAdmin && (
@@ -261,7 +273,12 @@ export default function StudioChannelScreen() {
               </View>
             }
             renderItem={({ item }) => (
-              <MyMessage message={item} onOpenReplies={() => router.push(`/studio/${actorId}/replies/${item.id}`)} onDelete={() => void removeMessage(item.id)} />
+              <MyMessage
+                message={item}
+                senderName={actor?.kind === 'COUPLE' ? (item.sender?.chatDisplayName ?? null) : null}
+                onOpenReplies={() => router.push(`/studio/${actorId}/replies/${item.id}`)}
+                onDelete={() => void removeMessage(item.id)}
+              />
             )}
           />
         )}

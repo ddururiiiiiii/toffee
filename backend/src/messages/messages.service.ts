@@ -5,7 +5,7 @@ import { PushService } from '../notifications/push.service.js';
 import { pushStrings } from '../notifications/push-messages.js';
 import { ModerationService } from '../moderation/moderation.service.js';
 import { MediaService } from '../storage/media.service.js';
-import { MessageMediaType, MessageSenderType, ReportStatus, UserStatus } from '../generated/prisma/enums.js';
+import { ActorKind, MessageMediaType, MessageSenderType, ReportStatus, UserStatus } from '../generated/prisma/enums.js';
 import { ensureCanViewActor, ensureIsActorSelf } from '../common/authorization/actor-access.js';
 import { ensureActiveSubscription } from '../common/authorization/ensure-active-subscription.js';
 import { fanTag } from '../common/nickname/nickname.js';
@@ -151,15 +151,33 @@ export class MessagesService {
     void this.prisma.subscription
       .update({ where: { userId_actorId: { userId, actorId } }, data: { lastReadAt: new Date() } })
       .catch(() => {});
-    return this.mediaService.withReadUrls(
-      messages.map(withQuote).map((message) => ({
-        ...message,
-        body:
-          message.senderType === MessageSenderType.ARTIST && message.body
-            ? personalize(message.body, fan.nickname ?? fan.displayName)
-            : message.body,
-      })),
+    return this.withSenders(
+      await this.mediaService.withReadUrls(
+        messages.map(withQuote).map((message) => ({
+          ...message,
+          body:
+            message.senderType === MessageSenderType.ARTIST && message.body
+              ? personalize(message.body, fan.nickname ?? fan.displayName)
+              : message.body,
+        })),
+      ),
     );
+  }
+
+  /**
+   * 스타 메시지에 보낸 배우(이름·대화방 사진)를 붙임 — 커플방에서 말풍선마다 누가 보냈는지 보여 주려고(2026-09-29). 1인 방도
+   * 같이 붙지만 앱은 커플방일 때만 씀. 같은 배우는 한 번만 조회.
+   */
+  private async withSenders<T extends { senderActorId?: string | null }>(messages: T[]) {
+    const ids = [...new Set(messages.map((message) => message.senderActorId).filter((id): id is string => !!id))];
+    if (ids.length === 0) return messages.map((message) => ({ ...message, sender: null }));
+    const actors = await this.prisma.actor.findMany({ where: { id: { in: ids } }, select: { id: true, chatDisplayName: true, chatProfileImageUrl: true } });
+    const byId = new Map(
+      await Promise.all(
+        actors.map(async (actor) => [actor.id, { ...actor, chatProfileImageUrl: await this.mediaService.resolveImageUrl(actor.chatProfileImageUrl) }] as const),
+      ),
+    );
+    return messages.map((message) => ({ ...message, sender: (message.senderActorId && byId.get(message.senderActorId)) || null }));
   }
 
   /**
@@ -228,7 +246,8 @@ export class MessagesService {
   }
 
   async sendBroadcast(actorSelfUserId: string, actorId: string, dto: SendBroadcastDto) {
-    await ensureIsActorSelf(this.prisma, actorSelfUserId, actorId);
+    // 커플방이면 두 멤버 중 실제로 보낸 배우(말풍선·알림에 이름 표시)
+    const senderActorId = await ensureIsActorSelf(this.prisma, actorSelfUserId, actorId);
     const mediaKey = dto.mediaType === MessageMediaType.TEXT ? null : dto.mediaKey!;
     // 인용 답장: 같은 배우 채널의 팬 메시지만 인용 가능(다른 채널 메시지·스타 메시지 인용 불가)
     if (dto.replyToMessageId) {
@@ -245,6 +264,7 @@ export class MessagesService {
     const created = await this.prisma.message.create({
       data: {
         actorId,
+        senderActorId,
         senderType: MessageSenderType.ARTIST,
         mediaType: dto.mediaType,
         body: dto.body,
@@ -260,7 +280,7 @@ export class MessagesService {
       },
       include: quoteInclude(actorId),
     });
-    const message = await this.mediaService.withReadUrl(withQuote(created));
+    const [message] = await this.withSenders([await this.mediaService.withReadUrl(withQuote(created))]);
     // 채팅방을 열어 둔 팬·스타·소속사 화면에 바로 반영(푸시보다 먼저)
     void this.realtime.publish({ kind: 'artist-message', actorId });
     // 인용된 팬 — 인용이 가려지지 않았을 때만(정지·탈퇴·차단·신고 처리된 팬 메시지면 따로 알리지 않음)
@@ -282,13 +302,15 @@ export class MessagesService {
     // 푸시는 실패해도 메시지 발송 자체는 성공으로 처리 (best-effort). 카톡처럼 제목은 보낸 사람(대화방 이름),
     // 본문은 메시지 미리보기 — {{name}}은 받는 팬 본인 이름으로 치환, 텍스트가 없으면 미디어 종류 안내를
     // 받는 사람 언어로.
-    const actor = await this.prisma.actor.findUniqueOrThrow({ where: { id: actorId }, select: { chatDisplayName: true } });
+    const actor = await this.prisma.actor.findUniqueOrThrow({ where: { id: actorId }, select: { chatDisplayName: true, kind: true } });
+    // 커플방 알림은 "방 이름" 제목 + "보낸 배우: 내용"(카톡 단톡방처럼)
+    const senderPrefix = actor.kind === ActorKind.COUPLE && message.sender ? `${message.sender.chatDisplayName}: ` : '';
     // 알림을 누르면 앱이 이 값으로 해당 채팅방(팬)/콘솔(소속사)로 이동
     const pushData = { type: 'NEW_MESSAGE', actorId, messageId: message.id };
     const preview = (locale: string | null, fanName?: string) => {
-      if (!dto.body) return pushStrings(locale).media[dto.mediaType];
+      if (!dto.body) return senderPrefix + pushStrings(locale).media[dto.mediaType];
       const text = fanName ? personalize(dto.body, fanName) : dto.body;
-      return text.slice(0, PUSH_PREVIEW_LENGTH);
+      return (senderPrefix + text).slice(0, PUSH_PREVIEW_LENGTH);
     };
     // 푸시는 기다리지 않음 — 구독자가 많으면(수천 명, FCM 500건씩) 스타 화면의 "보내기"가 몇 초씩 걸려서(2026-09-29 부하 테스트).
     // 메시지는 이미 저장·실시간 신호가 나갔고, 푸시 실패는 원래도 발송 성공으로 처리(best-effort)
@@ -383,12 +405,14 @@ export class MessagesService {
       previewTargets.filter((m) => m._count.replies > 0).map((m) => m.id),
     );
     const previewIds = new Set(previewTargets.map((m) => m.id));
-    return this.mediaService.withReadUrls(
-      messages.map(({ _count, ...message }) => ({
-        ...withQuote(message),
-        replyCount: _count.replies,
-        ...(previewIds.has(message.id) ? { recentReplies: previews.get(message.id) ?? [] } : {}),
-      })),
+    return this.withSenders(
+      await this.mediaService.withReadUrls(
+        messages.map(({ _count, ...message }) => ({
+          ...withQuote(message),
+          replyCount: _count.replies,
+          ...(previewIds.has(message.id) ? { recentReplies: previews.get(message.id) ?? [] } : {}),
+        })),
+      ),
     );
   }
 

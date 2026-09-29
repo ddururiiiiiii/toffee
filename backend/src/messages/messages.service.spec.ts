@@ -24,7 +24,12 @@ function setup() {
       findMany: vi.fn().mockResolvedValue([{ userId: 'fan-1' }]),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
-    actor: { findUniqueOrThrow: vi.fn().mockResolvedValue({ chatDisplayName: '캐러멜' }) },
+    actor: {
+      findUniqueOrThrow: vi.fn().mockResolvedValue({ chatDisplayName: '캐러멜', kind: 'SOLO' }),
+      // 보낸 사람 확인(1인 방, 운영자 계정) · 보낸 배우 이름 조회
+      findUnique: vi.fn().mockResolvedValue({ kind: 'SOLO', selfUserId: 'star', coupleMembers: [] }),
+      findMany: vi.fn().mockResolvedValue([]),
+    },
   } as unknown as PrismaService;
   const push = {
     sendToUser: vi.fn().mockResolvedValue(undefined),
@@ -40,6 +45,7 @@ function setup() {
   const media = {
     verifyForAttach: vi.fn().mockResolvedValue(undefined),
     withReadUrl: vi.fn((item: object) => Promise.resolve(item)),
+    resolveImageUrl: vi.fn((value: string | null) => Promise.resolve(value)),
   } as unknown as MediaService;
   const service = new MessagesService(prisma, push, {} as ModerationService, media, config(), realtime);
   return { service, fanPushes, staffPushes, prisma, push };
@@ -56,6 +62,32 @@ describe('MessagesService.sendBroadcast 푸시 문구', () => {
       title: '캐러멜 sent a new message',
       body: '{{name}}야 안녕!',
     });
+  });
+
+  it('커플방: 보낸 배우가 기록되고, 팬 알림은 "방 이름" 제목 + "보낸 배우: 내용"', async () => {
+    const { service, fanPushes, prisma } = setup();
+    const actor = (prisma as unknown as { actor: Record<string, ReturnType<typeof vi.fn>> }).actor;
+    (prisma as unknown as { user: { findUniqueOrThrow: ReturnType<typeof vi.fn> } }).user.findUniqueOrThrow.mockResolvedValue({ role: Role.ACTOR });
+    actor.findUnique.mockResolvedValue({
+      kind: 'COUPLE',
+      selfUserId: null,
+      coupleMembers: [{ member: { id: 'nawin', selfUserId: 'u-nawin' } }, { member: { id: 'pakin', selfUserId: 'u-pakin' } }],
+    });
+    actor.findUniqueOrThrow.mockResolvedValue({ chatDisplayName: 'Nawin & Pakin', kind: 'COUPLE' });
+    actor.findMany.mockResolvedValue([{ id: 'pakin', chatDisplayName: 'Pakin', chatProfileImageUrl: null }]);
+    (prisma as unknown as { message: { create: ReturnType<typeof vi.fn> } }).message.create.mockResolvedValue({
+      id: 'm1',
+      mediaKey: null,
+      mediaUrl: null,
+      senderActorId: 'pakin',
+    });
+
+    await service.sendBroadcast('u-pakin', 'couple-1', { mediaType: MessageMediaType.TEXT, body: '같이 인사해요' });
+
+    expect((prisma as unknown as { message: { create: ReturnType<typeof vi.fn> } }).message.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ senderActorId: 'pakin' }) }),
+    );
+    expect(fanPushes[0]({ locale: 'ko', displayName: '민지' })).toEqual({ title: 'Nawin & Pakin', body: 'Pakin: 같이 인사해요' });
   });
 
   it('알림을 끈 팬(notificationsMuted)은 푸시 대상에서 빠짐', async () => {

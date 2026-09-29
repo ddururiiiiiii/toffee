@@ -177,11 +177,24 @@ model ParentalConsent {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+enum ActorKind {
+  // 배우 1명의 개인방
+  SOLO
+  // 배우 2명의 커플(CP)방 — 멤버는 CoupleMember
+  COUPLE
+}
+
 model Actor {
   // 공식 프로필(실명+공식 사진)과 대화방 프로필(닉네임+사진)을 분리 — 대화방 쪽은
   // 소속사가 메신저 프로필 바꾸듯 자유롭게 변경 가능 (Bubble/Weverse 벤치마킹).
   // 이모지는 쓰지 않고 이름+이미지만 사용.
+  //
+  // 2026-09-29부터 Actor 한 줄 = "방" 하나: kind SOLO는 배우 개인방(지금까지와 같음), COUPLE은 배우 2명의 커플방.
+  // 메시지·구독·구매·묶음·차단·신고·실시간·통계가 전부 actorId(= 방)로 동작해서 커플방도 같은 코드를 씀.
+  // 커플방은 공식 이름·공식 사진·가격은 운영자, 방 이름(chatDisplayName)·대화방 사진은 두 멤버 배우가 각자 바꿀 수 있음.
+  // 커플방은 소속사(agencyId)·본인 계정(selfUserId)이 없고 권한은 멤버 배우를 통해 판단(actor-access.ts).
   id                      String    @id @default(uuid())
+  kind                    ActorKind @default(SOLO)
   legalName               String
   officialProfileImageUrl String?
   chatDisplayName         String
@@ -205,9 +218,11 @@ model Actor {
   fanBlocks          ActorFanBlock[]
   subscriptions      Subscription[]
   subscriptionEvents SubscriptionEvent[]
-  messages           Message[]
-  pairingsAsFirst    GlCp[]               @relation("PairingActorOne")
-  pairingsAsSecond   GlCp[]               @relation("PairingActorTwo")
+  messages           Message[]            @relation("MessageChannel")
+  // 커플방이면 멤버 배우 2명 / 1인 배우면 이 배우가 속한 커플방들
+  coupleMembers      CoupleMember[]       @relation("CoupleRoom")
+  memberOfCouples    CoupleMember[]       @relation("CoupleMemberActor")
+  sentMessages       Message[]            @relation("MessageSenderActor")
   stories            Story[]
   purchases          Purchase[]
   bundles            BundleActor[]
@@ -248,18 +263,6 @@ model ActorAgencyHistory {
 }
 
 // 팬에게 노출되는 탐색/발견 화면 없음 — 동시구독 할인 계산에만 쓰는 내부 페어링
-model GlCp {
-  id              String   @id @default(uuid())
-  actorOneId      String
-  actorTwoId      String
-  discountPercent Int      @default(10)
-  createdAt       DateTime @default(now())
-
-  actorOne Actor @relation("PairingActorOne", fields: [actorOneId], references: [id])
-  actorTwo Actor @relation("PairingActorTwo", fields: [actorTwoId], references: [id])
-
-  @@unique([actorOneId, actorTwoId])
-}
 
 // 방(배우 개인방) 이용권 — 사람×배우당 한 줄. "이 팬이 이 채팅방을 볼 수 있는지"와 채팅방별 상태(대화가 보이기 시작한
 // 시점 startedAt, 읽음, 알림 끄기)를 가짐. 열림/닫힘(cancelledAt)은 직접 정하지 않고 **유효한 구매(Purchase)가 하나라도
@@ -367,6 +370,7 @@ model Message {
   // 조회 시점에 요청한 팬 본인의 displayName으로 치환해서 내려줌(Bubble 개인화 메시지 방식)
   id               String            @id @default(uuid())
   actorId          String
+  senderActorId    String?
   senderType       MessageSenderType
   fanUserId        String?
   mediaType        MessageMediaType  @default(TEXT)
@@ -393,7 +397,9 @@ model Message {
   deletedByAdmin   Boolean           @default(false)
   createdAt        DateTime          @default(now())
 
-  actor        Actor                @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  actor        Actor                @relation("MessageChannel", fields: [actorId], references: [id], onDelete: Cascade)
+  // 스타 메시지를 실제로 보낸 배우 — 1인 방은 그 배우, 커플방은 두 멤버 중 보낸 쪽(말풍선에 이름·사진 표시). 팬 답장은 null
+  senderActor  Actor?               @relation("MessageSenderActor", fields: [senderActorId], references: [id], onDelete: SetNull)
   fanUser      User?                @relation("FanMessages", fields: [fanUserId], references: [id])
   replyTo      Message?             @relation("MessageReplies", fields: [replyToMessageId], references: [id], onDelete: SetNull)
   replies      Message[]            @relation("MessageReplies")
@@ -508,4 +514,16 @@ model AdminAction {
 
   @@index([createdAt])
   @@index([targetType, targetId])
+}
+
+// 커플방 멤버 — 커플방(Actor kind COUPLE) 하나에 1인 배우 2명(2026-09-29)
+model CoupleMember {
+  coupleId String
+  memberId String
+
+  couple Actor @relation("CoupleRoom", fields: [coupleId], references: [id], onDelete: Cascade)
+  member Actor @relation("CoupleMemberActor", fields: [memberId], references: [id], onDelete: Restrict)
+
+  @@id([coupleId, memberId])
+  @@index([memberId])
 }

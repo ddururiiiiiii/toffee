@@ -13,6 +13,7 @@ import type { Actor } from '@/hooks/use-actors';
 
 function ActorRow({ actor, onPress }: { actor: Actor; onPress: () => void }) {
   const theme = useTheme();
+  const { t } = useTranslation();
   return (
     <Pressable onPress={onPress} style={[styles.row, { backgroundColor: theme.backgroundElement }]}>
       <Image
@@ -22,7 +23,7 @@ function ActorRow({ actor, onPress }: { actor: Actor; onPress: () => void }) {
       <ThemedView style={styles.rowBody}>
         <ThemedText type="smallBold">{actor.chatDisplayName}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          {actor.legalName}
+          {actor.kind === 'COUPLE' ? `${t('couple.roomLabel')} · ${actor.legalName}` : actor.legalName}
         </ThemedText>
       </ThemedView>
     </Pressable>

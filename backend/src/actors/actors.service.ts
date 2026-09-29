@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { ensureCanViewActor, ensureIsActorSelf, viewableActorsWhere } from '../common/authorization/actor-access.js';
 import { normalizeNickname } from '../common/nickname/nickname.js';
 import { ModerationService } from '../moderation/moderation.service.js';
-import { MessageSenderType, Role } from '../generated/prisma/enums.js';
+import { ActorKind, MessageSenderType, Role } from '../generated/prisma/enums.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { MediaService } from '../storage/media.service.js';
 import { appError } from '../common/i18n/app-error.js';
@@ -25,7 +25,17 @@ const LIST_SELECT = {
   retiredAt: true,
   // 소속사는 팬에게도 공개(소속사별 목록/검색) — 무소속이면 null
   agency: { select: { id: true, name: true, logoUrl: true } },
+  // 1인 방(SOLO) / 커플방(COUPLE, 2026-09-29) — 커플방이면 멤버 배우 2명
+  kind: true,
+  coupleMembers: {
+    select: {
+      member: { select: { id: true, legalName: true, chatDisplayName: true, officialProfileImageUrl: true, chatProfileImageUrl: true, retiredAt: true } },
+    },
+  },
 } as const;
+
+// 커플방 중 멤버 배우가 활동 종료한 방은 팬 목록에서 숨김(방 자체의 retiredAt과 같은 취급)
+const NO_RETIRED_MEMBER: Prisma.ActorWhereInput = { coupleMembers: { none: { member: { retiredAt: { not: null } } } } };
 
 @Injectable()
 export class ActorsService {
@@ -36,9 +46,10 @@ export class ActorsService {
   ) {}
 
   // q는 배우 이름뿐 아니라 소속사 이름에도 매칭 — "GMMTV"로 검색하면 소속 배우가 다 나오게
-  async findAll(query?: string, agencyId?: string, sort?: 'trending' | 'new') {
-    // 활동 종료한 배우는 둘러보기·검색에서 숨김(프로필 링크로 들어오면 "활동 종료" 안내)
-    const where: Prisma.ActorWhereInput = { retiredAt: null };
+  async findAll(query?: string, agencyId?: string, sort?: 'trending' | 'new', kind: ActorKind = ActorKind.SOLO) {
+    // 활동 종료한 배우는 둘러보기·검색에서 숨김(프로필 링크로 들어오면 "활동 종료" 안내). 기본은 1인 배우만 —
+    // 커플방은 kind=COUPLE로 따로(둘러보기의 커플방 줄)
+    const where: Prisma.ActorWhereInput = { retiredAt: null, kind, ...NO_RETIRED_MEMBER };
     if (agencyId) where.agencyId = agencyId;
     if (query) {
       where.OR = [
@@ -57,6 +68,16 @@ export class ActorsService {
             : { legalName: 'asc' },
     });
     return Promise.all(actors.map((actor) => this.withImageUrls(actor)));
+  }
+
+  /** 이 배우가 멤버인 커플방(배우 프로필의 "커플방") — 활동 중인 것만 */
+  async couplesOf(actorId: string) {
+    const rows = await this.prisma.actor.findMany({
+      where: { kind: ActorKind.COUPLE, retiredAt: null, coupleMembers: { some: { memberId: actorId } }, ...NO_RETIRED_MEMBER },
+      select: LIST_SELECT,
+      orderBy: { createdAt: 'asc' },
+    });
+    return Promise.all(rows.map((row) => this.withImageUrls(row)));
   }
 
   async findOne(id: string) {
@@ -95,18 +116,31 @@ export class ActorsService {
       officialProfileImageUrl: string | null;
       chatProfileImageUrl: string | null;
       agency: { logoUrl: string | null } | null;
+      coupleMembers?: { member: { officialProfileImageUrl: string | null; chatProfileImageUrl: string | null } }[];
     },
   >(actor: T): Promise<T> {
-    const [officialProfileImageUrl, chatProfileImageUrl, logoUrl] = await Promise.all([
+    const [officialProfileImageUrl, chatProfileImageUrl, logoUrl, coupleMembers] = await Promise.all([
       this.media.resolveImageUrl(actor.officialProfileImageUrl),
       this.media.resolveImageUrl(actor.chatProfileImageUrl),
       this.media.resolveImageUrl(actor.agency?.logoUrl ?? null),
+      // 커플방 멤버 사진도 같은 방식으로
+      actor.coupleMembers &&
+        Promise.all(
+          actor.coupleMembers.map(async ({ member }) => ({
+            member: {
+              ...member,
+              officialProfileImageUrl: await this.media.resolveImageUrl(member.officialProfileImageUrl),
+              chatProfileImageUrl: await this.media.resolveImageUrl(member.chatProfileImageUrl),
+            },
+          })),
+        ),
     ]);
     return {
       ...actor,
       officialProfileImageUrl,
       chatProfileImageUrl,
       agency: actor.agency && { ...actor.agency, logoUrl },
+      ...(coupleMembers ? { coupleMembers } : {}),
     };
   }
 

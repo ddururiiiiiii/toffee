@@ -4,9 +4,9 @@ import { MediaService } from '../storage/media.service.js';
 import { ActorsService } from '../actors/actors.service.js';
 import { AdminAgenciesService } from './admin-agencies.service.js';
 import { profileImagePrefix, type ProfileImageTarget } from '../storage/media-policy.js';
-import { Role } from '../generated/prisma/enums.js';
+import { ActorKind, Role } from '../generated/prisma/enums.js';
 import type { Prisma } from '../generated/prisma/client.js';
-import type { CreateActorDto, UpdateActorDto, UpdateActorImagesDto } from './dto/upsert-actor.dto.js';
+import type { CreateActorDto, CreateCoupleDto, UpdateActorDto, UpdateActorImagesDto } from './dto/upsert-actor.dto.js';
 import { appError } from '../common/i18n/app-error.js';
 import { AuditService } from '../audit/audit.service.js';
 import { ensureStoreProductIdFree } from '../common/store/store-product.js';
@@ -20,6 +20,8 @@ const ADMIN_ACTOR_SELECT = {
   monthlyPriceCents: true,
   storeProductId: true,
   verified: true,
+  kind: true,
+  coupleMembers: { select: { member: { select: { id: true, legalName: true, chatDisplayName: true, officialProfileImageUrl: true, chatProfileImageUrl: true, retiredAt: true } } } },
   retiredAt: true,
   createdAt: true,
   agency: { select: { id: true, name: true, logoUrl: true } },
@@ -77,6 +79,34 @@ export class AdminActorsService {
     return this.toResponse(row);
   }
 
+  /**
+   * 커플방 만들기(2026-09-29) — 1인 배우 2명 + 공식 이름·방 이름·월 가격(스토어 상품 ID는 나중에). 같은 두 배우의 커플방은
+   * 하나만. 공식 사진은 만든 뒤 상세 화면에서(업로드 경로에 방 id가 필요), 대화방 사진·방 이름은 두 멤버 배우가 각자 바꿀 수 있음.
+   */
+  async createCouple(adminId: string, dto: CreateCoupleDto) {
+    const memberIds = [...new Set(dto.memberIds)];
+    if (memberIds.length !== 2) throw new BadRequestException(appError('COUPLE_MEMBERS_INVALID'));
+    const members = await this.prisma.actor.findMany({ where: { id: { in: memberIds }, kind: ActorKind.SOLO }, select: { id: true } });
+    if (members.length !== 2) throw new BadRequestException(appError('COUPLE_MEMBERS_INVALID'));
+    const existing = await this.prisma.actor.findFirst({
+      where: { kind: ActorKind.COUPLE, AND: memberIds.map((memberId) => ({ coupleMembers: { some: { memberId } } })) },
+      select: { id: true },
+    });
+    if (existing) throw new ConflictException(appError('COUPLE_EXISTS'));
+    const couple = await this.prisma.actor.create({
+      data: {
+        kind: ActorKind.COUPLE,
+        legalName: dto.legalName.trim(),
+        chatDisplayName: dto.chatDisplayName.trim(),
+        monthlyPriceCents: dto.monthlyPriceCents,
+        coupleMembers: { create: memberIds.map((memberId) => ({ memberId })) },
+      },
+      select: { id: true },
+    });
+    await this.audit.record(adminId, 'COUPLE_CREATE', 'ACTOR', couple.id, { memberIds, monthlyPriceCents: dto.monthlyPriceCents });
+    return this.findOne(couple.id);
+  }
+
   async create(dto: CreateActorDto) {
     const actor = await this.prisma.actor.create({
       data: { legalName: dto.legalName.trim(), chatDisplayName: dto.chatDisplayName.trim(), monthlyPriceCents: dto.monthlyPriceCents },
@@ -128,6 +158,9 @@ export class AdminActorsService {
   // 배우 본인 계정 연결 — 이 계정이 스튜디오에서 메시지를 보내게 됨. 한 계정은 배우 한 명에만 연결
   async linkUser(id: string, userId: string | null) {
     await this.ensureActor(id);
+    const room = await this.prisma.actor.findUniqueOrThrow({ where: { id }, select: { kind: true } });
+    // 커플방은 본인 계정이 없음 — 멤버 배우 각자의 본인 계정이 커플방에도 보냄
+    if (room.kind === ActorKind.COUPLE) throw new BadRequestException(appError('NOT_FOR_COUPLE'));
     if (userId) {
       const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
       if (!user) throw new NotFoundException(appError('USER_NOT_FOUND'));

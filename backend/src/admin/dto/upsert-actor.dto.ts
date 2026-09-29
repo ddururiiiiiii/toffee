@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, Max, Min, ValidateIf } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, Max, Min, ValidateIf } from 'class-validator';
 import { MAX_PRICE_CENTS, STORE_PRODUCT_ID_PATTERN } from '../../common/store/store-product.js';
 
 export class CreateActorDto {
@@ -21,6 +21,30 @@ export class CreateActorDto {
   @IsOptional()
   @IsString()
   agencyId?: string;
+}
+
+// 커플방 만들기 — 멤버 배우 2명(참조 ID라 @IsString), 공식 이름, 방 이름(멤버 배우가 나중에 바꿀 수 있음), 월 가격
+export class CreateCoupleDto {
+  @IsArray()
+  @ArrayMinSize(2)
+  @ArrayMaxSize(2)
+  @IsString({ each: true })
+  memberIds!: string[];
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  legalName!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  chatDisplayName!: string;
+
+  @IsInt()
+  @Min(0)
+  @Max(MAX_PRICE_CENTS)
+  monthlyPriceCents!: number;
 }
 
 export class UpdateActorDto {

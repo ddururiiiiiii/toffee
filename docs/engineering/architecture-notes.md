@@ -1057,3 +1057,20 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   그 사용자 연결만 재조회 + 앱이 인박스 새로고침), 안전 새로고침은 10분 + 흩뜨림 ③ 발송 API가 푸시 전송(FCM 500건씩)을 기다림 →
   기다리지 않음(void, 실패는 원래도 best-effort). 앱 `useRealtimeSync(token)`는 구독 변경 때 재연결하지 않음.
 
+## 커플방 = Actor(kind COUPLE) (2026-09-29)
+
+- 설계: 새 Channel 테이블 대신 **Actor 한 줄 = 방**으로 봄. `Actor.kind`(SOLO/COUPLE), `CoupleMember(coupleId, memberId)`(멤버 삭제는
+  Restrict), `Message.senderActorId`(보낸 배우, 기존 스타 메시지는 actorId로 백필). 메시지·구독·구매·묶음·차단·신고·실시간·통계·
+  미디어 경로(`actors/<방id>/...`)가 전부 actorId 기준이라 커플방도 같은 코드로 동작. `GlCp` 테이블 삭제. 마이그레이션 `20260929120000_couple_rooms`.
+- 권한(`common/authorization/actor-access.ts`): `ensureIsActorSelf`가 커플방이면 멤버 배우 중 selfUserId가 요청자인 배우 id를
+  돌려줌(= senderActorId, 운영자면 null). `viewableActorsWhere`에 `{ kind: COUPLE, coupleMembers: { some: { member: <본인/소속사 조건> } } }`
+  추가 → 콘솔·실시간 수신 대상·차단·신고 확인이 자동으로 커플방 포함. `roomRetired`(방 또는 멤버 활동 종료)로 구독·묶음 구매 차단.
+- 메시지: `withSenders`가 팬 목록·스튜디오 목록·발송 응답에 `sender {id, chatDisplayName, chatProfileImageUrl}`를 붙임. 커플방 푸시
+  본문 앞에 "보낸 배우: ". `PushService.notifyActorStaff`는 커플방이면 멤버들의 소속사 직원 전원.
+- 조회: `GET /actors?kind=COUPLE`(둘러보기 줄, 기본은 SOLO만), `GET /actors/:id/couples`, 응답에 `kind`·`coupleMembers`. 멤버 중 활동
+  종료가 있으면 목록에서 숨김. 스토리 작성은 커플방이면 400 `STORY_NOT_FOR_COUPLE`.
+- 운영자: `POST /admin/couples`(멤버 2명·SOLO·같은 쌍 중복 불가, 작업 기록 `COUPLE_CREATE`), 커플방엔 소속사 지정·본인 계정 연결 불가
+  (`NOT_FOR_COUPLE`). 공식 사진은 운영자, 대화방 사진·방 이름은 멤버 배우(기존 `chat-profile-image`·`nickname` API가 멤버 권한으로 동작).
+- 앱: `Actor.kind/coupleMembers`, `CoupleCard`, 배우 프로필 커플방 절·커플방 멤버 줄, 둘러보기 커플방 줄, 채팅 말풍선 보낸 배우 이름
+  (보낸 배우가 바뀌면 묶음 분리), 스튜디오 목록 개인방/커플방 라벨·메시지 보낸 배우, 콘솔 라벨, 운영자 `admin/actors/new-couple`.
+

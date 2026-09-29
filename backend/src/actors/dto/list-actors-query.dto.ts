@@ -15,4 +15,9 @@ export class ListActorsQueryDto {
   @IsOptional()
   @IsIn(['trending', 'new'])
   sort?: 'trending' | 'new';
+
+  // 1인 배우(기본) / 커플방(둘러보기의 커플방 줄, 2026-09-29)
+  @IsOptional()
+  @IsIn(['SOLO', 'COUPLE'])
+  kind?: 'SOLO' | 'COUPLE';
 }

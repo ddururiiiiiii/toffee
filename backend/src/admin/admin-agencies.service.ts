@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { Role } from '../generated/prisma/enums.js';
+import { ActorKind, Role } from '../generated/prisma/enums.js';
 import type { CreateAgencyDto, UpdateAgencyDto } from './dto/upsert-agency.dto.js';
 import { MediaService } from '../storage/media.service.js';
 import { isStorageKey, profileImagePrefix } from '../storage/media-policy.js';
@@ -65,8 +65,10 @@ export class AdminAgenciesService {
     if (agencyId) await this.findAgencyOrThrow(agencyId);
 
     return this.prisma.$transaction(async (tx) => {
-      const actor = await tx.actor.findUnique({ where: { id: actorId }, select: { agencyId: true } });
+      const actor = await tx.actor.findUnique({ where: { id: actorId }, select: { agencyId: true, kind: true } });
       if (!actor) throw new NotFoundException(appError('ACTOR_NOT_FOUND'));
+      // 커플방은 소속사가 없음 — 멤버 배우의 소속사가 각자 모니터링
+      if (actor.kind === ActorKind.COUPLE) throw new BadRequestException(appError('NOT_FOR_COUPLE'));
       if (actor.agencyId === agencyId) return this.actorWithAgency(tx, actorId);
 
       const now = new Date();

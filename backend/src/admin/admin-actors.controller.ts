@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { AdminActorsService } from './admin-actors.service.js';
-import { CreateActorDto, LinkActorUserDto, SetRetiredDto, UpdateActorDto, UpdateActorImagesDto } from './dto/upsert-actor.dto.js';
+import { CreateActorDto, CreateCoupleDto, LinkActorUserDto, SetRetiredDto, UpdateActorDto, UpdateActorImagesDto } from './dto/upsert-actor.dto.js';
 import { AuditService } from '../audit/audit.service.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
@@ -31,6 +31,12 @@ export class AdminActorsController {
   @Post('actors')
   create(@Body() dto: CreateActorDto) {
     return this.adminActorsService.create(dto);
+  }
+
+  // 커플방 만들기(멤버 배우 2명)
+  @Post('couples')
+  createCouple(@CurrentUser() admin: AuthenticatedUser, @Body() dto: CreateCoupleDto) {
+    return this.adminActorsService.createCouple(admin.id, dto);
   }
 
   @Patch('actors/:id')

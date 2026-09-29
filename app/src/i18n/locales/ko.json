@@ -443,5 +443,12 @@
   },
   "network": {
     "offline": "인터넷 연결이 끊겼어요"
+  },
+  "couple": {
+    "sectionTitle": "커플방",
+    "sectionHint": "두 배우가 함께 메시지를 보내는 방이에요. 개인 구독과 따로 구독해요.",
+    "discoverTitle": "커플방",
+    "roomLabel": "커플방",
+    "soloLabel": "개인방"
   }
 }

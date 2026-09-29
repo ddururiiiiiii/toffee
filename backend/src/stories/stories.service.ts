@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PushService } from '../notifications/push.service.js';
 import { pushStrings } from '../notifications/push-messages.js';
 import { ensureCanViewActor, ensureIsActorSelf } from '../common/authorization/actor-access.js';
 import { ensureActiveSubscription } from '../common/authorization/ensure-active-subscription.js';
-import { Role } from '../generated/prisma/enums.js';
+import { ActorKind, Role } from '../generated/prisma/enums.js';
 import { MediaService } from '../storage/media.service.js';
 import { fanTag } from '../common/nickname/nickname.js';
 import type { UploadableMediaType } from '../storage/media-policy.js';
@@ -25,6 +25,9 @@ export class StoriesService {
   // 배우 본인만 업로드 가능, 24시간 뒤 만료
   async create(actorSelfUserId: string, actorId: string, dto: CreateStoryDto) {
     await ensureIsActorSelf(this.prisma, actorSelfUserId, actorId);
+    // 스토리는 1인 방에만(커플방엔 없음 — 2026-09-21 스펙)
+    const room = await this.prisma.actor.findUnique({ where: { id: actorId }, select: { kind: true } });
+    if (room?.kind === ActorKind.COUPLE) throw new BadRequestException(appError('STORY_NOT_FOR_COUPLE'));
     await this.mediaService.verifyForAttach(actorId, 'story', dto.mediaType as UploadableMediaType, dto.mediaKey);
     const created = await this.prisma.story.create({
       data: {

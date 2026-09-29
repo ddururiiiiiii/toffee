@@ -25,7 +25,22 @@ export interface Actor {
   retiredAt?: string | null;
   // 무소속이면 null
   agency: AgencySummary | null;
+  /** 1인 방 / 커플방(2026-09-29) — 커플방은 소속사가 없고 멤버 배우 2명 */
+  kind?: 'SOLO' | 'COUPLE';
+  coupleMembers?: { member: CoupleMemberActor }[];
 }
+
+export interface CoupleMemberActor {
+  id: string;
+  legalName: string;
+  chatDisplayName: string;
+  officialProfileImageUrl: string | null;
+  chatProfileImageUrl: string | null;
+  retiredAt: string | null;
+}
+
+/** 커플방 멤버 배우들(1인 방이면 빈 배열) */
+export const membersOf = (actor: Pick<Actor, 'coupleMembers'>): CoupleMemberActor[] => actor.coupleMembers?.map(({ member }) => member) ?? [];
 
 // q는 서버에서 배우 이름 + 소속사 이름 둘 다에 매칭됨
 export type ActorSort = 'trending' | 'new';
@@ -58,3 +73,18 @@ export function useActor(id: string) {
     enabled: !!id,
   });
 }
+
+/** 둘러보기 "커플방" 줄 — 활동 중인 커플방 전체 */
+export function useCoupleRooms() {
+  return useQuery({ queryKey: ['actors', 'couples'], queryFn: () => apiClient.get<Actor[]>('/actors?kind=COUPLE') });
+}
+
+/** 이 배우가 든 커플방(배우 프로필) */
+export function useActorCouples(actorId: string, enabled = true) {
+  return useQuery({
+    queryKey: ['actors', actorId, 'couples'],
+    queryFn: () => apiClient.get<Actor[]>(`/actors/${actorId}/couples`),
+    enabled: !!actorId && enabled,
+  });
+}
+

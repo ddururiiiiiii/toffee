@@ -50,7 +50,13 @@ export default function StudioHomeScreen() {
               source={{ uri: item.chatProfileImageUrl ?? undefined }}
               style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]}
             />
-            <ThemedText type="smallBold">{item.chatDisplayName}</ThemedText>
+            <ThemedText type="smallBold" style={styles.flex}>
+              {item.chatDisplayName}
+            </ThemedText>
+            {/* 개인방·커플방이 둘 다 있는 배우가 헷갈리지 않게 */}
+            <ThemedText type="caption" themeColor="textSecondary">
+              {item.kind === 'COUPLE' ? t('couple.roomLabel') : t('couple.soloLabel')}
+            </ThemedText>
           </Pressable>
         )}
       />
@@ -66,6 +72,7 @@ export default function StudioHomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loading: { marginTop: Spacing.six },
+  flex: { flex: 1 },
   list: { padding: Spacing.four, gap: Spacing.three },
   empty: { textAlign: 'center', marginTop: Spacing.four },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, borderRadius: 14, padding: Spacing.three },

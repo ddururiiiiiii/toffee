@@ -24,7 +24,7 @@ async function main() {
   await prisma.purchase.deleteMany();
   await prisma.bundle.deleteMany();
   await prisma.authIdentity.deleteMany();
-  await prisma.glCp.deleteMany();
+  await prisma.coupleMember.deleteMany();
   await prisma.actorAgencyHistory.deleteMany();
   await prisma.actor.deleteMany();
   await prisma.user.deleteMany();
@@ -72,9 +72,15 @@ async function main() {
     ],
   });
 
-  // 팬에게 노출 안 되는 내부 CP 페어링 — 둘 다 구독하면 15% 할인
-  await prisma.glCp.create({
-    data: { actorOneId: caramel.id, actorTwoId: nougat.id, discountPercent: 15 },
+  // 커플(CP)방 — 캐러멜 + 누가(2026-09-29). 방 이름·대화방 사진은 두 배우가 각자 바꿀 수 있음
+  await prisma.actor.create({
+    data: {
+      kind: 'COUPLE',
+      legalName: '(가상) 데모 배우 A & B',
+      chatDisplayName: '캐러멜 & 누가',
+      monthlyPriceCents: 6900,
+      coupleMembers: { create: [{ memberId: caramel.id }, { memberId: nougat.id }] },
+    },
   });
 
   // 데모 엔터 스태프 1명 — 같은 소속사라 두 배우 모두 모니터링 가능

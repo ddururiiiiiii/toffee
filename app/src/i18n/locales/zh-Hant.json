@@ -443,5 +443,12 @@
   },
   "network": {
     "offline": "網路已中斷"
+  },
+  "couple": {
+    "sectionTitle": "情侶房間",
+    "sectionHint": "兩位演員一起傳訊息給你的房間，需與個人房間分開訂閱。",
+    "discoverTitle": "情侶房間",
+    "roomLabel": "情侶房間",
+    "soloLabel": "個人房間"
   }
 }

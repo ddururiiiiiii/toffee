@@ -20,15 +20,18 @@ function ActorRow({ actor }: { actor: AdminActor }) {
       <AdminAvatar uri={actor.officialProfileImageUrl ?? actor.chatProfileImageUrl} name={actor.legalName} />
       <ThemedView style={styles.rowBody}>
         <ThemedText type="smallBold">
+          {actor.kind === 'COUPLE' ? '[커플방] ' : ''}
           {actor.legalName}
           {actor.verified ? ' ✓' : ''}
         </ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          닉네임 {actor.chatDisplayName} · {actor.agency?.name ?? '무소속'}
+          {actor.kind === 'COUPLE'
+            ? `방 이름 ${actor.chatDisplayName} · 멤버 ${actor.coupleMembers.map(({ member }) => member.legalName).join(' + ')}`
+            : `닉네임 ${actor.chatDisplayName} · ${actor.agency?.name ?? '무소속'}`}
         </ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          {formatBaht(actor.monthlyPriceCents)}/월 · 구독자 {actor.activeSubscriberCount}명 ·{' '}
-          {actor.selfUser ? `본인 계정 ${actor.selfUser.displayName}` : '본인 계정 미연결'}
+          {formatBaht(actor.monthlyPriceCents)}/월 · 구독자 {actor.activeSubscriberCount}명
+          {actor.kind === 'COUPLE' ? '' : ` · ${actor.selfUser ? `본인 계정 ${actor.selfUser.displayName}` : '본인 계정 미연결'}`}
         </ThemedText>
       </ThemedView>
       <ThemedText type="small" themeColor="textSecondary">
@@ -55,6 +58,7 @@ export default function AdminActorsScreen() {
           style={[styles.search, { color: theme.text, backgroundColor: theme.backgroundElement }]}
         />
         <AdminButton label="+ 배우 등록" onPress={() => router.push('/admin/actors/new')} />
+        <AdminButton label="+ 커플방 만들기" onPress={() => router.push('/admin/actors/new-couple')} />
       </ThemedView>
 
       {isLoading ? (

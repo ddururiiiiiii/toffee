@@ -16,7 +16,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Icon } from '@/components/ui/icon';
 import { SearchField } from '@/components/ui/search-field';
 import { SectionHeader } from '@/components/ui/section-header';
-import { useActors, useAgencies, type Actor, type ActorSort } from '@/hooks/use-actors';
+import { useActors, useAgencies, useCoupleRooms, type Actor, type ActorSort } from '@/hooks/use-actors';
+import { CoupleCard } from '@/components/couple-card';
 import { useMySubscriptions } from '@/hooks/use-subscriptions';
 import { useTheme } from '@/hooks/use-theme';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -48,6 +49,7 @@ export default function DiscoverScreen() {
   const list = useActors(query, agencyId, sort);
   const trending = useActors('', null, 'trending');
   const newest = useActors('', null, 'new');
+  const couples = useCoupleRooms();
   const { data: subscriptions } = useMySubscriptions();
   const subscribed = useMemo(() => new Set(subscriptions?.map((s) => s.actorId)), [subscriptions]);
 
@@ -59,6 +61,7 @@ export default function DiscoverScreen() {
     void list.refetch();
     void trending.refetch();
     void newest.refetch();
+    void couples.refetch();
   };
 
   const header = (
@@ -123,6 +126,20 @@ export default function DiscoverScreen() {
                 subscribed={subscribed.has(actor.id)}
                 onPress={() => open(actor)}
               />
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* 커플방(2026-09-29) — 두 배우가 함께 보내는 방 */}
+      {showSections && (couples.data?.length ?? 0) > 0 && (
+        <View style={styles.section}>
+          <SectionHeader title={t('couple.discoverTitle')} />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardRow}>
+            {couples.data!.map((room) => (
+              <View key={room.id} style={styles.coupleItem}>
+                <CoupleCard room={room} onPress={() => open(room)} />
+              </View>
             ))}
           </ScrollView>
         </View>
@@ -219,6 +236,7 @@ function ActorPhotoCard({ actor, width, subscribed, onPress }: { actor: Actor; w
 }
 
 const styles = StyleSheet.create({
+  coupleItem: { width: 300 },
   container: { flex: 1 },
   content: { paddingBottom: Spacing.five, width: '100%', alignSelf: 'center' },
   search: { marginHorizontal: Spacing.four },

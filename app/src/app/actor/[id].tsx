@@ -1,4 +1,4 @@
-import { ActivityIndicator, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -7,13 +7,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight, ChevronLeft, SearchX } from 'lucide-react-native';
 
 import { BundleCard } from '@/components/bundle-card';
+import { CoupleCard } from '@/components/couple-card';
+import { Avatar } from '@/components/ui/avatar';
 import { MembershipBenefits } from '@/components/membership-benefits';
 import { useActorBundles } from '@/hooks/use-bundles';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { IconButton } from '@/components/ui/icon-button';
-import { useActor } from '@/hooks/use-actors';
+import { membersOf, useActor, useActorCouples } from '@/hooks/use-actors';
 import { useMySubscriptions } from '@/hooks/use-subscriptions';
 import { useTheme } from '@/hooks/use-theme';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -35,6 +37,9 @@ export default function ActorProfileScreen() {
   const { data: subscriptions } = useMySubscriptions();
   const isSubscribed = subscriptions?.some((sub) => sub.actorId === id) ?? false;
   const { data: bundles } = useActorBundles(id);
+  // 1인 배우면 이 배우가 든 커플방, 커플방이면 멤버 배우(2026-09-29)
+  const isCouple = actor?.kind === 'COUPLE';
+  const { data: couples } = useActorCouples(id, !!actor && !isCouple);
   const ownedBundleIds = new Set(subscriptions?.flatMap((sub) => sub.coveredBy.map((cover) => cover.bundle?.id)).filter(Boolean));
   const offers = (bundles ?? []).filter((bundle) => !ownedBundleIds.has(bundle.id));
   const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
@@ -72,7 +77,21 @@ export default function ActorProfileScreen() {
 
         <View style={styles.body}>
           <ThemedText type="display">{actor.legalName}</ThemedText>
-          {actor.agency ? (
+          {isCouple ? (
+            // 커플방: 멤버 배우 — 누르면 각자 프로필
+            <View style={styles.members}>
+              {membersOf(actor).map((member) => (
+                <Pressable
+                  key={member.id}
+                  onPress={() => router.push({ pathname: '/actor/[id]', params: { id: member.id } })}
+                  style={styles.member}
+                  accessibilityRole="link">
+                  <Avatar uri={member.chatProfileImageUrl ?? member.officialProfileImageUrl} name={member.legalName} size={28} />
+                  <ThemedText type="smallMedium">{member.legalName}</ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          ) : actor.agency ? (
             <ThemedText type="small" themeColor="textSecondary">
               {actor.agency.name}
             </ThemedText>
@@ -107,6 +126,19 @@ export default function ActorProfileScreen() {
               {isSubscribed ? t('actorProfile.subscribed') : t('actorProfile.noFreeTier')}
             </ThemedText>
           </View>
+
+          {/* 이 배우의 커플방 */}
+          {!isCouple && (couples?.length ?? 0) > 0 ? (
+            <View style={styles.bundles}>
+              <ThemedText type="headline">{t('couple.sectionTitle')}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                {t('couple.sectionHint')}
+              </ThemedText>
+              {couples!.map((room) => (
+                <CoupleCard key={room.id} room={room} onPress={() => router.push({ pathname: '/actor/[id]', params: { id: room.id } })} />
+              ))}
+            </View>
+          ) : null}
 
           {/* 묶음으로 더 저렴하게 — 이미 구독 중인 묶음은 빼고, 활동 종료한 배우면 안 보임(서버가 걸러 줌) */}
           {offers.length > 0 && !actor.retiredAt ? (
@@ -149,6 +181,8 @@ const styles = StyleSheet.create({
   price: { flexDirection: 'row', alignItems: 'baseline' },
   center: { textAlign: 'center', marginTop: -Spacing.two },
   bundles: { marginTop: Spacing.five, gap: Spacing.two },
+  members: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three, marginTop: Spacing.one },
+  member: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   backFloating: { position: 'absolute', left: Spacing.three, backgroundColor: 'rgba(15,17,21,0.35)' },
   backPlain: { margin: Spacing.three },
   loading: { marginTop: Spacing.six },

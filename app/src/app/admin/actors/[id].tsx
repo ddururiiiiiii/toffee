@@ -298,8 +298,21 @@ export default function AdminActorDetailScreen() {
             </ThemedView>
           </AdminSection>
           <BasicInfo key={`${actor.id}-info`} actor={actor} />
-          <AgencySection actor={actor} />
-          <SelfAccountSection actor={actor} />
+          {actor.kind === 'COUPLE' ? (
+            // 커플방: 소속사·본인 계정은 멤버 배우 쪽에서 정해짐(각 소속사가 자기 배우가 든 커플방을 모니터링, 두 배우 본인 계정이 보냄)
+            <AdminSection title="멤버 배우" hint="방 이름과 대화방 사진은 두 배우가 각자 스튜디오에서 바꿀 수 있어요. 멤버 중 한 명이라도 활동을 종료하면 새 구독이 멈춰요.">
+              {actor.coupleMembers.map(({ member }) => (
+                <ThemedText key={member.id} type="small">
+                  {member.legalName} ({member.chatDisplayName}){member.retiredAt ? ' — 활동 종료' : ''}
+                </ThemedText>
+              ))}
+            </AdminSection>
+          ) : (
+            <>
+              <AgencySection actor={actor} />
+              <SelfAccountSection actor={actor} />
+            </>
+          )}
           <RetireSection actor={actor} />
         </ScrollView>
       )}

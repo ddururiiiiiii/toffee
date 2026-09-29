@@ -443,5 +443,12 @@
   },
   "network": {
     "offline": "You're offline"
+  },
+  "couple": {
+    "sectionTitle": "Couple rooms",
+    "sectionHint": "A room where two actors message you together. Subscribed to separately from individual rooms.",
+    "discoverTitle": "Couple rooms",
+    "roomLabel": "Couple room",
+    "soloLabel": "My room"
   }
 }

@@ -116,10 +116,15 @@ export class PushService implements OnModuleInit {
 
   // 배우가 새 메시지를 보낼 때 현재 소속사 스태프 전원에게 알림(모니터링용) — best-effort
   async notifyActorStaff(actorId: string, compose: ComposePush, data?: Record<string, string>): Promise<void> {
-    const actor = await this.prisma.actor.findUnique({ where: { id: actorId }, select: { agencyId: true } });
-    if (!actor?.agencyId) return;
+    // 커플방은 두 멤버 배우의 소속사 직원 모두(각 소속사는 자기 배우가 든 커플방을 모니터링, 2026-09-29)
+    const actor = await this.prisma.actor.findUnique({
+      where: { id: actorId },
+      select: { agencyId: true, coupleMembers: { select: { member: { select: { agencyId: true } } } } },
+    });
+    const agencyIds = [actor?.agencyId, ...(actor?.coupleMembers.map(({ member }) => member.agencyId) ?? [])].filter((id): id is string => !!id);
+    if (agencyIds.length === 0) return;
     const staff = await this.prisma.user.findMany({
-      where: { agencyId: actor.agencyId, role: Role.AGENCY_STAFF },
+      where: { agencyId: { in: [...new Set(agencyIds)] }, role: Role.AGENCY_STAFF },
       select: { id: true },
     });
     await this.sendToUsers(

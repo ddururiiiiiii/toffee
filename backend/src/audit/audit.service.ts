@@ -14,7 +14,8 @@ export type AdminActionType =
   // 가격·스토어 상품 변경(돈과 직결돼서 기록, 2026-09-29)
   | 'ACTOR_PRICE'
   | 'BUNDLE_CREATE'
-  | 'BUNDLE_UPDATE';
+  | 'BUNDLE_UPDATE'
+  | 'COUPLE_CREATE';
 
 /**
  * 운영자 작업 기록(AdminAction) — 제재·역할 변경·신고 처리·배우 활동 종료를 누가 언제 했는지. 유료 서비스 분쟁·문의 대응용.

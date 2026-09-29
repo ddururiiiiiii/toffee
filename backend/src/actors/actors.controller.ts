@@ -16,7 +16,7 @@ export class ActorsController {
   @Public()
   @Get()
   findAll(@Query() query: ListActorsQueryDto) {
-    return this.actorsService.findAll(query.q, query.agencyId, query.sort);
+    return this.actorsService.findAll(query.q, query.agencyId, query.sort, query.kind);
   }
 
   // 'mine'은 ':id'보다 먼저 등록해야 함 — 안 그러면 "mine"이 id로 잡혀버림
@@ -24,6 +24,13 @@ export class ActorsController {
   @Get('mine')
   findMine(@CurrentUser() user: AuthenticatedUser) {
     return this.actorsService.findMine(user.id);
+  }
+
+  // 이 배우가 든 커플방(배우 프로필 "커플방")
+  @Public()
+  @Get(':id/couples')
+  couples(@Param('id') id: string) {
+    return this.actorsService.couplesOf(id);
   }
 
   @Public()

@@ -443,5 +443,12 @@
   },
   "network": {
     "offline": "网络已断开"
+  },
+  "couple": {
+    "sectionTitle": "情侣房间",
+    "sectionHint": "两位演员一起给你发消息的房间，需与个人房间分开订阅。",
+    "discoverTitle": "情侣房间",
+    "roomLabel": "情侣房间",
+    "soloLabel": "个人房间"
   }
 }

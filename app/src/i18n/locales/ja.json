@@ -443,5 +443,12 @@
   },
   "network": {
     "offline": "インターネットに接続されていません"
+  },
+  "couple": {
+    "sectionTitle": "カップルルーム",
+    "sectionHint": "2人の俳優が一緒にメッセージを送るルームです。個人ルームとは別に購読します。",
+    "discoverTitle": "カップルルーム",
+    "roomLabel": "カップルルーム",
+    "soloLabel": "個人ルーム"
   }
 }

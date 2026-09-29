@@ -39,7 +39,7 @@ export class BundlesService {
   /** 이 배우가 들어 있는 판매 중인 묶음(활동 종료한 배우가 섞인 묶음은 뺌) */
   async forActor(actorId: string) {
     const rows = await this.prisma.bundle.findMany({
-      where: { active: true, actors: { some: { actorId } }, NOT: { actors: { some: { actor: { retiredAt: { not: null } } } } } },
+      where: { active: true, actors: { some: { actorId } }, NOT: { actors: { some: { actor: { OR: [{ retiredAt: { not: null } }, { coupleMembers: { some: { member: { retiredAt: { not: null } } } } }] } } } } },
       select: BUNDLE_SELECT,
       orderBy: { priceCents: 'asc' },
     });

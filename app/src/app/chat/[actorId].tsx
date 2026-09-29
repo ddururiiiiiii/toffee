@@ -56,6 +56,7 @@ export default function ChatRoomScreen() {
   // focus: 푸시 알림을 눌러 들어왔을 때 보여줄 메시지 id(없거나 목록에 없으면 평소처럼 맨 아래)
   const { actorId, focus } = useLocalSearchParams<{ actorId: string; focus?: string }>();
   const { data: actor } = useActor(actorId);
+  const isCouple = actor?.kind === 'COUPLE';
   const { data: subscriptions } = useMySubscriptions();
   const subscription = subscriptions?.find((s) => s.actorId === actorId);
   const setMuted = useSetNotificationsMuted(actorId);
@@ -237,19 +238,28 @@ export default function ChatRoomScreen() {
           // 뒤집힌 목록: index-1이 더 최신, index+1이 더 오래된 메시지
           const newer = messages[index - 1];
           const older = messages[index + 1];
+          // 커플방은 보낸 배우가 바뀌어도 묶음을 나눔(누가 보냈는지 보이게)
+          const sameSender = (a: ChatMessage, b: ChatMessage) => a.senderType === b.senderType && (!isCouple || a.sender?.id === b.sender?.id);
           const endsGroup =
             !newer ||
-            newer.senderType !== item.senderType ||
+            !sameSender(newer, item) ||
             new Date(newer.createdAt).getTime() - new Date(item.createdAt).getTime() > GROUP_GAP_MS ||
             !sameDay(newer.createdAt, item.createdAt);
           const dayChanged = !older || !sameDay(older.createdAt, item.createdAt);
+          const startsGroup =
+            !older ||
+            !sameSender(older, item) ||
+            new Date(item.createdAt).getTime() - new Date(older.createdAt).getTime() > GROUP_GAP_MS ||
+            dayChanged;
           return (
             <View>
               {dayChanged && <DaySeparator iso={item.createdAt} locale={i18n.language} />}
               <MessageRow
                 message={item}
-                avatarUri={actor?.chatProfileImageUrl}
-                actorName={actor?.chatDisplayName}
+                avatarUri={isCouple ? (item.sender?.chatProfileImageUrl ?? actor?.chatProfileImageUrl) : actor?.chatProfileImageUrl}
+                actorName={isCouple ? (item.sender?.chatDisplayName ?? actor?.chatDisplayName) : actor?.chatDisplayName}
+                // 커플방: 묶음 첫 말풍선 위에 보낸 배우 이름(카톡 단톡방처럼)
+                senderLabel={isCouple && startsGroup && item.senderType === 'ARTIST' ? (item.sender?.chatDisplayName ?? null) : null}
                 showAvatarAndTime={endsGroup}
                 highlighted={item.id === highlightId}
                 menuOpen={menuFor === item.id}
@@ -361,6 +371,7 @@ function MessageRow({
   onCopy,
   actorId,
   nextVoiceId,
+  senderLabel,
 }: {
   message: ChatMessage;
   avatarUri?: string | null;
@@ -375,6 +386,7 @@ function MessageRow({
   onCopy: () => void;
   actorId: string;
   nextVoiceId?: string;
+  senderLabel?: string | null;
 }) {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
@@ -445,6 +457,11 @@ function MessageRow({
           </View>
         )}
         <View style={[styles.column, isArtist ? styles.columnLeft : styles.columnRight]}>
+          {senderLabel ? (
+            <ThemedText type="captionBold" themeColor="textSecondary" style={styles.senderLabel}>
+              {senderLabel}
+            </ThemedText>
+          ) : null}
           {bubble}
           {menuOpen && (
             <View style={[styles.menu, { backgroundColor: theme.background, borderColor: theme.border }]}>
@@ -501,6 +518,7 @@ const styles = StyleSheet.create({
   bubble: { borderRadius: Radius.lg + 2, paddingHorizontal: 14, paddingVertical: 10, gap: 6 },
   mediaGroup: { gap: 4 },
   time: { paddingHorizontal: 4 },
+  senderLabel: { paddingHorizontal: 4 },
   menu: {
     flexDirection: 'row',
     alignItems: 'center',

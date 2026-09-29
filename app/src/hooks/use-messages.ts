@@ -22,6 +22,8 @@ export interface ChatMessage {
   waveform?: number[] | null;
   // 영상 첫 장면 사진(없을 수도 있음 — 예전 메시지, 캡처 실패)
   thumbnailUrl?: string | null;
+  /** 스타 메시지를 보낸 배우 — 커플방에서 말풍선마다 누가 보냈는지(1인 방에도 오지만 안 씀) */
+  sender?: { id: string; chatDisplayName: string; chatProfileImageUrl: string | null } | null;
   /** 사진·영상 흐린 미리보기(ThumbHash) — 받는 동안 보여줌. 없을 수도 있음(예전 메시지·웹에서 보낸 것) */
   thumbhash?: string | null;
   // 스타의 인용 답장이면 인용한 팬 메시지 요약(전체 공개, 닉네임만)
