@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronRight, Sparkles } from 'lucide-react-native';
 
 import { BundleAvatars } from '@/components/bundle-card';
+import { IdleRefundSection } from '@/components/idle-refund-section';
 import { ThemedText } from '@/components/themed-text';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,13 @@ export default function ManageSubscriptionsScreen() {
       contentContainerStyle={styles.list}
       data={subscriptions ?? []}
       keyExtractor={(item) => item.id}
-      ListHeaderComponent={bundles?.length ? <MyBundlesSection bundles={bundles} /> : null}
+      ListHeaderComponent={
+        <>
+          {/* 스타 미발송 환불 — 대상이 있을 때만 */}
+          <IdleRefundSection />
+          {bundles?.length ? <MyBundlesSection bundles={bundles} /> : null}
+        </>
+      }
       ListFooterComponent={Platform.OS === 'web' ? null : <RestorePurchases />}
       renderItem={({ item }) => <SubscriptionCard sub={item} onPress={() => router.push({ pathname: '/subscriptions/[actorId]', params: { actorId: item.actorId } })} />}
       ListEmptyComponent={

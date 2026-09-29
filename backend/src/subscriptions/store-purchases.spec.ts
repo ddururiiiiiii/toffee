@@ -41,7 +41,7 @@ function setup() {
   const bundles: Row[] = [{ id: 'b1', name: 'A+B', priceCents: 5000, storeProductId: 'toffee.b1', active: true, actorIds: ['a1', 'a2'] }];
   const purchases: Row[] = [];
   const subs: Row[] = [];
-  const charges: { purchaseId: string; storeTransactionId?: string; chargedAt: Date }[] = [];
+  const charges: { purchaseId: string; storeTransactionId?: string; chargedAt: Date; periodEnd?: Date }[] = [];
   const refunded: string[] = [];
   const actorOut = (a: Row) => a && { ...a, actors: undefined };
   const bundleOut = (b: Row) =>
@@ -89,6 +89,9 @@ function setup() {
       update: async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => Object.assign(subs.find((s) => s.id === where.id)!, data),
     },
     subscriptionEvent: { create: async () => ({}) },
+    purchaseCharge: {
+      findUnique: async ({ where }: { where: { storeTransactionId: string } }) => charges.find((c) => c.storeTransactionId === where.storeTransactionId) ?? null,
+    },
     $transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn(db),
   };
   let nextTransaction: StoreTransaction | null = null;
@@ -219,6 +222,16 @@ describe('스토어 알림 반영', () => {
     await r.service.applyStoreEvent({ kind: 'REFUNDED', originalTransactionId: 'orig-1', storeTransactionId: 'tx-1' });
     expect(r.refunded).toEqual(['tx-1']);
     expect(r.open('a1')).toBeUndefined();
+  });
+
+  it('이미 끝난 지난 기간 결제만 환불되면(미발송 환불) 지금 기간 이용은 그대로', async () => {
+    const t = setup();
+    t.receipt();
+    await t.service.verifyPurchase('u', 'a1', t.iosDto);
+    t.charges.push({ purchaseId: 'p1', storeTransactionId: 'tx-old', chargedAt: new Date(Date.now() - 40 * DAY), periodEnd: new Date(Date.now() - 10 * DAY) });
+    await t.service.applyStoreEvent({ kind: 'REFUNDED', originalTransactionId: 'orig-1', storeTransactionId: 'tx-old' });
+    expect(t.refunded).toEqual(['tx-old']);
+    expect(t.open('a1')).toBeDefined();
   });
 
   it('순서가 뒤바뀌어 늦게 온 옛 만료 알림은 무시(그 사이 갱신된 구독을 닫지 않음)', async () => {

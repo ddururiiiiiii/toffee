@@ -545,5 +545,19 @@
     "show": "查看翻译",
     "hide": "隐藏翻译",
     "failed": "翻译失败"
+  },
+  "idleRefund": {
+    "title": "可以申请退款",
+    "reason": "在 {{from}} – {{to}} 的使用期间，明星没有发送任何消息。",
+    "deadline": "{{date}} 前可申请 · {{amount}}",
+    "request": "申请退款",
+    "requestApple": "向 Apple 申请退款",
+    "confirmTitle": "要退还这一期的订阅费吗？",
+    "confirmBody": "{{amount}} 将退回到原付款方式（可能需要几天）。当前的订阅不受影响。",
+    "confirmApple": "Toffee 无法直接退还 Apple 付款。Apple 退款页面打开后，请选择这笔付款并选择\"未按预期运行\"。当前的订阅不受影响。",
+    "refunded": "已退款。退回到付款方式可能需要几天。",
+    "guided": "已打开 Apple 退款申请页面。Apple 审核后会退款。",
+    "guidedBefore": "已为你打开过 Apple 退款页面。如果还没申请，可以再次打开。",
+    "failed": "无法处理退款申请。请稍后再试。"
   }
 }

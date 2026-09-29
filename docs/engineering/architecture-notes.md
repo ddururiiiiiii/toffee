@@ -1173,6 +1173,23 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
   로컬 확인: 8월 마감 → 8월 결제 환불 → 9월 조정 −฿99, CSV 반영.
 - 앱: `useSettlementClose`, 정산 화면 마감 상태 줄(자물쇠·마감/마감 취소 버튼 — `canClose`는 운영자 화면만), 조정 카드·열.
 
+## 스타 미발송 환불 IdleRefund + 환불 기준 경고 (2026-09-29)
+
+- 판정 `subscriptions/idle-refund.service.ts` `IdleRefundService.candidates(userId)`: 내 `PurchaseCharge` 중 `refundedAt null`이고
+  `periodEnd ∈ (now − IDLE_REFUND_REQUEST_DAYS(7), now]`, 그 결제의 `ChargeAllocation.roomId`(묶음이면 여러 방) 전부에서 `[chargedAt, periodEnd)` 동안
+  `Message(senderType ARTIST, deletedAt null)` 0개. allocation이 없는 결제는 대상 아님. 팬 답장은 안 봄.
+- 요청 `request(userId, chargeId)`: 후보 재확인 → SANDBOX `refundedAt` 직접, GOOGLE `IapVerificationService.refundGoogleOrder(orderId)`
+  (`POST .../orders/{orderId}:refund?revoke=false` — 그 주문만, 구독 유지. 서비스 계정 "주문 관리" 권한) 후 `ledger.markRefunded`, APPLE은
+  `STORE_GUIDED` + `https://reportaproblem.apple.com/`(서버 환불 API 없음). 기록 `RefundRequest { chargeId, userId, reason 'STAR_IDLE', source, status }`
+  `@@unique([chargeId, reason])` — 구글/테스트는 행을 먼저 만들고(P2002면 이미 처리) 환불 실패 시 지움(중복 클릭 방지). 마이그레이션
+  `20260929200000_refund_request`. API `GET /me/refunds/idle`, `POST /me/refunds/idle/:chargeId`.
+- **스토어 환불 알림 보정**: `applyStoreEvent(REFUNDED)`에서 환불된 `storeTransactionId`의 `periodEnd`가 이미 지났으면 결제만 환불 처리하고
+  구매(방)는 닫지 않음 — 지난달만 환불한 경우 지금 기간 이용이 끊기지 않게. 현재 기간 결제나 transactionId 없는 REVOKED는 전처럼 닫음.
+- 경고 `notifications/idle-reminder.ts`: `refundDays`(`IDLE_REFUND_DAYS`, 30) 추가, `idleStage`가 27~28일 → 27, 29일 → 29(그 구간엔 7일 반복 28 대신),
+  `refundWarningLeft(stage)`로 경고 단계면 배우 + `notifyActorStaff` + ADMIN(ACTIVE) 전원에 `idleRefundTitle/Body`. 30~34일은 반복 단계 28 < 저장된 29라 안 울림.
+- 앱: `components/idle-refund-section.tsx`(구독 관리 ListHeader 맨 위, 대상 없으면 안 보임). mutation은 구역에 둠 — 환불되면 카드가 목록에서 빠져서
+  카드 안 콜백은 안 불림(처음엔 결과 문구가 안 보였음). 테스트: `idle-refund.service.spec.ts`, `idle-reminder.spec.ts`, `store-purchases.spec.ts`.
+
 ## 검색 속도: pg_trgm GIN 색인 (2026-09-29)
 
 - `ILIKE '%…%'`(Prisma `contains` + `mode: 'insensitive'`)는 btree를 못 써서 행이 늘면 전체를 훑음. 가장 커질 두 곳에 글자 조각 색인:

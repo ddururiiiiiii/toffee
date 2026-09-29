@@ -545,5 +545,19 @@
     "show": "See translation",
     "hide": "Hide translation",
     "failed": "Couldn't translate"
+  },
+  "idleRefund": {
+    "title": "You can request a refund",
+    "reason": "The star sent no messages during your {{from}} – {{to}} period.",
+    "deadline": "Request by {{date}} · {{amount}}",
+    "request": "Request refund",
+    "requestApple": "Request refund from Apple",
+    "confirmTitle": "Refund this period?",
+    "confirmBody": "{{amount}} will go back to your original payment method (this can take a few days). Your current subscription stays active.",
+    "confirmApple": "Toffee can't refund Apple payments directly. When Apple's refund page opens, choose this payment and select \"Didn't work as expected\". Your current subscription stays active.",
+    "refunded": "Refunded. It may take a few days to reach your payment method.",
+    "guided": "We opened Apple's refund page. Apple will review and refund.",
+    "guidedBefore": "We've shown you Apple's refund page. If you haven't requested yet, you can open it again.",
+    "failed": "Couldn't process the refund request. Please try again in a moment."
   }
 }

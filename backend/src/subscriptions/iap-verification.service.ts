@@ -135,6 +135,23 @@ export class IapVerificationService {
   }
 
   /**
+   * 구글 결제 한 건(orderId) 환불(2026-09-29, 스타 미발송 환불) — revoke=false라 지금 이용 중인 기간·자동 갱신은 그대로, 그 결제만 돌려줌.
+   * 서비스 계정에 Play Console "주문 관리" 권한이 있어야 함.
+   */
+  async refundGoogleOrder(orderId: string): Promise<void> {
+    const packageName = this.required('GOOGLE_PLAY_PACKAGE_NAME');
+    const auth = new GoogleAuth({
+      credentials: JSON.parse(this.required('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON')) as Record<string, string>,
+      scopes: ['https://www.googleapis.com/auth/androidpublisher'],
+    });
+    const accessToken = (await (await auth.getClient()).getAccessToken()).token;
+    if (!accessToken) throw new BadRequestException(appError('IAP_GOOGLE_AUTH_FAILED'));
+    const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(packageName)}/orders/${encodeURIComponent(orderId)}:refund?revoke=false`;
+    const res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } });
+    if (!res.ok) throw new BadRequestException(appError('REFUND_FAILED'));
+  }
+
+  /**
    * 구글 실시간 개발자 알림(RTDN)은 Pub/Sub "푸시"로 옴 — 요청의 Authorization: Bearer <OIDC 토큰>이 우리가 지정한 서비스 계정이
    * 서명한 것인지 확인(아무나 가짜 "갱신됨" 알림을 보내지 못하게). 설정이 없으면 이 경로를 닫아 둠(404).
    */

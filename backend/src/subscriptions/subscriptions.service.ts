@@ -369,7 +369,12 @@ export class SubscriptionsService {
       return { applied: true };
     }
     const purchase = await this.prisma.purchase.findUnique({ where: { iapTransactionId: event.originalTransactionId }, include: PURCHASE_INCLUDE });
-    if (event.kind === 'REFUNDED' && event.storeTransactionId) await this.ledger.markRefunded(this.prisma, event.storeTransactionId);
+    if (event.kind === 'REFUNDED' && event.storeTransactionId) {
+      await this.ledger.markRefunded(this.prisma, event.storeTransactionId);
+      // 이미 끝난 기간의 결제만 환불된 것(예: 스타 미발송 환불로 지난달만 돌려줌)이면 지금 이용 중인 기간은 그대로 둠(2026-09-29)
+      const charge = await this.prisma.purchaseCharge.findUnique({ where: { storeTransactionId: event.storeTransactionId }, select: { periodEnd: true } });
+      if (charge && charge.periodEnd <= new Date()) return { applied: true };
+    }
     if (!purchase) return { applied: event.kind === 'REFUNDED' };
     if (event.kind === 'GRACE') {
       if (!purchase.iapExpiresAt || event.until > purchase.iapExpiresAt) {

@@ -489,6 +489,22 @@ export const ERROR_MESSAGES = {
     'zh-Hans': '已有付款记录。如有错误，请删除后重新记录。',
     'zh-Hant': '已有付款紀錄。如有錯誤，請刪除後重新記錄。',
   },
+  REFUND_NOT_ELIGIBLE: {
+    ko: '환불 요청 대상이 아니에요. 이용 기간 동안 스타 메시지가 하나도 없었고, 기간이 끝난 뒤 7일 안일 때만 요청할 수 있어요.',
+    en: 'This payment isn’t eligible. You can request a refund only if the star sent no messages during that period, within 7 days after it ends.',
+    th: 'รายการนี้ขอคืนเงินไม่ได้ ขอได้เฉพาะเมื่อสตาร์ไม่ได้ส่งข้อความเลยในช่วงนั้น และภายใน 7 วันหลังสิ้นสุดช่วงนั้น',
+    ja: 'この支払いは返金申請の対象外です。期間中にスターからのメッセージが一件もなく、期間終了後7日以内の場合のみ申請できます。',
+    'zh-Hans': '该付款不符合退款条件。仅当该期间内明星未发送任何消息，且在期间结束后 7 天内才能申请。',
+    'zh-Hant': '該付款不符合退款條件。僅當該期間內明星未傳送任何訊息，且在期間結束後 7 天內才能申請。',
+  },
+  REFUND_FAILED: {
+    ko: '지금은 환불하지 못했어요. 잠시 후 다시 시도하거나 고객센터에 문의해 주세요.',
+    en: "Couldn't process the refund right now. Please try again later or contact support.",
+    th: 'ไม่สามารถคืนเงินได้ในขณะนี้ กรุณาลองใหม่ภายหลังหรือติดต่อฝ่ายบริการลูกค้า',
+    ja: '現在、返金を処理できませんでした。しばらくしてからもう一度お試しいただくか、サポートにお問い合わせください。',
+    'zh-Hans': '暂时无法退款。请稍后重试或联系客服。',
+    'zh-Hant': '暫時無法退款。請稍後再試或聯絡客服。',
+  },
   TRANSLATION_UNAVAILABLE: {
     ko: '번역 기능을 준비 중이에요.',
     en: 'Translation is not available yet.',

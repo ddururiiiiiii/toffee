@@ -79,3 +79,29 @@ export function useSetNotificationsMuted(actorId: string) {
   });
 }
 
+
+/** 스타 미발송 환불(2026-09-29) — 이용 기간 동안 스타 메시지가 0개였던 결제, 기간 끝난 뒤 7일 안 */
+export interface IdleRefundCandidate {
+  chargeId: string;
+  productName: string;
+  amountCents: number;
+  currency: string;
+  chargedAt: string;
+  periodEnd: string;
+  deadline: string;
+  source: 'SANDBOX' | 'APPLE' | 'GOOGLE';
+  /** 애플 결제를 이미 안내받았으면 STORE_GUIDED */
+  requested: 'REFUNDED' | 'STORE_GUIDED' | null;
+}
+
+export function useIdleRefunds() {
+  return useQuery({ queryKey: ['idle-refunds'], queryFn: () => apiClient.get<IdleRefundCandidate[]>('/me/refunds/idle') });
+}
+
+export function useRequestIdleRefund() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (chargeId: string) => apiClient.post<{ status: 'REFUNDED' | 'STORE_GUIDED'; url?: string }>(`/me/refunds/idle/${chargeId}`),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: ['idle-refunds'] }),
+  });
+}

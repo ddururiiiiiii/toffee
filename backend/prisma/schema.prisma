@@ -586,8 +586,9 @@ model PurchaseCharge {
   refundedAt         DateTime?
   createdAt          DateTime     @default(now())
 
-  purchase    Purchase?          @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
-  allocations ChargeAllocation[]
+  purchase       Purchase?          @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+  allocations    ChargeAllocation[]
+  refundRequests RefundRequest[]
 
   // 같은 구매의 같은 시각 결제는 한 번만(샌드박스 갱신·빈 기록 채우기가 여러 서버에서 동시에 돌아도 안전)
   @@unique([purchaseId, chargedAt])
@@ -657,4 +658,30 @@ model SettlementPayout {
   createdAt    DateTime        @default(now())
 
   @@unique([month, payeeKey])
+}
+
+enum RefundRequestStatus {
+  // 우리가 환불까지 끝냄(구글 API·테스트 결제)
+  REFUNDED
+  // 애플 결제 — 우리가 직접 환불할 수 없어서 애플 환불 요청 페이지로 안내함(애플이 환불하면 스토어 알림으로 결제 기록이 환불로 바뀜)
+  STORE_GUIDED
+}
+
+// 팬의 환불 요청(2026-09-29) — 지금은 "스타 미발송 환불"(결제 기간 동안 스타 메시지 0개면 기간 끝난 뒤 7일 안에 요청)만.
+// 결제 한 건당 한 번(애플 안내는 다시 눌러도 같은 행). 누가 언제 요청했는지 문의·분쟁 대응용 기록
+model RefundRequest {
+  id        String              @id @default(uuid())
+  chargeId  String
+  // 팬(탈퇴해도 기록은 남게 관계 없이 id만)
+  userId    String
+  // 지금은 STAR_IDLE만
+  reason    String
+  source    ChargeSource
+  status    RefundRequestStatus
+  createdAt DateTime            @default(now())
+
+  charge PurchaseCharge @relation(fields: [chargeId], references: [id], onDelete: Restrict)
+
+  @@unique([chargeId, reason])
+  @@index([userId])
 }

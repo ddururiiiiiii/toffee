@@ -2,10 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { MessageSenderType } from '../generated/prisma/enums.js';
+import { MessageSenderType, Role, UserStatus } from '../generated/prisma/enums.js';
 import { PushService } from './push.service.js';
 import { pushStrings } from './push-messages.js';
-import { DEFAULT_IDLE_RULE, idleStage, type IdleReminderRule } from './idle-reminder.js';
+import { DEFAULT_IDLE_RULE, idleStage, refundWarningLeft, type IdleReminderRule } from './idle-reminder.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -13,6 +13,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * 스타 장기 미발송 알림(2026-09-29, 사용자 제안: 배우 본인에게도 푸시). 구독 팬이 있는 방에서 마지막 스타 메시지 후
  * - 3일: 배우(커플방이면 두 배우)에게 "팬 N명이 기다리고 있어요"
  * - 7일: 배우에게 다시 + 소속사 직원에게, 이후 7일마다 한 번
+ * - 환불 기준(30일) 3일 전·하루 전: 배우 + 소속사 + 운영자에게 "며칠 뒤면 팬이 환불을 요청할 수 있어요"(2026-09-29 — 버블 방식 환불 정책)
  * 매일 태국 낮 12시 5분에 확인(밤에 안 울리게). 같은 단계는 한 번만 — 서버가 여러 대여도 먼저 기록한 쪽만 보냄. 활동 종료한 방은 제외.
  */
 @Injectable()
@@ -34,6 +35,7 @@ export class IdleReminderService {
       firstDays: num('IDLE_REMINDER_DAYS', DEFAULT_IDLE_RULE.firstDays),
       escalateDays: num('IDLE_ESCALATE_DAYS', DEFAULT_IDLE_RULE.escalateDays),
       repeatDays: num('IDLE_REPEAT_DAYS', DEFAULT_IDLE_RULE.repeatDays),
+      refundDays: num('IDLE_REFUND_DAYS', DEFAULT_IDLE_RULE.refundDays),
     };
   }
 
@@ -98,6 +100,24 @@ export class IdleReminderService {
       const roomName = room.kind === 'COUPLE' ? room.chatDisplayName : undefined;
       const selfUserIds = [room.selfUserId, ...room.coupleMembers.map(({ member }) => member.selfUserId)].filter((id): id is string => !!id);
       const data = { type: 'idle-reminder', actorId: room.id };
+      const left = refundWarningLeft(stage, rule);
+      if (left !== null) {
+        // 환불 기준 경고 — 배우·소속사·운영자 모두(운영자가 소속사에 직접 연락할 수 있게)
+        const admins = await this.prisma.user.findMany({ where: { role: Role.ADMIN, status: UserStatus.ACTIVE }, select: { id: true } });
+        const warn = (locale: string | null | undefined) => {
+          const t = pushStrings(locale);
+          return { title: t.idleRefundTitle(room.chatDisplayName, left), body: t.idleRefundBody(days, fans) };
+        };
+        await this.push.sendToUsers(selfUserIds, (recipient) => warn(recipient.locale), data);
+        await this.push.notifyActorStaff(room.id, (recipient) => warn(recipient.locale), data);
+        await this.push.sendToUsers(
+          admins.map((admin) => admin.id),
+          (recipient) => warn(recipient.locale),
+          data,
+        );
+        sent += 1;
+        continue;
+      }
       await this.push.sendToUsers(
         selfUserIds,
         (recipient) => {

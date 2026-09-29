@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { idleStage } from './idle-reminder.js';
+import { idleStage, refundWarningLeft } from './idle-reminder.js';
 import { IdleReminderService } from './idle-reminder.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { PushService, ComposePush } from './push.service.js';
@@ -10,6 +10,11 @@ const DAY = 24 * 60 * 60 * 1000;
 describe('미발송 단계', () => {
   it('3일 → 3, 7~13일 → 7, 14일 → 14, 그 전엔 0', () => {
     expect([0, 2, 3, 6, 7, 13, 14, 20, 21].map((days) => idleStage(days))).toEqual([0, 0, 3, 3, 7, 7, 14, 14, 21]);
+  });
+
+  it('환불 기준(30일) 3일 전·하루 전엔 경고 단계, 28일 반복 알림은 건너뜀', () => {
+    expect([26, 27, 28, 29, 30, 34, 35].map((days) => idleStage(days))).toEqual([21, 27, 27, 29, 28, 28, 35]);
+    expect([27, 29, 21, 28].map((stage) => refundWarningLeft(stage))).toEqual([3, 1, null, null]);
   });
 });
 
@@ -28,6 +33,7 @@ function setup(rooms: Record<string, unknown>[], lastMessage: Record<string, Dat
       },
     },
     message: { groupBy: async () => Object.entries(lastMessage).map(([actorId, createdAt]) => ({ actorId, _max: { createdAt } })) },
+    user: { findMany: async () => [{ id: 'admin-1' }] },
   };
   const push = {
     sendToUsers: async (to: string[], compose: ComposePush) => {
@@ -85,5 +91,18 @@ describe('미발송 알림 보내기', () => {
     });
     expect(await t.service.run(now)).toBe(0);
     expect(t.sent).toEqual([]);
+  });
+
+  it('27일째(환불 기준 3일 전)엔 배우·소속사·운영자에게 경고, 28일엔 다시 안 보내고 29일에 한 번 더', async () => {
+    const t = setup([room('a1', { idleReminderStage: 21, idleReminderFor: new Date(now.getTime() - 27 * DAY - 1000) })], {
+      a1: new Date(now.getTime() - 27 * DAY - 1000),
+    });
+    expect(await t.service.run(now)).toBe(1);
+    expect(t.sent.map((push) => push.to)).toEqual([['self-a1'], ['admin-1']]);
+    expect(t.sent[0].title).toBe('a1 · 3일 뒤부터 팬이 환불을 요청할 수 있어요');
+    expect(t.staff).toEqual([{ roomId: 'a1', title: 'a1 · 3일 뒤부터 팬이 환불을 요청할 수 있어요' }]);
+    expect(await t.service.run(new Date(now.getTime() + DAY))).toBe(0);
+    expect(await t.service.run(new Date(now.getTime() + 2 * DAY))).toBe(1);
+    expect(t.sent.at(-1)?.title).toBe('a1 · 내일부터 팬이 환불을 요청할 수 있어요');
   });
 });

@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { SandboxSubscribeGuard } from '../common/guards/sandbox-subscribe.guard.js';
 import { SubscriptionsService } from './subscriptions.service.js';
+import { IdleRefundService } from './idle-refund.service.js';
 import { RestorePurchasesDto, VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
 import { SetNotificationsDto } from './dto/set-notifications.dto.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
@@ -8,7 +9,10 @@ import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
 
 @Controller()
 export class SubscriptionsController {
-  constructor(private readonly subscriptionsService: SubscriptionsService) {}
+  constructor(
+    private readonly subscriptionsService: SubscriptionsService,
+    private readonly idleRefunds: IdleRefundService,
+  ) {}
 
   @Get('me/subscriptions')
   listMine(@CurrentUser() user: AuthenticatedUser) {
@@ -65,6 +69,17 @@ export class SubscriptionsController {
   @Delete('actors/:actorId/subscribe')
   unsubscribe(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string) {
     return this.subscriptionsService.unsubscribe(user.id, actorId);
+  }
+
+  // 스타 미발송 환불 — 지금 요청할 수 있는 내 결제(구독 관리 화면)
+  @Get('me/refunds/idle')
+  listIdleRefunds(@CurrentUser() user: AuthenticatedUser) {
+    return this.idleRefunds.candidates(user.id);
+  }
+
+  @Post('me/refunds/idle/:chargeId')
+  requestIdleRefund(@CurrentUser() user: AuthenticatedUser, @Param('chargeId') chargeId: string) {
+    return this.idleRefunds.request(user.id, chargeId);
   }
 
   // 배우별 알림 끄기(채팅방 🔔)
