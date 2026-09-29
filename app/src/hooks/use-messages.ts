@@ -117,3 +117,41 @@ export function useChatMedia(actorId: string | undefined) {
   });
 }
 
+
+export type ChatSearchHit = Pick<ChatMessage, 'id' | 'senderType' | 'body' | 'mediaType' | 'createdAt' | 'sender'>;
+const SEARCH_PAGE_SIZE = 30;
+
+/**
+ * 채팅방 안 검색(2026-09-29) — 글에 검색어가 들어간 메시지(스타 메시지 + 내 답장), 최신 → 오래된 순 30개씩. 2글자 미만이면
+ * 안 보냄. 결과는 id만 써서 대화방의 그 위치로 이동함.
+ */
+export function useChatSearch(actorId: string | undefined, query: string) {
+  const q = query.trim();
+  return useInfiniteQuery({
+    queryKey: ['chat-search', actorId, q],
+    queryFn: ({ pageParam }) =>
+      apiClient.get<ChatSearchHit[]>(
+        `/actors/${actorId}/messages/search?limit=${SEARCH_PAGE_SIZE}&q=${encodeURIComponent(q)}` +
+          (pageParam ? `&before=${encodeURIComponent(pageParam)}` : ''),
+      ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => (lastPage.length === SEARCH_PAGE_SIZE ? lastPage[lastPage.length - 1].id : undefined),
+    enabled: !!actorId && q.length >= 2,
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * 메시지 번역(2026-09-29) — "번역 보기"를 누른 메시지만 서버에 요청(서버가 메시지 × 언어마다 한 번 번역해 저장). 결과는 다시 받을 필요가
+ * 없어서 앱 켜져 있는 동안 계속 씀.
+ */
+export function useMessageTranslation(actorId: string, messageId: string, language: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['translation', messageId, language],
+    queryFn: () => apiClient.post<{ text: string }>(`/actors/${actorId}/messages/${messageId}/translate`, { targetLanguage: language }),
+    enabled,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    retry: false,
+  });
+}

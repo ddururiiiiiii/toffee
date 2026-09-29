@@ -1,3 +1,4 @@
+import { IDLE_WARN_DAYS, idleDays } from '@/utils/idle-days';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,6 +34,12 @@ function ActorRow({ actor }: { actor: AdminActor }) {
           {formatBaht(actor.monthlyPriceCents)}/월 · 구독자 {actor.activeSubscriberCount}명
           {actor.kind === 'COUPLE' ? '' : ` · ${actor.selfUser ? `본인 계정 ${actor.selfUser.displayName}` : '본인 계정 미연결'}`}
         </ThemedText>
+        {/* 장기 미발송(2026-09-29) — 구독자가 있는데 오래 안 보냈으면 빨간색 */}
+        {actor.activeSubscriberCount > 0 && !actor.retiredAt ? (
+          <ThemedText type="small" themeColor={(idleDays(actor.lastBroadcastAt) ?? IDLE_WARN_DAYS) >= IDLE_WARN_DAYS ? 'danger' : 'textTertiary'}>
+            {!actor.lastBroadcastAt ? '아직 보낸 메시지 없음' : idleDays(actor.lastBroadcastAt) === 0 ? '오늘 메시지 보냄' : `마지막 메시지 ${idleDays(actor.lastBroadcastAt)}일 전`}
+          </ThemedText>
+        ) : null}
       </ThemedView>
       <ThemedText type="small" themeColor="textSecondary">
         ›

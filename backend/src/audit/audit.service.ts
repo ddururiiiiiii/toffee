@@ -15,7 +15,15 @@ export type AdminActionType =
   | 'ACTOR_PRICE'
   | 'BUNDLE_CREATE'
   | 'BUNDLE_UPDATE'
-  | 'COUPLE_CREATE';
+  | 'COUPLE_CREATE'
+  // 소속사 정산 배분율 변경(2026-09-29)
+  | 'AGENCY_SHARE'
+  // 정산 마감·마감 취소(2026-09-29)
+  | 'SETTLEMENT_CLOSE'
+  | 'SETTLEMENT_REOPEN'
+  // 정산 지급 기록·기록 삭제(2026-09-29)
+  | 'SETTLEMENT_PAYOUT'
+  | 'SETTLEMENT_PAYOUT_DELETE';
 
 /**
  * 운영자 작업 기록(AdminAction) — 제재·역할 변경·신고 처리·배우 활동 종료를 누가 언제 했는지. 유료 서비스 분쟁·문의 대응용.
@@ -25,7 +33,7 @@ export type AdminActionType =
 export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async record(adminId: string, action: AdminActionType, targetType: 'USER' | 'REPORT' | 'ACTOR' | 'BUNDLE', targetId: string, detail?: Prisma.InputJsonValue) {
+  async record(adminId: string, action: AdminActionType, targetType: 'USER' | 'REPORT' | 'ACTOR' | 'BUNDLE' | 'AGENCY' | 'SETTLEMENT', targetId: string, detail?: Prisma.InputJsonValue) {
     await this.prisma.adminAction.create({ data: { adminId, action, targetType, targetId, detail } });
   }
 
@@ -39,15 +47,18 @@ export class AuditService {
     const userIds = actions.filter((a) => a.targetType === 'USER').map((a) => a.targetId);
     const actorIds = actions.filter((a) => a.targetType === 'ACTOR').map((a) => a.targetId);
     const bundleIds = actions.filter((a) => a.targetType === 'BUNDLE').map((a) => a.targetId);
-    const [users, actors, bundles] = await Promise.all([
+    const agencyIds = actions.filter((a) => a.targetType === 'AGENCY').map((a) => a.targetId);
+    const [users, actors, bundles, agencies] = await Promise.all([
       this.prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, nickname: true, displayName: true, email: true } }),
       this.prisma.actor.findMany({ where: { id: { in: actorIds } }, select: { id: true, legalName: true } }),
       this.prisma.bundle.findMany({ where: { id: { in: bundleIds } }, select: { id: true, name: true } }),
+      this.prisma.agency.findMany({ where: { id: { in: agencyIds } }, select: { id: true, name: true } }),
     ]);
     const names = new Map<string, string>([
       ...users.map((u) => [u.id, u.nickname ?? u.displayName ?? u.email ?? u.id] as [string, string]),
       ...actors.map((a) => [a.id, a.legalName] as [string, string]),
       ...bundles.map((b) => [b.id, b.name] as [string, string]),
+      ...agencies.map((a) => [a.id, a.name] as [string, string]),
     ]);
     return actions.map(({ admin, ...action }) => ({ ...action, adminName: admin.displayName, targetName: names.get(action.targetId) ?? null }));
   }

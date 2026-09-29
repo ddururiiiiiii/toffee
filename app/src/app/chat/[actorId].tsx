@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import * as Clipboard from 'expo-clipboard';
-import { ArrowUp, Bell, BellOff, CloudOff, Copy, Flag, Images, Lock, MessageCircleHeart, X } from 'lucide-react-native';
+import { ArrowUp, Bell, BellOff, ChevronDown, ChevronUp, CloudOff, Copy, Flag, Images, Lock, MessageCircleHeart, Search, X } from 'lucide-react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Avatar } from '@/components/ui/avatar';
@@ -25,11 +25,12 @@ import { Icon } from '@/components/ui/icon';
 import { IconButton } from '@/components/ui/icon-button';
 import { MediaTile } from '@/components/media-tile';
 import { QuoteBlock } from '@/components/quote-block';
+import { TranslatableText } from '@/components/translatable-text';
 import { VoiceMessage } from '@/components/voice-message';
 import { ApiError } from '@/lib/api-client';
 import { saveMedia } from '@/lib/save-media';
 import { useActor } from '@/hooks/use-actors';
-import { useActorMessages, useReplyQuota, useSendReply, type ChatMessage } from '@/hooks/use-messages';
+import { useActorMessages, useChatSearch, useReplyQuota, useSendReply, type ChatMessage } from '@/hooks/use-messages';
 import { useMySubscriptions, useSetNotificationsMuted } from '@/hooks/use-subscriptions';
 import { useTheme } from '@/hooks/use-theme';
 import { fontFor, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -38,6 +39,8 @@ import { fontFor, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 const AT_BOTTOM_PX = 80;
 // 같은 사람이 이 시간 안에 이어 보낸 메시지는 한 묶음(시간·프로필 사진은 묶음 끝에 한 번)
 const GROUP_GAP_MS = 5 * 60 * 1000;
+// 알림·검색 결과로 이동할 메시지가 아직 안 불러온 예전 메시지면 이만큼(50개씩)까지만 더 불러옴 — 너무 오래된 건 안내만
+const MAX_FOCUS_PAGES = 20;
 
 const sameDay = (a: string, b: string) => new Date(a).toDateString() === new Date(b).toDateString();
 
@@ -85,21 +88,65 @@ export default function ChatRoomScreen() {
     if (bottom && seenNewestId) setSeenNewestId(undefined);
   };
 
-  // 알림으로 들어왔으면 그 메시지로 이동해 잠깐 강조(이미 한 번 처리한 focus는 폴링으로 목록이 바뀌어도 다시 안 함)
+  // 채팅방 안 검색(2026-09-29, 카톡처럼 방 안에서) — 위/아래 화살표로 결과(최신 → 오래된 순)를 옮겨 다니며 그 메시지로 이동
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [matchIndex, setMatchIndex] = useState(0);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchText.trim());
+      setMatchIndex(0);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+  const search = useChatSearch(searchOpen ? actorId : undefined, searchQuery);
+  const hits = useMemo(() => search.data?.pages.flat() ?? [], [search.data]);
+  const activeMatchId = hits[matchIndex]?.id;
+  const goOlderMatch = () => {
+    if (matchIndex + 1 < hits.length) setMatchIndex(matchIndex + 1);
+    // 불러온 결과의 끝이면 다음 결과 묶음을 받은 뒤 넘어감
+    if (matchIndex + 2 >= hits.length && search.hasNextPage && !search.isFetchingNextPage) void search.fetchNextPage();
+  };
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchText('');
+    setHighlightId(null);
+  };
+
+  // 알림(focus)이나 검색 결과로 들어온 메시지로 이동해 강조 — 아직 안 불러온 예전 메시지면 찾을 때까지 이전 대화를 더
+  // 불러옴(최대 MAX_FOCUS_PAGES). 이미 한 번 처리한 대상은 폴링으로 목록이 바뀌어도 다시 안 함
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const handledFocus = useRef<string | null>(null);
+  const focusPaging = useRef<{ target: string | null; pages: number }>({ target: null, pages: 0 });
+  const target = searchOpen ? (activeMatchId ?? null) : (focus ?? null);
   useEffect(() => {
-    const index = focus ? messages.findIndex((m) => m.id === focus) : -1;
-    if (!focus || index < 0 || handledFocus.current === focus) return;
-    handledFocus.current = focus;
-    setHighlightId(focus);
+    if (!target || handledFocus.current === target) return;
+    const index = messages.findIndex((m) => m.id === target);
+    if (index < 0) {
+      const paging = focusPaging.current;
+      if (paging.target !== target) focusPaging.current = { target, pages: 0 };
+      if (isFetchingNextPage) return;
+      if (hasNextPage && focusPaging.current.pages < MAX_FOCUS_PAGES) {
+        focusPaging.current.pages += 1;
+        void fetchNextPage();
+      } else {
+        handledFocus.current = target;
+        if (searchOpen) void Promise.resolve().then(() => setNotice(t('chatSearch.notLoaded')));
+      }
+      return;
+    }
+    handledFocus.current = target;
+    setHighlightId(target);
     const scroll = setTimeout(() => listRef.current?.scrollToIndex({ index, viewPosition: 0.5, animated: false }), 50);
+    return () => clearTimeout(scroll);
+  }, [target, messages, hasNextPage, isFetchingNextPage, fetchNextPage, searchOpen, t]);
+  // 알림으로 온 강조는 잠깐만(검색 중엔 지금 결과를 계속 강조)
+  useEffect(() => {
+    if (!highlightId || searchOpen) return;
     const clear = setTimeout(() => setHighlightId(null), 2500);
-    return () => {
-      clearTimeout(scroll);
-      clearTimeout(clear);
-    };
-  }, [focus, messages]);
+    return () => clearTimeout(clear);
+  }, [highlightId, searchOpen]);
 
   useEffect(() => {
     navigation.setOptions({
@@ -118,6 +165,7 @@ export default function ChatRoomScreen() {
       headerRight: subscription
         ? () => (
             <View style={styles.headerActions}>
+              <IconButton icon={Search} label={t('chatSearch.open')} onPress={() => setSearchOpen(true)} />
               <IconButton
                 icon={Images}
                 label={t('gallery.open')}
@@ -261,7 +309,7 @@ export default function ChatRoomScreen() {
                 // 커플방: 묶음 첫 말풍선 위에 보낸 배우 이름(카톡 단톡방처럼)
                 senderLabel={isCouple && startsGroup && item.senderType === 'ARTIST' ? (item.sender?.chatDisplayName ?? null) : null}
                 showAvatarAndTime={endsGroup}
-                highlighted={item.id === highlightId}
+                highlighted={item.id === highlightId && (!searchOpen || item.id === activeMatchId)}
                 menuOpen={menuFor === item.id}
                 onOpenMenu={() => setMenuFor(item.id)}
                 onCloseMenu={() => setMenuFor(null)}
@@ -302,8 +350,40 @@ export default function ChatRoomScreen() {
   return (
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: theme.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
       <SafeAreaView style={styles.inner} edges={['bottom']}>
+        {searchOpen && (
+          <View style={[styles.searchBar, { borderBottomColor: theme.border }]}>
+            <View style={[styles.searchField, { backgroundColor: theme.backgroundElement }]}>
+              <Icon as={Search} size={16} color={theme.textTertiary} />
+              <TextInput
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholder={t('chatSearch.placeholder')}
+                placeholderTextColor={theme.textTertiary}
+                style={[styles.searchInput, { color: theme.text }, fontFor(400, i18n.language)]}
+                autoFocus
+                returnKeyType="search"
+                onSubmitEditing={goOlderMatch}
+                maxLength={50}
+                accessibilityLabel={t('chatSearch.placeholder')}
+              />
+              {search.isFetching ? <ActivityIndicator size="small" color={theme.textTertiary} /> : null}
+            </View>
+            {searchQuery.length > 0 && !search.isFetching ? (
+              <ThemedText type="caption" themeColor="textTertiary" style={styles.searchCount} numberOfLines={1}>
+                {searchQuery.length < 2
+                  ? t('chatSearch.tooShort')
+                  : hits.length === 0
+                    ? t('chatSearch.noResults')
+                    : t(search.hasNextPage ? 'chatSearch.countMore' : 'chatSearch.count', { current: matchIndex + 1, total: hits.length })}
+              </ThemedText>
+            ) : null}
+            <IconButton icon={ChevronUp} label={t('chatSearch.older')} onPress={goOlderMatch} disabled={matchIndex + 1 >= hits.length && !search.hasNextPage} />
+            <IconButton icon={ChevronDown} label={t('chatSearch.newer')} onPress={() => setMatchIndex(Math.max(matchIndex - 1, 0))} disabled={matchIndex === 0} />
+            <IconButton icon={X} label={t('chatSearch.close')} onPress={closeSearch} />
+          </View>
+        )}
         {body}
-        {showComposer &&
+        {showComposer && !searchOpen &&
           (!canReply || outOfReplies ? (
             <View style={[styles.waitingBar, { borderTopColor: theme.border }]}>
               <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
@@ -424,7 +504,7 @@ function MessageRow({
           />
           {message.body ? (
             <View style={[styles.bubble, { backgroundColor: theme.backgroundElement }]}>
-              <ThemedText>{message.body}</ThemedText>
+              <TranslatableText actorId={actorId} messageId={message.id} text={message.body} />
             </View>
           ) : null}
         </View>
@@ -442,7 +522,8 @@ function MessageRow({
               nextId={nextVoiceId}
             />
           ) : null}
-          {message.body ? <ThemedText>{message.body}</ThemedText> : null}
+          {/* 스타 메시지는 다른 언어면 "번역 보기"(내 답장은 번역 안 함) */}
+          {message.body ? isArtist ? <TranslatableText actorId={actorId} messageId={message.id} text={message.body} /> : <ThemedText>{message.body}</ThemedText> : null}
         </View>
       )}
     </Pressable>
@@ -498,6 +579,20 @@ const styles = StyleSheet.create({
   inner: { flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
   headerTitle: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, maxWidth: 240 },
   headerActions: { flexDirection: 'row', alignItems: 'center' },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+  },
+  searchField: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, borderRadius: Radius.pill, paddingHorizontal: Spacing.three, minHeight: 40 },
+  searchCount: { flexShrink: 0, marginLeft: Spacing.one },
+  searchInput: { flex: 1, minWidth: 0, width: '100%', fontSize: 15, paddingVertical: Spacing.two, outlineStyle: 'none' } as object,
   listArea: { flex: 1 },
   list: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.three },
   // 뒤집힌 목록 안의 빈 화면은 위아래가 뒤집혀 보이지 않게

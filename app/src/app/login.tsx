@@ -11,6 +11,8 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { TextField } from '@/components/ui/text-field';
+import { SocialLoginButtons } from '@/components/social-login-buttons';
+import type { SocialCredential } from '@/lib/social-types';
 import { apiClient, ApiError } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
 import { Radius, Spacing } from '@/constants/theme';
@@ -18,8 +20,11 @@ import { Radius, Spacing } from '@/constants/theme';
 /**
  * 첫 화면 — 브랜드 보드의 스플래시(어두운 배경 + 흰 워드마크 + "Real people. Real messages. A closer world.")와
  * DESIGN_GUIDE §3 온보딩 목표: 배우를 찾고 → 구독하면 DM이 열리고 → 사진·음성·영상이 오고 → 유료라는 걸 한눈에.
- * 로그인은 아직 개발용 이메일뿐 — 소셜 로그인(1차 남은 작업)이 붙으면 아래 카드 자리에 버튼이 들어감.
+ * 로그인: 소셜 로그인(키가 설정된 것만 — 앱은 애플·구글·LINE·카카오·네이버, PC 웹은 구글, 2026-09-29) + 개발용 이메일 로그인(개발 빌드나
+ * EXPO_PUBLIC_ENABLE_DEV_LOGIN=true일 때만 — 운영 빌드엔 안 보임, 서버도 운영에선 막음).
  */
+const SHOW_DEV_LOGIN = __DEV__ || process.env.EXPO_PUBLIC_ENABLE_DEV_LOGIN === 'true';
+
 export default function LoginScreen() {
   const { t } = useTranslation();
   const { login, signedOutReason } = useAuth();
@@ -29,6 +34,23 @@ export default function LoginScreen() {
     mutationFn: () => apiClient.post<{ accessToken: string }>('/auth/dev-login', { email }),
     onSuccess: (data) => login(data.accessToken),
   });
+  // 소셜 로그인 — SDK에서 받은 토큰을 서버가 그 회사 API로 다시 확인하고 우리 로그인 토큰을 줌
+  const [socialError, setSocialError] = useState<string | null>(null);
+  const socialLogin = useMutation({
+    mutationFn: (credential: SocialCredential) => apiClient.post<{ accessToken: string }>(`/auth/${credential.provider}`, credential.body),
+    onSuccess: (data) => login(data.accessToken),
+  });
+  // mutate·setState는 렌더마다 같은 함수 — 웹 구글 버튼이 매번 다시 그려지지 않게 그대로 넘김
+  const onCredential = socialLogin.mutate;
+  const error = socialLogin.isError
+    ? socialLogin.error instanceof ApiError
+      ? socialLogin.error.message
+      : t('login.failed')
+    : devLogin.isError
+      ? devLogin.error instanceof ApiError
+        ? devLogin.error.message
+        : t('login.failed')
+      : (socialError ?? signedOutReason);
 
   const points: { icon: LucideIcon; text: string }[] = [
     { icon: Compass, text: t('welcome.discover') },
@@ -66,6 +88,21 @@ export default function LoginScreen() {
               </View>
             </View>
 
+            <View style={styles.actions}>
+              <SocialLoginButtons onCredential={onCredential} onError={setSocialError} busy={socialLogin.isPending} />
+              {socialLogin.isPending ? (
+                <ThemedText type="small" style={styles.cardHint}>
+                  {t('login.signingIn')}
+                </ThemedText>
+              ) : null}
+              {!SHOW_DEV_LOGIN && error ? (
+                <ThemedText type="small" style={styles.error}>
+                  {error}
+                </ThemedText>
+              ) : null}
+            </View>
+
+            {SHOW_DEV_LOGIN ? (
             <View style={styles.card}>
               <ThemedText type="headline" style={styles.cardTitle}>
                 {t('welcome.devTitle')}
@@ -90,16 +127,13 @@ export default function LoginScreen() {
                 disabled={!email.includes('@')}
                 onPress={() => devLogin.mutate()}
               />
-              {devLogin.isError ? (
+              {error ? (
                 <ThemedText type="small" style={styles.error}>
-                  {devLogin.error instanceof ApiError ? devLogin.error.message : t('login.failed')}
-                </ThemedText>
-              ) : signedOutReason ? (
-                <ThemedText type="small" style={styles.error}>
-                  {signedOutReason}
+                  {error}
                 </ThemedText>
               ) : null}
             </View>
+            ) : null}
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -120,6 +154,7 @@ const styles = StyleSheet.create({
   pointText: { color: 'rgba(255,255,255,0.9)', flex: 1 },
   paid: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   paidText: { color: 'rgba(255,255,255,0.6)' },
+  actions: { gap: Spacing.two },
   card: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: Radius.xl, padding: Spacing.four, gap: Spacing.three },
   cardTitle: { color: '#ffffff' },
   cardHint: { color: 'rgba(255,255,255,0.6)', marginTop: -Spacing.two },

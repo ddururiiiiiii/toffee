@@ -1,4 +1,5 @@
-import { IsIn, IsNotEmpty, IsString, ValidateIf } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ArrayMaxSize, IsArray, IsIn, IsNotEmpty, IsString, ValidateIf, ValidateNested } from 'class-validator';
 
 export class VerifyPurchaseDto {
   @IsIn(['IOS', 'ANDROID'])
@@ -21,4 +22,13 @@ export class VerifyPurchaseDto {
   @IsString()
   @IsNotEmpty()
   purchaseToken?: string;
+}
+
+/** 구매 복원 — 앱이 스토어에서 받은 이 기기의 구독 영수증들(많아야 몇 개) */
+export class RestorePurchasesDto {
+  @IsArray()
+  @ArrayMaxSize(20)
+  @ValidateNested({ each: true })
+  @Type(() => VerifyPurchaseDto)
+  items!: VerifyPurchaseDto[];
 }

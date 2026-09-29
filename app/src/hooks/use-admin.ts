@@ -144,6 +144,8 @@ export interface AdminAgency {
   id: string;
   name: string;
   logoUrl: string | null;
+  // 정산 배분율(%) — null이면 서버 기본값(잠정 70)
+  revenueSharePercent: number | null;
   createdAt: string;
   actorCount: number;
   staffCount: number;
@@ -167,7 +169,7 @@ export function useCreateAgency() {
 export function useUpdateAgency() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...input }: { id: string; name?: string; logoUrl?: string | null }) =>
+    mutationFn: ({ id, ...input }: { id: string; name?: string; logoUrl?: string | null; revenueSharePercent?: number | null }) =>
       apiClient.patch<AdminAgency>(`/admin/agencies/${id}`, input),
     onSuccess: () => {
       invalidateAdminAccounts(queryClient);
@@ -196,6 +198,8 @@ export interface AdminActor {
   agency: { id: string; name: string; logoUrl: string | null } | null;
   selfUser: { id: string; displayName: string; email: string | null } | null;
   activeSubscriberCount: number;
+  /** 마지막 스타 메시지 시각(목록에서만, 없으면 null) — "N일째 미발송" 표시 */
+  lastBroadcastAt?: string | null;
 }
 
 export interface AgencyHistoryEntry {
@@ -436,3 +440,28 @@ export function useCreateCouple() {
   );
 }
 
+
+/** 운영자 환불 요청 목록(2026-09-29) — 스타 미발송·활동 종료 */
+export interface AdminRefundEntry {
+  id: string;
+  reason: 'STAR_IDLE' | 'ACTOR_RETIRED';
+  source: 'SANDBOX' | 'APPLE' | 'GOOGLE';
+  /** REFUNDED = 우리가 환불까지, STORE_GUIDED = 애플 환불 페이지 안내(애플이 환불하면 refundedAt이 채워짐) */
+  status: 'REFUNDED' | 'STORE_GUIDED';
+  requestedAt: string;
+  fan: { id: string; name: string; email: string | null } | null;
+  productName: string;
+  amountCents: number;
+  chargedAt: string;
+  periodEnd: string;
+  refundedAt: string | null;
+  actors: string[];
+  agencies: (string | null)[];
+}
+
+export function useAdminRefunds(reason?: AdminRefundEntry['reason']) {
+  return useQuery({
+    queryKey: ['admin', 'refunds', reason ?? null],
+    queryFn: () => apiClient.get<AdminRefundEntry[]>(`/admin/refunds${reason ? `?reason=${reason}` : ''}`),
+  });
+}

@@ -1,14 +1,18 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { SandboxSubscribeGuard } from '../common/guards/sandbox-subscribe.guard.js';
 import { SubscriptionsService } from './subscriptions.service.js';
-import { VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
+import { RefundService } from './refund.service.js';
+import { RestorePurchasesDto, VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
 import { SetNotificationsDto } from './dto/set-notifications.dto.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
 
 @Controller()
 export class SubscriptionsController {
-  constructor(private readonly subscriptionsService: SubscriptionsService) {}
+  constructor(
+    private readonly subscriptionsService: SubscriptionsService,
+    private readonly refunds: RefundService,
+  ) {}
 
   @Get('me/subscriptions')
   listMine(@CurrentUser() user: AuthenticatedUser) {
@@ -50,9 +54,32 @@ export class SubscriptionsController {
     return this.subscriptionsService.verifyPurchase(user.id, actorId, dto);
   }
 
+  // 묶음 스토어 결제 확인
+  @Post('bundles/:bundleId/verify-purchase')
+  verifyBundlePurchase(@CurrentUser() user: AuthenticatedUser, @Param('bundleId') bundleId: string, @Body() dto: VerifyPurchaseDto) {
+    return this.subscriptionsService.verifyBundlePurchase(user.id, bundleId, dto);
+  }
+
+  // 구매 복원(기기 변경·재설치) — 스토어 심사에서 요구하는 "구매 복원" 버튼
+  @Post('me/purchases/restore')
+  restorePurchases(@CurrentUser() user: AuthenticatedUser, @Body() dto: RestorePurchasesDto) {
+    return this.subscriptionsService.restorePurchases(user.id, dto.items);
+  }
+
   @Delete('actors/:actorId/subscribe')
   unsubscribe(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string) {
     return this.subscriptionsService.unsubscribe(user.id, actorId);
+  }
+
+  // 환불 요청(스타 미발송·활동 종료) — 지금 요청할 수 있는 내 결제(구독 관리 화면)
+  @Get('me/refunds')
+  listRefundable(@CurrentUser() user: AuthenticatedUser) {
+    return this.refunds.candidates(user.id);
+  }
+
+  @Post('me/refunds/:chargeId')
+  requestRefund(@CurrentUser() user: AuthenticatedUser, @Param('chargeId') chargeId: string) {
+    return this.refunds.request(user.id, chargeId);
   }
 
   // 배우별 알림 끄기(채팅방 🔔)

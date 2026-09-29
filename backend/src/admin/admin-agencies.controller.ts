@@ -4,6 +4,8 @@ import { CreateAgencyDto, UpdateAgencyDto } from './dto/upsert-agency.dto.js';
 import { AssignAgencyDto } from './dto/assign-agency.dto.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { Role } from '../generated/prisma/enums.js';
+import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
 
 @Roles(Role.ADMIN)
 @Controller('admin')
@@ -21,8 +23,8 @@ export class AdminAgenciesController {
   }
 
   @Patch('agencies/:id')
-  update(@Param('id') id: string, @Body() dto: UpdateAgencyDto) {
-    return this.adminAgenciesService.update(id, dto);
+  update(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() dto: UpdateAgencyDto) {
+    return this.adminAgenciesService.update(user.id, id, dto);
   }
 
   @Patch('actors/:id/agency')

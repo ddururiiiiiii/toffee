@@ -21,6 +21,8 @@ async function main() {
   await prisma.storyView.deleteMany();
   await prisma.story.deleteMany();
   await prisma.subscription.deleteMany();
+  await prisma.chargeAllocation.deleteMany();
+  await prisma.purchaseCharge.deleteMany();
   await prisma.purchase.deleteMany();
   await prisma.bundle.deleteMany();
   await prisma.authIdentity.deleteMany();

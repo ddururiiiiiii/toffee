@@ -5,6 +5,8 @@ import type { PrismaService } from '../prisma/prisma.service.js';
 import type { IapVerificationService } from './iap-verification.service.js';
 import type { MediaService } from '../storage/media.service.js';
 import type { RealtimeService } from '../realtime/realtime.service.js';
+import type { ChargeLedgerService } from '../settlements/charge-ledger.service.js';
+import type { ConfigService } from '@nestjs/config';
 
 interface Purchase {
   id: string;
@@ -90,9 +92,19 @@ function fakeDb(user: Record<string, unknown> = DONE_USER) {
     },
     $transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn(db),
   };
-  const service = new SubscriptionsService(db as unknown as PrismaService, {} as IapVerificationService, {} as MediaService, { publish: () => Promise.resolve() } as unknown as RealtimeService);
+  // 정산용 결제 기록 — 무엇이 기록됐는지만 모아 둠(배분 계산은 settlements/allocate-charge.spec)
+  const charges: { purchaseId: string; source: string }[] = [];
+  const ledger = { record: async (_tx: unknown, purchaseId: string, input: { source: string }) => charges.push({ purchaseId, source: input.source }) };
+  const service = new SubscriptionsService(
+    db as unknown as PrismaService,
+    {} as IapVerificationService,
+    {} as MediaService,
+    { publish: () => Promise.resolve() } as unknown as RealtimeService,
+    ledger as unknown as ChargeLedgerService,
+    { get: () => undefined } as unknown as ConfigService,
+  );
   const open = (actorId: string) => subs.find((s) => s.actorId === actorId && !s.cancelledAt);
-  return { service, purchases, subs, events, actors, bundles, open };
+  return { service, purchases, subs, events, actors, bundles, open, charges };
 }
 
 describe('구독 전 가입 절차 강제(서버)', () => {
@@ -174,5 +186,14 @@ describe('묶음 구독', () => {
     const db = fakeDb();
     db.bundles.get('b1')!.active = false;
     await expect(db.service.subscribeBundle('u', 'b1')).rejects.toThrow('구독할 수 없는 묶음');
+  });
+});
+
+describe('정산용 결제 기록', () => {
+  it('개인 구독·묶음 구독 모두 구매마다 첫 결제 한 건(샌드박스)', async () => {
+    const { service, purchases, charges } = fakeDb();
+    await service.subscribe('u', 'a1');
+    await service.subscribeBundle('u', 'b1');
+    expect(charges).toEqual(purchases.map((purchase) => ({ purchaseId: purchase.id, source: 'SANDBOX' })));
   });
 });

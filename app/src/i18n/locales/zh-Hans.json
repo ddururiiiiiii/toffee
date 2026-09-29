@@ -27,7 +27,17 @@
     "demoHint": "正式的社交账号登录准备好后会显示在这里。现在只用邮箱就可以体验完整流程。",
     "namePlaceholder": "昵称（选填）",
     "submit": "登录",
-    "failed": "登录失败。"
+    "failed": "登录失败。",
+    "socialFailed": "登录失败，请重试。",
+    "signingIn": "正在登录…",
+    "continueWith": {
+      "apple": "通过 Apple 继续",
+      "google": "通过 Google 继续",
+      "line": "通过 LINE 继续",
+      "kakao": "通过 Kakao 继续",
+      "naver": "通过 NAVER 继续"
+    },
+    "backToLogin": "返回登录"
   },
   "actors": {
     "title": "寻找演员",
@@ -112,7 +122,10 @@
     "lastBroadcast": "最近发送日期",
     "noBroadcast": "暂无发送记录",
     "noNickname": "（无昵称）",
-    "deletedByActor": "明星已删除的消息（粉丝看不到）"
+    "deletedByActor": "明星已删除的消息（粉丝看不到）",
+    "lastMessageDays": "上次消息：{{count}} 天前",
+    "noMessagesYet": "尚未发送消息",
+    "lastMessageToday": "今天已发送消息"
   },
   "onboarding": {
     "birthDateTitle": "请填写你的出生日期",
@@ -390,7 +403,14 @@
     "benefits": "包含权益",
     "openChat": "查看消息",
     "cancel": "取消订阅",
-    "notFound": "找不到订阅信息"
+    "notFound": "找不到订阅信息",
+    "cancelInStore": "在商店中取消",
+    "cancelInStoreBody": "此订阅通过 {{store}} 购买，请在 {{store}} 的订阅管理中取消。已付费期间结束前可继续使用。",
+    "openStore": "打开 {{store}}",
+    "restore": "恢复购买",
+    "restoreDone": "已恢复 {{count}} 个订阅",
+    "restoreNone": "没有可恢复的订阅",
+    "restoreFailed": "恢复失败，请稍后重试。"
   },
   "welcome": {
     "headline": "真实的人，\n真实的消息，\n更近的世界。",
@@ -399,7 +419,7 @@
     "media": "照片、语音和视频，由演员亲自发送",
     "paid": "付费订阅服务 · 无免费方案",
     "devTitle": "开发用邮箱登录",
-    "devHint": "接入社交登录后，这里会显示登录按钮。",
+    "devHint": "这是开发和演示用的登录方式。正式发布的应用中不会显示，只显示社交账号登录按钮。",
     "email": "邮箱",
     "continue": "继续"
   },
@@ -433,7 +453,8 @@
     "cancelConfirm": "取消 {{name}} 后，与 {{names}} 的聊天室将一起关闭（单独订阅的演员不受影响）。重新订阅也看不到之前的聊天。",
     "cancelFromActor": "该演员包含在你的 {{name}} 套餐中。取消后套餐内其他聊天室也会关闭，重新订阅也看不到之前的聊天。",
     "cancelFailed": "取消失败，请重试。",
-    "viaShort": "通过套餐使用"
+    "viaShort": "通过套餐使用",
+    "replacesSingleStore": "单独订阅的 {{names}} 的商店订阅不会自动结束——购买套餐后请在商店订阅管理中取消（聊天会继续）。"
   },
   "gallery": {
     "title": "照片和视频",
@@ -450,5 +471,94 @@
     "discoverTitle": "情侣房间",
     "roomLabel": "情侣房间",
     "soloLabel": "个人房间"
+  },
+  "chatSearch": {
+    "open": "搜索聊天",
+    "placeholder": "搜索消息",
+    "close": "关闭搜索",
+    "older": "上一个结果",
+    "newer": "下一个结果",
+    "count": "{{current}}/{{total}}",
+    "countMore": "{{current}}/{{total}}+",
+    "noResults": "没有找到",
+    "tooShort": "至少 2 个字",
+    "notLoaded": "无法加载到该消息"
+  },
+  "settlement": {
+    "title": "结算",
+    "menuHint": "每月付款额、商店手续费、支付金额，下载 CSV（电脑网页）",
+    "webOnly": "请在电脑网页上查看结算",
+    "webOnlyBody": "结算表格较大且信息敏感，手机应用中不显示。请在电脑浏览器中用同一账号登录查看。",
+    "prevMonth": "上个月",
+    "nextMonth": "下个月",
+    "includeSandbox": "包含测试付款",
+    "sandboxIncluded": "包含测试（未付款）订阅，并非实际结算金额。",
+    "csvActors": "按演员 CSV",
+    "csvRooms": "按房间 CSV",
+    "downloadFailed": "下载失败",
+    "loadFailed": "无法加载结算",
+    "allAgencies": "全部",
+    "independent": "无经纪公司（结算给演员本人）",
+    "gross": "付款额",
+    "storeFee": "商店手续费 {{percent}}%",
+    "storeFeeShort": "商店手续费",
+    "net": "扣除手续费后",
+    "payout": "支付金额",
+    "platform": "Toffee 分成",
+    "refunded": "退款",
+    "charges": "付款笔数",
+    "actor": "演员",
+    "total": "合计",
+    "share": "分成 {{percent}}%",
+    "soloRoom": "个人房间",
+    "coupleRoom": "情侣房间（{{name}}）",
+    "empty": "本月没有付款",
+    "note": "根据付款记录估算（按泰国时间计月）。商店手续费 {{fee}}%、默认分成 {{share}}% 为暂定值，因各经纪公司合同而异。套餐按单独定价比例分配，情侣房间由两位演员平分。实际到账金额（各国价格、汇率、税费）需与商店结算报告核对。",
+    "adjustment": "调整（上月）",
+    "close": "本月结账",
+    "reopen": "取消结账",
+    "closeTitle": "结算结账",
+    "closeConfirm": "要以当前数字锁定 {{month}} 的结算吗？结账后的退款或迟到的付款将计入下月的“调整”，而非本月。请按已结账的表格支付。",
+    "reopenTitle": "取消结账",
+    "reopenConfirm": "要取消 {{month}} 的结账吗？如果已经支付，建议不要取消，而是在下月调整中处理。取消后将按当前数据重新计算。",
+    "closedAt": "已结账 — {{date}}，{{name}}。此表保持结账时的数据（之后的退款或付款计入下月调整）。",
+    "openCurrent": "本月进行中——数字仍会变化。月底后可结账。",
+    "openPast": "尚未结账——如有退款数字可能变化。请在支付前结账。",
+    "closeFailed": "操作失败",
+    "paid": "已付款 — {{date}}，{{amount}}",
+    "unpaid": "尚无付款记录 — 应付金额 {{amount}}",
+    "payoutNegative": "无需付款（{{amount}}）— 将从下次付款中扣除",
+    "payoutDiffers": "与结算表中的应付金额 {{amount}} 不同",
+    "payoutRecord": "记录付款",
+    "payoutSave": "记录",
+    "payoutDelete": "删除记录",
+    "payoutDeleteTitle": "删除付款记录",
+    "payoutDeleteConfirm": "请只删除填错的记录。这只会删除记录，不会撤销实际转账（运营操作记录中仍会保留）。",
+    "payoutAmount": "转账金额（฿）",
+    "payoutDate": "转账日期",
+    "payoutReference": "转账编号",
+    "payoutMemo": "备注（选填）",
+    "payoutAmountInvalid": "请用数字填写转账金额",
+    "payoutDateInvalid": "请按 YYYY-MM-DD 格式填写日期"
+  },
+  "translate": {
+    "show": "查看翻译",
+    "hide": "隐藏翻译",
+    "failed": "翻译失败"
+  },
+  "idleRefund": {
+    "title": "可以申请退款",
+    "reason": "在 {{from}} – {{to}} 的使用期间，明星没有发送任何消息。",
+    "deadline": "{{date}} 前可申请 · {{amount}}",
+    "request": "申请退款",
+    "requestApple": "向 Apple 申请退款",
+    "confirmTitle": "要退还这一期的订阅费吗？",
+    "confirmBody": "{{amount}} 将退回到原付款方式（可能需要几天）。当前的订阅不受影响。",
+    "confirmApple": "Toffee 无法直接退还 Apple 付款。Apple 退款页面打开后，请选择这笔付款并选择\"未按预期运行\"。当前的订阅不受影响。",
+    "refunded": "已退款。退回到付款方式可能需要几天。",
+    "guided": "已打开 Apple 退款申请页面。Apple 审核后会退款。",
+    "guidedBefore": "已为你打开过 Apple 退款页面。如果还没申请，可以再次打开。",
+    "failed": "无法处理退款申请。请稍后再试。",
+    "reasonRetired": "演员已于 {{date}} 结束活动，在付款后 14 天内，因此可以全额退还本期费用。"
   }
 }

@@ -52,7 +52,7 @@
   검증하고, 마이그레이션 SQL은 `prisma/migrations/`의 기존 파일을 본떠 손으로 작성할
   것. 파일명은 `YYYYMMDDHHmmss_설명` 형식.
 - 커밋 전엔 최소 `backend`: `npx tsc --noEmit`, `npm run lint`(oxlint), `npm test`, `npx nest build`
-  / `app`: `npx tsc --noEmit`, `npx eslint src` 통과를 확인할 것. GitHub Actions CI(`.github/workflows/ci.yml`)는
+  / `app`: `npx tsc --noEmit`, `npx eslint src`, `npm test` 통과를 확인할 것(화면 흐름을 바꿨으면 서버·웹을 띄우고 `npm run e2e`도). GitHub Actions CI(`.github/workflows/ci.yml`)는
   Actions 무료 시간을 아끼려고 **main 대상 PR/push에서만** 자동으로 돎(작업 브랜치 push에선 안 돎,
   2026-09-28) — 그래서 스키마를 바꿨다면 로컬 Postgres에 `prisma migrate deploy` 후
   `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code`로

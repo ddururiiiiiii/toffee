@@ -8,6 +8,7 @@ import { ActorKind, MessageSenderType, Role } from '../generated/prisma/enums.js
 import type { Prisma } from '../generated/prisma/client.js';
 import { MediaService } from '../storage/media.service.js';
 import { appError } from '../common/i18n/app-error.js';
+import { escapeLike } from '../common/utils/escape-like.js';
 
 // legalName/officialProfileImageUrl는 탐색 화면(공식 프로필, 운영자가 관리)에, chatDisplayName(배우가 직접 정하는
 // 닉네임)/chatProfileImageUrl는 채팅방 안에서 씀 — 어느 쪽을 보여줄지는 클라이언트가 화면 맥락에 맞게 고름
@@ -53,8 +54,8 @@ export class ActorsService {
     if (agencyId) where.agencyId = agencyId;
     if (query) {
       where.OR = [
-        { legalName: { contains: query, mode: 'insensitive' } },
-        { agency: { name: { contains: query, mode: 'insensitive' } } },
+        { legalName: { contains: escapeLike(query), mode: 'insensitive' } },
+        { agency: { name: { contains: escapeLike(query), mode: 'insensitive' } } },
       ];
     }
     const actors = await this.prisma.actor.findMany({
@@ -94,7 +95,20 @@ export class ActorsService {
       select: LIST_SELECT,
       orderBy: { legalName: 'asc' },
     });
-    return Promise.all(actors.map((actor) => this.withImageUrls(actor)));
+    const last = await this.lastBroadcastMap(actors.map((actor) => actor.id));
+    // 마지막 스타 메시지 시각 — 소속사 목록의 "N일째 미발송" 표시(2026-09-29)
+    return Promise.all(actors.map(async (actor) => ({ ...(await this.withImageUrls(actor)), lastBroadcastAt: last.get(actor.id) ?? null })));
+  }
+
+  /** 방별 마지막 스타 메시지 시각(지운 메시지 제외) */
+  async lastBroadcastMap(actorIds: string[]): Promise<Map<string, Date | null>> {
+    if (actorIds.length === 0) return new Map();
+    const rows = await this.prisma.message.groupBy({
+      by: ['actorId'],
+      where: { actorId: { in: actorIds }, senderType: MessageSenderType.ARTIST, deletedAt: null },
+      _max: { createdAt: true },
+    });
+    return new Map(rows.map((row) => [row.actorId, row._max.createdAt]));
   }
 
   async getStats(userId: string, actorId: string) {

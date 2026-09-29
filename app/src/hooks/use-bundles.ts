@@ -22,6 +22,8 @@ export interface Bundle {
   priceCents: number;
   /** 포함된 배우를 개인 구독으로 따로 살 때 합계 — "N% 할인" 표시용 */
   regularPriceCents: number;
+  /** 스토어 구독 상품 ID — 없으면 아직 스토어 결제 불가(샌드박스 구독만) */
+  storeProductId?: string | null;
   actors: BundleActor[];
 }
 

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 export class CreateAgencyDto {
   @IsString()
@@ -22,4 +22,11 @@ export class UpdateAgencyDto {
   @IsOptional()
   @IsString()
   logoUrl?: string | null;
+
+  // 정산 배분율(스토어 수수료 뺀 금액 중 소속사 몫 %) — null이면 기본값으로 되돌림
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  revenueSharePercent?: number | null;
 }

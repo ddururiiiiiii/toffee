@@ -7,9 +7,15 @@
     "@expo/ui": "~57.0.17",
     "@react-native-firebase/app": "^26.4.0",
     "@react-native-firebase/messaging": "^26.4.0",
+    "@react-native-google-signin/google-signin": "^16.1.5",
+    "@react-native-kakao/core": "^2.4.8",
+    "@react-native-kakao/user": "^2.4.8",
+    "@react-native-seoul/naver-login": "^5.0.1",
     "@sentry/react-native": "~7.11.0",
     "@tanstack/react-query": "^5.102.8",
+    "@xmartlabs/react-native-line": "^6.0.1",
     "expo": "~57.0.21",
+    "expo-apple-authentication": "~57.0.1",
     "expo-audio": "~57.0.4",
     "expo-build-properties": "~57.0.17",
     "expo-clipboard": "~57.0.1",
@@ -55,7 +61,9 @@
     "@types/react": "~19.2.2",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~57.0.1",
-    "typescript": "~6.0.3"
+    "playwright": "^1.56.1",
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.2"
   },
   "scripts": {
     "start": "expo start",
@@ -63,7 +71,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test": "vitest run",
+    "e2e": "node e2e/run.mjs"
   },
   "private": true
 }

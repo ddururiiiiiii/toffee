@@ -4,6 +4,7 @@ import { Role, UserStatus, type ReportCategory } from '../generated/prisma/enums
 import type { Prisma } from '../generated/prisma/client.js';
 import { appError } from '../common/i18n/app-error.js';
 import { AuditService } from '../audit/audit.service.js';
+import { escapeLike } from '../common/utils/escape-like.js';
 
 interface SanctionReason {
   category: ReportCategory;
@@ -39,9 +40,9 @@ export class AdminUsersService {
     if (role) where.role = role;
     if (query) {
       where.OR = [
-        { displayName: { contains: query, mode: 'insensitive' } },
-        { nickname: { contains: query, mode: 'insensitive' } },
-        { email: { contains: query, mode: 'insensitive' } },
+        { displayName: { contains: escapeLike(query), mode: 'insensitive' } },
+        { nickname: { contains: escapeLike(query), mode: 'insensitive' } },
+        { email: { contains: escapeLike(query), mode: 'insensitive' } },
       ];
     }
     return this.prisma.user.findMany({

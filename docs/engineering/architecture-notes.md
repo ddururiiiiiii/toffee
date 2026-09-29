@@ -1074,3 +1074,234 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
 - 앱: `Actor.kind/coupleMembers`, `CoupleCard`, 배우 프로필 커플방 절·커플방 멤버 줄, 둘러보기 커플방 줄, 채팅 말풍선 보낸 배우 이름
   (보낸 배우가 바뀌면 묶음 분리), 스튜디오 목록 개인방/커플방 라벨·메시지 보낸 배우, 콘솔 라벨, 운영자 `admin/actors/new-couple`.
 
+## 채팅방 안 검색 (2026-09-29)
+
+- API `GET /actors/:actorId/messages/search?q=&limit=&before=`(`SearchMessagesQueryDto`, q 2~50자) → `MessagesService.searchForFan`.
+  범위는 `listForFan`과 같음(구독 시작 이후, `deletedAt: null`, 스타 메시지 OR 본인 답장). 본문은 `contains + mode insensitive`(ILIKE).
+  **Prisma `contains`는 `%`·`_`를 이스케이프하지 않아서** "%%"가 전부와 맞았음 → `escapeLike()`로 이스케이프(단위 테스트). 팬 이름에 q가
+  들어 있으면 `{{name}}`이 있는 스타 메시지도 같이 찾고, 응답 본문은 personalize 후. 결과는 가벼운 필드(id·senderType·body·mediaType·
+  createdAt·sender)만.
+- 인덱스: `Message`에 `(actorId, createdAt)`가 없었음(기존은 PK·replyToMessageId뿐) — 팬 대화 나눠 받기·검색·모아보기가 모두 이 조건이라
+  `@@index([actorId, createdAt])` 추가(마이그레이션 `20260929130000_message_actor_created_index`). 부분 문자열 검색은 이 인덱스로 방 단위
+  행만 훑음 — 방당 메시지가 수만 개가 되면 `pg_trgm` GIN 인덱스 검토.
+- 앱: `useChatSearch`(infinite, 30개씩). 채팅 화면에 방 안 검색 바(350ms 디바운스, ▲/▼, 결과 끝에서 다음 결과 묶음). 알림 `focus`와 검색 결과가
+  같은 이동 로직을 씀 — 대상이 불러온 목록에 없으면 `fetchNextPage`를 찾을 때까지(최대 `MAX_FOCUS_PAGES`=20 × 50개). 이전엔 알림 focus가
+  첫 50개 밖이면 그냥 무시됐음(같이 고쳐짐). 강조 해제 타이머를 별도 effect로 분리(폴링으로 목록이 바뀌면 cleanup이 타이머를 지워 강조가
+  안 꺼지던 문제). `IconButton`에 `disabled` 추가.
+- 한계: 많이 불러온 상태에서 폴링(연결 끊겼을 때)은 불러온 페이지를 전부 다시 받음 — react-query infinite 기본 동작. 실시간 연결 중엔
+  30초 간격이라 부담 작음.
+
+## 정산: 결제 기록(PurchaseCharge)·배분(ChargeAllocation), PC 넓은 화면 (2026-09-29)
+
+- 스키마(`20260929140000_purchase_charges_settlement`): `PurchaseCharge`(결제 1건 — purchaseId는 SetNull로 팬 탈퇴 후에도 남음, actorId/
+  bundleId/productName/amountCents/currency 복사, chargedAt/periodEnd, `ChargeSource` SANDBOX/APPLE/GOOGLE, storeTransactionId unique,
+  refundedAt, `@@unique([purchaseId, chargedAt])`), `ChargeAllocation`(chargeId Cascade, roomId·actorId·agencyId는 Restrict — 돈 기록이 있는
+  배우·소속사는 못 지움), `Agency.revenueSharePercent Int?`.
+- `settlements/allocate-charge.ts`: `allocateCharge(amount, rooms)` — 방이 여럿이면 `allocateBundlePrice`(정가 비율), 커플방은 멤버에게 같은
+  가중치로 다시 나눔. 반올림은 마지막 몫. `addMonths`는 월말 보정.
+- `ChargeLedgerService.record(tx, purchaseId, input)`: 멱등(같은 purchase+chargedAt 또는 storeTransactionId면 기존 행, 동시 생성은 P2002 잡아서
+  재조회). 배우 소속사는 `ActorAgencyHistory`에서 chargedAt을 포함하는 행, 이력이 아예 없는 배우만 현재 `agencyId`. 호출처: `subscribe`/
+  `subscribeBundle`(SANDBOX), `verifyPurchase`(새 구매 = 첫 결제, 기존 구매의 만료일이 늘었으면 이전 만료 시각에 갱신 결제).
+  `fillMissing()`(부팅 시 비동기 + 매시간 cron): 샌드박스 구매는 startedAt + k개월(해지 전·지금 이전), 스토어 구매는 기록이 없을 때 첫 결제만.
+  기존 데이터 백필도 이걸로(마이그레이션 SQL엔 백필 없음). 로컬 12건 백필·재시작 후 중복 0 확인.
+- `SettlementsService.report(month, { agencyId, includeSandbox })`: 태국 시간 월 범위(`monthRange`), allocation을 결제 순간 소속사 → 배우 →
+  방으로 모음, 환불은 refundedCents로 분리. `splitRevenue`: 수수료 = round(gross×fee%), 지급 = round(net×share%), 토피 = 나머지(합 보존).
+  수수료·지급은 배우 단위로 계산해 합산(소속사 합계 = 배우 합). `includeSandbox` 기본값 = `ENABLE_SANDBOX_SUBSCRIBE`. `toCsv`는 BOM + 배우별/
+  배우×방별.
+- API: `GET /settlements?month=YYYY-MM[&agencyId&includeSandbox]`, `GET /settlements/export?...&detail=true`(text/csv) — ADMIN·AGENCY_STAFF,
+  `scopeFor`가 직원이면 자기 agencyId로 강제(요청의 agencyId 무시). `PATCH /admin/agencies/:id`에 `revenueSharePercent`(0~100, null = 기본값),
+  변경 시 감사 기록 `AGENCY_SHARE`(targetType AGENCY, 이름 해석 추가). 운영자 작업 기록 화면에 빠져 있던 ACTOR_PRICE·BUNDLE_*·COUPLE_CREATE 라벨도 추가.
+- 설정: `STORE_FEE_PERCENT`(15), `AGENCY_REVENUE_SHARE_PERCENT`(70).
+- 앱: `hooks/use-settlements.ts`(`apiClient.getText`로 CSV → Blob 다운로드, 웹에서만 enabled), `components/settlement-report.tsx`(i18n 6개
+  언어 — 소속사 콘솔이 태국어일 수 있어서), `admin/settlements`, `console/settlements`. `components/wide-shell.tsx`: 웹 && 폭 ≥ 1024 && 경로가
+  /admin·/console이면 루트 Stack을 왼쪽 메뉴(248px) + 내용으로 감쌈(라우트 구조는 그대로). 운영자 메뉴는 `constants/admin-menu.ts`로 분리해
+  홈 목록과 공유.
+- 남은 일: 스토어 갱신·환불 알림으로 PurchaseCharge 기록(결제 연결 작업), 실제 결제 금액·통화(애플 JWS price/currency, 구글 orderId), 정산 마감
+  (월 확정 스냅샷), 지급 처리 기록.
+
+## 스토어 결제·서버 알림, 소셜 로그인 앱 연결 (2026-09-29)
+
+**서버 — 결제**
+- `IapVerificationService`가 `StoreTransaction`(originalTransactionId = Purchase.iapTransactionId, storeTransactionId = 결제 건 id(애플
+  transactionId / 구글 orderId), productId, purchasedAt, expiresAt, accountToken(애플 appAccountToken / 구글 obfuscatedExternalAccountId),
+  storeAmountMilli·storeCurrency)을 돌려줌. 애플 `SignedDataVerifier`는 한 번 만들어 재사용, **운영 환경은 appAppleId(`APPLE_APP_ID`) 필수**
+  (예전 코드엔 없어서 운영 검증이 실패했을 것). 설정이 없으면 503(`SERVICE_UNAVAILABLE`, 예전엔 getOrThrow로 500).
+- `SubscriptionsService.verifyStorePurchase(userId, dto, expected)`: accountToken ≠ userId → 409 `IAP_RECEIPT_IN_USE`, 만료 → 400
+  `IAP_EXPIRED`, productId로 `Actor.storeProductId`/`Bundle.storeProductId` 조회(없으면 `IAP_PRODUCT_UNKNOWN`), 기대한 배우·묶음과 다르면
+  `IAP_PRODUCT_MISMATCH`(예전엔 상품 확인이 없어서 싼 상품 영수증으로 비싼 방을 열 수 있었음). `upsertStorePurchase`: 같은 구독 인스턴스면
+  만료일만 늘림(줄이지 않음), 새 구매면 판매 가능 확인. 결제 기록은 storeTransactionId로 멱등. 라우트: `POST actors/:id/verify-purchase`(기존 응답
+  모양 유지), `POST bundles/:id/verify-purchase`, `POST me/purchases/restore`(최대 20개, 건별 결과).
+- 스토어 알림: `store-notifications.controller.ts` — `POST /iap/apple/notifications`(signedPayload JWS 검증 → `appleStoreEvent`),
+  `POST /iap/google/notifications`(Pub/Sub 푸시 OIDC 토큰을 `GOOGLE_RTDN_AUDIENCE`·`GOOGLE_RTDN_SERVICE_ACCOUNT_EMAIL`로 확인, 미설정이면
+  404 → base64 data → `googleStoreEvent`, 결제·유예 알림은 Play API로 최신 상태 재조회). 둘 다 `StoreEvent`(PAID/GRACE/EXPIRED/REFUNDED/
+  IGNORED)로 바꿔 `applyStoreEvent`에 넘김. PAID인데 우리 구매가 없으면 accountToken의 사용자로 생성(앱이 결제 직후 죽은 경우), 없으면 무시.
+  REFUNDED는 `ChargeLedgerService.markRefunded(storeTransactionId)` + 구매 닫기. `sweepExpired`(매시간): `iapExpiresAt < now - IAP_EXPIRY_GRACE_HOURS(24)`.
+- 스토어 구매 해지 요청(`cancelPurchase`/`unsubscribe`)은 409 `IAP_MANAGE_IN_STORE`. `listMine().coveredBy[].iapPlatform`으로 앱이 미리 분기.
+- `PurchaseCharge.storeAmountMilli`·`storeCurrency`(마이그레이션 `20260929150000_charge_store_amount`) — 정산 금액(amountCents, 바트 정가)과
+  별개로 실제 청구액 대조용.
+- 테스트: `store-purchases.spec.ts`(메모리 DB — 상품 불일치·만료·다른 계정·묶음·복원·스토어 해지 거절·갱신 멱등·accountToken 생성·만료/환불/
+  유예·만료 정리, 애플·구글 알림 해석, 구글 orderId 갱신 판별·micros 변환).
+
+**서버 — 로그인**: `GOOGLE_CLIENT_ID`·`APPLE_CLIENT_ID`·`LINE_CHANNEL_ID` 쉼표 목록 허용(애플 idToken aud = 번들 ID라 `.dev` 빌드가 막혔음, LINE은
+idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/user/access_token_info`의 app_id를 확인(토큰 바꿔치기 방지). 설정 없으면 거절.
+
+**앱**
+- `lib/social-sign-in.ts`(네이티브, 젤리 이식 — 운영/개발 키를 `extra.isProductionVariant`로 선택, 안드로이드도 분리) / `.web.ts`(구글만) +
+  `components/social-login-buttons.tsx` / `.web.tsx`(구글 GIS `renderButton`, popup → credential = idToken). Metro 플랫폼 확장자로 웹 번들에
+  네이티브 SDK가 안 들어감. `login.tsx`: `/auth/<provider>`로 교환, 개발 로그인 카드는 `__DEV__ || EXPO_PUBLIC_ENABLE_DEV_LOGIN`. 로그아웃 시
+  `signOutProviders`.
+- `app.config.ts`: `usesAppleSignIn`, `expo-apple-authentication`·LINE 플러그인은 항상, 구글(iosUrlScheme)·카카오(nativeAppKey)·네이버(urlScheme)
+  플러그인은 키가 있을 때만(키 없이도 빌드), 카카오 maven 저장소, `extra.isProductionVariant`. `expo config --type prebuild`로 키 있는/없는 경우 해석 확인.
+  **네이티브 빌드(EAS)는 아직 안 돌려 봄** — 첫 빌드 때 SDK 링크(static frameworks + Firebase) 확인 필요.
+- `hooks/use-store-purchase.ts`(`.web.ts`는 항상 unavailable): `useIAP` + 대기 중 구매 Promise(ref), 결제창에 appAccountToken/obfuscatedAccountId
+  = 사용자 id, 성공 → verify-purchase → `finishTransaction`(서버 확인 실패면 끝내지 않아 다음 실행에 재시도), 대기 없는 거래(재실행 시 재전달)는
+  restore로. 복원은 `getAvailablePurchases()` → restore. 구독·묶음 구독 화면은 `available`이면 스토어, 아니면 샌드박스. `lib/store-subscriptions.ts`:
+  스토어 구독 관리 URL. 예전 `use-purchase.ts`(쓰이지 않던 배우 전용 훅) 삭제.
+
+## 정산 마감 SettlementClose (2026-09-29)
+
+- 스키마 `SettlementClose { month(PK, YYYY-MM), closedAt, closedById, snapshot Json }`(마이그레이션 `20260929160000_settlement_close`).
+- `SettlementsService.report`: 마감한 달이면 snapshot(소속사 범위만 필터·합계 재계산) + `closed {at, byId, byName}`, 아니면 `compute()`.
+  `compute`: 이 달 결제(기존) + **조정** — `chargedAt < from`이고 `createdAt` 또는 `refundedAt`이 이 달인 allocation 중, 결제 달(`monthOf`)이
+  마감됐고 그 사건 시각이 `closedAt` 이후인 것만(늦은 기록 +, 환불 −). 마감 안 한 달의 결제는 조정 없이 그 달 안에서 환불 처리.
+  `splitRevenue(gross + adjustment)` — 음수 가능. 응답·CSV에 `adjustmentCents`, CSV에 status 열.
+- `close(adminId, month)`: 끝난 달만(`SETTLEMENT_NOT_ENDED`), 중복 불가, 첫 결제 달부터 앞 달이 모두 마감돼야 함(`SETTLEMENT_CLOSE_ORDER`), 감사
+  `SETTLEMENT_CLOSE`(targetType SETTLEMENT). `reopen`: 뒤 달이 마감돼 있으면 거절(`SETTLEMENT_REOPEN_ORDER`), 감사 `SETTLEMENT_REOPEN`.
+  API `POST|DELETE /settlements/:month/close`(ADMIN). 사건 시각은 "기록된 시각"(환불 알림 도착 시각)이라 마감은 달이 끝난 뒤에만 허용 → 마감 뒤
+  사건은 항상 뒤 달에 떨어짐.
+- 테스트: `settlements.service.spec.ts`(메모리 DB — 마감 후 환불 −조정, 늦은 기록 +조정, 마감 전 환불은 조정 없음, 순서·중복·미종료 거절).
+  로컬 확인: 8월 마감 → 8월 결제 환불 → 9월 조정 −฿99, CSV 반영.
+- 앱: `useSettlementClose`, 정산 화면 마감 상태 줄(자물쇠·마감/마감 취소 버튼 — `canClose`는 운영자 화면만), 조정 카드·열.
+
+## 스타 미발송 환불 IdleRefund + 환불 기준 경고 (2026-09-29)
+
+- (같은 날 이어서 `refund.service.ts` `RefundService`로 이름 바꾸고 활동 종료 사유 추가 — 아래 절) 판정 `IdleRefundService.candidates(userId)`: 내 `PurchaseCharge` 중 `refundedAt null`이고
+  `periodEnd ∈ (now − IDLE_REFUND_REQUEST_DAYS(7), now]`, 그 결제의 `ChargeAllocation.roomId`(묶음이면 여러 방) 전부에서 `[chargedAt, periodEnd)` 동안
+  `Message(senderType ARTIST, deletedAt null)` 0개. allocation이 없는 결제는 대상 아님. 팬 답장은 안 봄.
+- 요청 `request(userId, chargeId)`: 후보 재확인 → SANDBOX `refundedAt` 직접, GOOGLE `IapVerificationService.refundGoogleOrder(orderId)`
+  (`POST .../orders/{orderId}:refund?revoke=false` — 그 주문만, 구독 유지. 서비스 계정 "주문 관리" 권한) 후 `ledger.markRefunded`, APPLE은
+  `STORE_GUIDED` + `https://reportaproblem.apple.com/`(서버 환불 API 없음). 기록 `RefundRequest { chargeId, userId, reason 'STAR_IDLE', source, status }`
+  `@@unique([chargeId, reason])` — 구글/테스트는 행을 먼저 만들고(P2002면 이미 처리) 환불 실패 시 지움(중복 클릭 방지). 마이그레이션
+  `20260929200000_refund_request`. API `GET /me/refunds/idle`, `POST /me/refunds/idle/:chargeId`.
+- **스토어 환불 알림 보정**: `applyStoreEvent(REFUNDED)`에서 환불된 `storeTransactionId`의 `periodEnd`가 이미 지났으면 결제만 환불 처리하고
+  구매(방)는 닫지 않음 — 지난달만 환불한 경우 지금 기간 이용이 끊기지 않게. 현재 기간 결제나 transactionId 없는 REVOKED는 전처럼 닫음.
+- 경고 `notifications/idle-reminder.ts`: `refundDays`(`IDLE_REFUND_DAYS`, 30) 추가, `idleStage`가 27~28일 → 27, 29일 → 29(그 구간엔 7일 반복 28 대신),
+  `refundWarningLeft(stage)`로 경고 단계면 배우 + `notifyActorStaff` + ADMIN(ACTIVE) 전원에 `idleRefundTitle/Body`. 30~34일은 반복 단계 28 < 저장된 29라 안 울림.
+- 앱: `components/idle-refund-section.tsx`(구독 관리 ListHeader 맨 위, 대상 없으면 안 보임). mutation은 구역에 둠 — 환불되면 카드가 목록에서 빠져서
+  카드 안 콜백은 안 불림(처음엔 결과 문구가 안 보였음). 테스트: `idle-refund.service.spec.ts`, `idle-reminder.spec.ts`, `store-purchases.spec.ts`.
+
+## 환불 확장: 활동 종료·입대 + 운영자 목록 (2026-09-29)
+
+- `subscriptions/refund.service.ts` `RefundService`(이전 IdleRefundService). 후보 조회: `refundedAt null`, `periodEnd > now − REFUND_REQUEST_DAYS`,
+  `chargedAt ≤ now`인 내 결제마다 사유 하나 — **ACTOR_RETIRED** 먼저: 결제의 allocation 방이 전부 종료(`roomsEndedAt` — 방의 종료 시각 = 방 `retiredAt`과
+  커플 멤버 `retiredAt` 중 가장 이른 것, 묶음은 그중 가장 늦은 것)이고 종료 시각 `< chargedAt + RETIRE_REFUND_DAYS(14)`·`< periodEnd`·`≤ now`
+  (결제 전 이미 종료된 방의 갱신 결제도 대상) → 기간 중에도 바로 요청, 기한 `periodEnd + 7일`. 아니면 **STAR_IDLE**(기존 규칙). 재개하면 `retiredAt null`이라 후보에서 빠짐.
+- API 이름 정리: `GET /me/refunds`, `POST /me/refunds/:chargeId`(앱만 쓰던 `/me/refunds/idle`은 제거). `RefundRequest.reason`에 `ACTOR_RETIRED`.
+- 활동 종료 알림: `AdminActorsService.setRetired`가 새로 종료할 때만(`wasRetired` 아니면) 그 배우 방 + 들어 있는 커플방(`CoupleMember.memberId`)의
+  활성 구독 팬에게 `retiredFanTitle/Body` 푸시(AdminModule이 NotificationsModule import).
+- 운영자 목록: `AdminRefundsController` `GET /admin/refunds?reason=`(ADMIN) → `RefundService.adminList` — 최근 200건, 팬(지금 닉네임·이메일, 탈퇴면 null),
+  결제의 allocation 배우·소속사, `charge.refundedAt`(애플 안내 건이 실제로 환불됐는지 — 애플 REFUND 알림이 채움). 앱 `app/admin/refunds.tsx`(한국어 전용).
+- 확인: 단위 테스트(기간 중 종료 즉시 대상·14일 지나 종료는 아님·결제 전 종료된 방 갱신 결제는 대상·묶음 일부 종료는 아님), 로컬에서 Chanon 종료 →
+  팬 후보 ACTOR_RETIRED → 환불 → 운영자 목록 → 재개·데이터 정리.
+
+## 검색 속도: pg_trgm GIN 색인 (2026-09-29)
+
+- `ILIKE '%…%'`(Prisma `contains` + `mode: 'insensitive'`)는 btree를 못 써서 행이 늘면 전체를 훑음. 가장 커질 두 곳에 글자 조각 색인:
+  `Message.body`(방 안 검색 — 팬 답장까지 한 테이블이라 인기 배우는 `[actorId, createdAt]` 범위도 큼), `User.displayName/nickname/email`(운영자 회원 검색).
+  배우·소속사 이름은 행이 적어서 안 넣음.
+- 스키마: generator `previewFeatures = ["postgresqlExtensions"]`, datasource `extensions = [pg_trgm]`, `@@index([body(ops: raw("gin_trgm_ops"))], type: Gin,
+  map: ...)` — 스키마에 적어야 `migrate diff` 드리프트 검사가 색인을 지우라고 안 함. 마이그레이션 `20260929190000_search_trigram_index`
+  (`CREATE EXTENSION IF NOT EXISTS pg_trgm` 포함 — 운영 DB가 확장 설치를 허용해야 함, RDS·Cloud SQL·Supabase·Neon 모두 기본 허용).
+- 확인: `EXPLAIN`(seqscan off)에서 한국어 `'%사랑해요%'`·영문 모두 `Bitmap Index Scan on Message_body_trgm_idx`. 한계: 검색어가 2글자면 3글자 조각이
+  없어서 색인 효과 없음(결과는 정확, 기존처럼 훑음). 쓰기 비용이 조금 늘어남(GIN) — 메시지 쓰기 빈도 대비 문제없는 수준.
+- 같이: `escapeLike`를 `common/utils/escape-like.ts`로 옮기고 배우·소속사·운영자 배우/회원 검색에도 적용(`%` 하나로 전부 나오던 것).
+
+## 정산 지급 기록 SettlementPayout (2026-09-29)
+
+- 스키마 `SettlementPayout { id, month → SettlementClose(onDelete Restrict), agencyId?, actorId?, payeeKey, name, amountCents, paidAt, reference?, memo?,
+  recordedById?, createdAt }`, `@@unique([month, payeeKey])`(마이그레이션 `20260929180000_settlement_payout`). `payeeKey`는 `agency:<id>` | `actor:<id>` —
+  nullable 두 열에 unique를 걸면 null끼리 안 막혀서 따로 둠. agency/actor는 관계 없이 id + 그때 이름(`name`)만(지워져도 기록 보존).
+- `SettlementsService.recordPayout(adminId, month, dto)`: 마감한 달만(`SETTLEMENT_NOT_CLOSED`), 받는 쪽은 snapshot에서 찾음 — `agencyId`면 소속사 그룹
+  합계, `actorId`면 무소속 그룹(agencyId null) 안의 배우. 둘 다/둘 다 없음/없는 받는 쪽/지급액 ≤ 0이면 `SETTLEMENT_PAYOUT_INVALID`, 중복은
+  `SETTLEMENT_PAYOUT_EXISTS`. `amountCents` 생략 시 표의 지급액. 감사 `SETTLEMENT_PAYOUT`(detail payee·amountCents·expectedCents).
+  `deletePayout`: 감사 `SETTLEMENT_PAYOUT_DELETE`. `reopen`: 지급 기록이 있으면 `SETTLEMENT_REOPEN_PAID`.
+- API(ADMIN): `POST /settlements/:month/payouts`(`SettlementPayoutDto`), `DELETE /settlements/:month/payouts/:payoutId`(204).
+  `report()` 응답에 `payouts[]`(마감한 달만, 소속사 범위면 그 소속사 것만 — 소속사 직원은 자기 것만 봄), CSV 요약에 `paid_at` 열.
+- 앱: `components/settlement-payout.tsx` `PayoutBar`(표 아래 한 줄 — 지급 완료/보낼 금액/음수 안내, 운영자면 기록 폼·지우기), `useSettlementPayouts`.
+  날짜만 입력받아 `YYYY-MM-DDT12:00:00+07:00`으로 보냄(어느 시간대에서도 같은 날). 테스트: `settlements.service.spec.ts` "정산 지급 기록".
+
+## PC 웹 소셜 로그인(authorization code) (2026-09-29)
+
+- 서버: `POST /auth/{kakao|naver|line}/web`(`WebCodeLoginDto` code·redirectUri·state) → `AuthService.verify{Kakao|Naver|Line}WebCode`: redirectUri의
+  origin이 `WEB_LOGIN_ORIGINS`(쉼표)에 있어야 함(없으면 웹 로그인 꺼짐) → 토큰 교환(카카오 `kauth.kakao.com/oauth/token` REST 키 + 선택 client
+  secret, 네이버 `nid.naver.com/oauth2.0/token` client id/secret + state, LINE `api.line.me/oauth2/v2.1/token` 웹 채널 id/secret) → 기존
+  `verifyKakaoToken`(앱 ID 확인 포함)·`verifyNaverToken`·`verifyLineToken`(aud로 채널 선택 — `LINE_WEB_CHANNEL_ID`가 `LINE_CHANNEL_ID` 목록에 있어야 함).
+  로그인 제한(5회/분)은 앱 로그인과 같음. 테스트: 허용 안 된 origin·설정 없음은 외부 호출 없이 거절, 카카오·LINE 교환 흐름(fetch 목).
+- 앱(웹): `lib/social-sign-in.web.ts` — `startRedirectLogin`(state = 16바이트 무작위, `sessionStorage`에 `provider:state`, redirect `<origin>/oauth/<provider>`,
+  LINE은 scope `profile openid`), `consumeRedirectState`(1회용). `app/oauth/[provider].tsx`: state 확인 후 1회만 서버 호출(ref 가드) → `login()`, AuthGate는
+  `oauth`를 로그인 화면처럼 취급. 버튼 색·순서는 `components/social-button-style.ts`로 앱·웹 공유. 키: `EXPO_PUBLIC_WEB_KAKAO_REST_API_KEY`·
+  `EXPO_PUBLIC_WEB_NAVER_CLIENT_ID`·`EXPO_PUBLIC_WEB_LINE_CHANNEL_ID`. 브라우저 확인: 버튼 → 카카오 authorize URL(client_id·redirect_uri·state),
+  위조 state 거절(서버 호출 없음), 맞는 state면 code 1회 전송.
+- 애플 웹은 Services ID + client secret(JWT, .p8 서명)가 필요해서 보류. → 2026-09-29 추가: `POST /auth/apple/web` →
+  `AuthService.verifyAppleWebCode` — `ensureWebRedirect` → `apple-signin-auth` `getClientSecret`(ES256, iss 팀 ID, sub Services ID, 5분) →
+  `getAuthorizationToken` → `verifyIdToken(audience = APPLE_WEB_SERVICES_ID)`. env `APPLE_WEB_SERVICES_ID`·`APPLE_TEAM_ID`·`APPLE_SIGNIN_KEY_ID`·
+  `APPLE_SIGNIN_PRIVATE_KEY`(\n 한 줄). 앱: `WEB_KEYS.apple`(`EXPO_PUBLIC_WEB_APPLE_SERVICES_ID`), authorize에 **scope 없이 `response_mode=query`** —
+  name/email scope를 넣으면 애플이 form_post만 허용해서 정적 웹(/oauth/apple)으로 못 받음. 그래서 웹 신규 가입은 이메일 없이 생김(웹은 기존 계정
+  로그인 용도). 회원 식별값(sub)이 앱과 같으려면 Services ID를 iOS App ID와 같은 그룹(Primary App ID)으로. 애플은 https Return URL만 → localhost
+  확인 불가, 브라우저 확인은 authorize URL·state·서버 호출까지. 테스트: `auth.service.spec.ts`(가짜 애플 서버 `_setFetch` — client secret 서명·
+  audience 불일치 거절).
+
+## 보안 점검 (2026-09-29)
+
+범위: 인증(JWT 전략·역할 가드·공개 경로 21개), 운영자 컨트롤러 역할, 공개 배우 응답 필드, 스토리·신고 접근, 법률 HTML 이스케이프, 결제·스토어
+알림, 정산, 웹 로그인, 의존성.
+- 문제없음: JWT는 매 요청 DB에서 역할·정지·탈퇴 재확인, 운영자 경로 전부 `@Roles(ADMIN)`, 공개 배우 응답에 계정·이메일 없음, 스토리·신고는
+  구독/열람 권한 확인, 법률 페이지 escapeHtml, 정산 소속사 범위 강제, 웹 로그인 state·허용 origin.
+- 고침: ① **스토어 알림 순서** — 애플·구글 알림은 순서 보장이 없어서 옛 EXPIRED가 갱신 뒤에 오면 결제한 팬의 방을 닫았을 것 → EXPIRED에
+  알림의 만료 시각을 싣고(구글은 API로 최신 상태 재조회), 아직 미래거나 우리가 아는 만료일보다 옛날이면 무시. ② **동시 결제 확인** — 같은
+  영수증이 동시에 두 번 오면 `iapTransactionId` 고유 제약으로 500 → P2002면 기존 구매 경로로 한 번 더. ③ **정산 CSV 수식 주입** — =,+,-,@로
+  시작하는 글자 칸 앞에 `'`(숫자는 제외). ④ 의존성: `npm audit fix`(비파괴)로 multer(업로드 DoS)·firebase-admin 계열 갱신. 남은 4건은 Prisma
+  CLI 쪽(mysql2·deepmerge-ts — Postgres 런타임과 무관, 고치려면 Prisma 메이저 다운그레이드라 보류). 앱은 high/critical 없음(moderate 21, Expo 빌드 도구).
+- 알고 두는 위험: 웹은 로그인 토큰을 localStorage에 둠(XSS가 나면 탈취 가능 — 사용자 입력을 HTML로 그리는 곳 없음, React가 이스케이프).
+
+## 스타 장기 미발송 알림 (2026-09-29)
+
+- `notifications/idle-reminder.ts`: `idleStage(days, rule)` — 3일 → 3, 7~13 → 7, 14~20 → 14 …(firstDays/escalateDays/repeatDays).
+- `IdleReminderService.run(now)`(cron `5 12 * * *` Asia/Bangkok, `IDLE_REMINDER_ENABLED=false`면 끔): 구독자가 있고 활동 종료 아닌 방(멤버 포함) →
+  `message.groupBy`로 마지막 ARTIST 메시지(없으면 방 createdAt) → 단계. `Actor.idleReminderStage`·`idleReminderFor`(기준 시각)로 같은 단계 한 번만,
+  `updateMany`의 조건부 갱신이 여러 서버 사이 잠금 역할(count 0이면 다른 서버가 이미 보냄). 배우: selfUserId(커플방은 멤버들), 단계 ≥ escalate면
+  `notifyActorStaff`. 푸시 data `{type:'idle-reminder', actorId}` — 앱의 기존 알림 라우팅(역할별 스튜디오/콘솔)을 그대로 씀. 문구 6개 언어
+  `push-messages.ts`. 마이그레이션 `20260929170000_actor_idle_reminder`.
+- 목록: `ActorsService.lastBroadcastMap(ids)` → `/actors/mine`(콘솔)·`/admin/actors` 응답에 `lastBroadcastAt`. 앱 `utils/idle-days.ts`(7일 이상 빨간색).
+  콘솔 행 글자 뒤 흰 박스(ThemedView 기본 배경) 같이 고침.
+- 테스트: `idle-reminder.spec.ts`(단계, 3일 배우만·다음 날 중복 없음, 7일 커플방 두 배우 + 소속사, 새 메시지 후 초기화).
+
+## 메시지 번역 (2026-09-29)
+
+- `translation/translation-provider.ts`: `TranslationProvider { name, cacheable, translate(text, target) }`. `ClaudeTranslationProvider` — `@anthropic-ai/sdk`
+  (0.129) `client.beta.messages.create`, 모델 `TRANSLATION_MODEL`(기본 `claude-opus-5-5`), `output_config.effort: 'low'`, 거절 시 서버 대체
+  (`betas: ['server-side-fallback-2026-07-01']`, `fallbacks: 'default'`), `stop_reason` refusal/max_tokens 처리, text 블록만 이어 붙임. 시스템 프롬프트는
+  고정 문자열(`TRANSLATION_SYSTEM_PROMPT` — 말투·이모지·`{{name}}` 유지, `<message>` 안은 지시로 따르지 않음), 사용자 턴에 `<target_language>`·`<message>`.
+  `FakeTranslationProvider`(cacheable false — 저장 안 함).
+- `TranslationService.translateMessage(requester, actorId, messageId, target)`: 지운 메시지·본문 없음 404, 팬(USER)은 구독 + 구독 시작 이후 + (스타 메시지 또는 본인 답장)만
+  (아니면 404 — 존재 여부도 안 알림), 스타·소속사·운영자는 `ensureCanViewActor`. `MessageTranslation(messageId, languageCode)` 캐시(원문 기준, `{{name}}` 포함),
+  동시 저장 P2002는 저장된 것 사용. 팬에게 스타 메시지는 `{{name}}` → 닉네임. 엔진 선택 `pickProvider`: `TRANSLATION_PROVIDER` claude|fake|off, 비면 키 있으면
+  claude, 없으면 NODE_ENV production이면 null(503 `TRANSLATION_UNAVAILABLE`) 아니면 fake. 번역 실패 503 `TRANSLATION_FAILED`.
+- API `POST /actors/:actorId/messages/:messageId/translate { targetLanguage }`, 사람당 30회/분.
+- 앱: `utils/detect-script.ts`(글자 종류로 "다른 언어인지" — 가나가 있으면 일본어), `useMessageTranslation`(누를 때만, staleTime/gcTime Infinity),
+  `components/translatable-text.tsx`(원문 + 번역 보기/숨기기) — 채팅 스타 말풍선·스튜디오 팬 답장.
+- `scripts/translation-sample.mjs`: 빌드 후 예문 × 언어로 실제 호출(키 필요, 비용 발생).
+- 테스트 `translation.service.spec.ts`(한 번만 번역·캐시·{{name}}, 팬 권한, 가짜 미저장·꺼짐, 엔진 선택, 프롬프트).
+
+## 앱 자동 테스트 (2026-09-29)
+
+- 단위: `app/vitest.config.ts`(`@` 별칭, `src/**/*.test.ts`, node 환경) — 화면 없이 순수 로직만(`utils/*`, 로그인 버튼 순서). 정산 달 계산은
+  `utils/month.ts`로 옮김(훅 파일이 react-native를 불러서 테스트에서 못 씀). `npm test`, CI app 잡에도 추가.
+- 끝-끝: `app/e2e/run.mjs`(Playwright 1.56, `npm run e2e`) — 서버(시드, 개발 로그인·샌드박스 구독 켜짐)·`expo start --web`을 띄운 상태에서 새 팬 가입(약관·
+  생년월일·닉네임) → 구독 → 배우 발송(API, 배우 본인 계정)이 채팅방에 닉네임으로 보임 → 답장 → 방 안 검색. 끝나면 보낸 메시지 삭제·팬 해지·탈퇴.
+  실패 화면 `e2e/last-failure.png`. CI엔 안 넣음(서버·DB·웹을 다 띄워야 해서, 필요해지면 별도 잡).
+- 발견: 웹 첫 화면이 미리 그려진 뒤 앱 코드가 붙는 동안 입력한 값이 초기값으로 되돌아감, Playwright `fill`은 RN 웹 TextInput 상태를 안 바꿀 때가 있음 →
+  `networkidle` 대기 + 한 글자씩 입력. 사람이 쓸 때는 문제없음(입력 이벤트가 정상).
+- 설치 주의: npm 10(Node 22 기본)의 의존성 계산 버그(`Cannot read properties of null (reading 'edgesOut')`)로 `npm install -D vitest`가 실패 —
+  `npx npm@11 install -D <패키지> --package-lock-only`로 잠금 파일을 만든 뒤 `npm ci`. `--legacy-peer-deps`로 설치하면 잠금 파일에서 peer 패키지가 빠져
+  CI의 `npm ci`가 실패하니 쓰지 말 것.

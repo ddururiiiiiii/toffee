@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -15,6 +16,7 @@ import { IconButton } from '@/components/ui/icon-button';
 import { ApiError } from '@/lib/api-client';
 import { useActor } from '@/hooks/use-actors';
 import { useSubscribe } from '@/hooks/use-subscriptions';
+import { useStorePurchase } from '@/hooks/use-store-purchase';
 import { useTheme } from '@/hooks/use-theme';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { formatPrice } from '@/utils/price';
@@ -23,7 +25,8 @@ import { formatPrice } from '@/utils/price';
  * 구독 확인 → 완료 — 시안 P-2 Actor-focused Subscription(docs/product/brand/exploration/p2-subscription-flow.png) +
  * DESIGN_GUIDE §6·§7. 배우 사진이 주인공, 아래 시트에 가격·혜택·자동 갱신 안내·구독 버튼. 완료는 영수증이 아니라
  * "더 가까워졌어요" 순간 → 바로 그 배우 채팅방으로.
- * 실제 결제(스토어)는 아직 연결 전이라 결제 없는 테스트 구독(서버가 켜 둔 경우에만 동작) — 결제 작업 때 usePurchaseSubscription으로 교체.
+ * 결제: 앱이고 배우에게 스토어 상품 ID가 있으면 스토어 결제(2026-09-29 코드 미리 작성, 스토어 등록 후 동작), 아니면 결제 없는 테스트
+ * 구독(서버가 켜 둔 경우에만 — 개발·데모).
  */
 export default function SubscribeScreen() {
   const theme = useTheme();
@@ -34,6 +37,10 @@ export default function SubscribeScreen() {
   const { actorId } = useLocalSearchParams<{ actorId: string }>();
   const { data: actor } = useActor(actorId);
   const subscribe = useSubscribe(actorId);
+  const store = useStorePurchase({ kind: 'actor', id: actorId, sku: actor?.storeProductId });
+  const storeBuy = useMutation({ mutationFn: store.buy, onSuccess: (result) => result && setDone({}) });
+  const busy = subscribe.isPending || storeBuy.isPending;
+  const failure = storeBuy.error ?? subscribe.error;
   const [done, setDone] = useState<{ discount?: string } | null>(null);
   const back = () => (router.canGoBack() ? router.back() : router.replace({ pathname: '/actor/[id]', params: { id: actorId } }));
 
@@ -48,7 +55,9 @@ export default function SubscribeScreen() {
   const price = formatPrice(t, actor.monthlyPriceCents);
 
   const confirm = () =>
-    subscribe.mutate(undefined, {
+    store.available
+      ? storeBuy.mutate()
+      : subscribe.mutate(undefined, {
       onSuccess: (result) =>
         setDone({
           discount: result.bundleDiscountApplied
@@ -113,18 +122,20 @@ export default function SubscribeScreen() {
             <MembershipBenefits name={actor.chatDisplayName} detailed />
           </View>
 
-          {subscribe.isError && (
+          {failure && (
             <ThemedText type="small" themeColor="danger" style={styles.center}>
-              {subscribe.error instanceof ApiError ? subscribe.error.message : t('subscribeFlow.failed')}
+              {failure instanceof ApiError ? failure.message : t('subscribeFlow.failed')}
             </ThemedText>
           )}
-          <Button title={t('subscribeFlow.cta', { price })} variant="accent" loading={subscribe.isPending} onPress={confirm} />
+          <Button title={t('subscribeFlow.cta', { price })} variant="accent" loading={busy} onPress={confirm} />
           <ThemedText type="caption" themeColor="textTertiary" style={styles.center}>
             {t('subscribeFlow.autoRenew')}
           </ThemedText>
-          <ThemedText type="caption" themeColor="textTertiary" style={styles.center}>
-            {t('subscribeFlow.sandboxNote')}
-          </ThemedText>
+          {store.available ? null : (
+            <ThemedText type="caption" themeColor="textTertiary" style={styles.center}>
+              {t('subscribeFlow.sandboxNote')}
+            </ThemedText>
+          )}
         </View>
       </ScrollView>
       <IconButton

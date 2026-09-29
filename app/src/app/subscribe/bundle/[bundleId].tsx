@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -17,6 +18,7 @@ import { IconButton } from '@/components/ui/icon-button';
 import { ApiError } from '@/lib/api-client';
 import { bundleDiscountPercent, useBundle, useSubscribeBundle } from '@/hooks/use-bundles';
 import { useMySubscriptions } from '@/hooks/use-subscriptions';
+import { useStorePurchase } from '@/hooks/use-store-purchase';
 import { useTheme } from '@/hooks/use-theme';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { formatPrice } from '@/utils/price';
@@ -24,7 +26,8 @@ import { formatPrice } from '@/utils/price';
 /**
  * 묶음 구독 확인 → 완료(2026-09-29) — 개인 구독 화면(P-2)과 같은 흐름. 사진 대신 배우들 사진을 겹쳐 보여주고, 개인
  * 구독 합계 대비 할인·포함된 배우·이미 개인 구독 중인 배우는 묶음으로 옮겨진다는 안내를 구독 버튼 전에 분명히.
- * 실제 결제(스토어) 전이라 결제 없는 테스트 구독(서버가 켜 둔 경우만).
+ * 결제: 앱이고 묶음에 스토어 상품 ID가 있으면 스토어 결제, 아니면 결제 없는 테스트 구독(서버가 켜 둔 경우만). 스토어 결제면 이미 개인
+ * 구독 중인 배우의 스토어 구독은 앱이 끊을 수 없어서 "스토어에서 해지" 안내를 따로 보여 줌.
  */
 export default function SubscribeBundleScreen() {
   const theme = useTheme();
@@ -36,6 +39,9 @@ export default function SubscribeBundleScreen() {
   const { data: subscriptions } = useMySubscriptions();
   const subscribe = useSubscribeBundle(bundleId);
   const [done, setDone] = useState(false);
+  const store = useStorePurchase({ kind: 'bundle', id: bundleId, sku: bundle?.storeProductId });
+  const storeBuy = useMutation({ mutationFn: store.buy, onSuccess: (result) => result && setDone(true) });
+  const failure = storeBuy.error ?? subscribe.error;
   const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
   if (isLoading) {
@@ -125,26 +131,30 @@ export default function SubscribeBundleScreen() {
 
         {alreadySingle.length > 0 ? (
           <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-            {t('bundle.replacesSingle', { names: alreadySingle.map((actor) => actor.chatDisplayName).join(', ') })}
+            {store.available
+              ? t('bundle.replacesSingleStore', { names: alreadySingle.map((actor) => actor.chatDisplayName).join(', ') })
+              : t('bundle.replacesSingle', { names: alreadySingle.map((actor) => actor.chatDisplayName).join(', ') })}
           </ThemedText>
         ) : null}
-        {subscribe.isError && (
+        {failure && (
           <ThemedText type="small" themeColor="danger" style={styles.center}>
-            {subscribe.error instanceof ApiError ? subscribe.error.message : t('subscribeFlow.failed')}
+            {failure instanceof ApiError ? failure.message : t('subscribeFlow.failed')}
           </ThemedText>
         )}
         <Button
           title={t('subscribeFlow.cta', { price })}
           variant="accent"
-          loading={subscribe.isPending}
-          onPress={() => subscribe.mutate(undefined, { onSuccess: () => setDone(true) })}
+          loading={subscribe.isPending || storeBuy.isPending}
+          onPress={() => (store.available ? storeBuy.mutate() : subscribe.mutate(undefined, { onSuccess: () => setDone(true) }))}
         />
         <ThemedText type="caption" themeColor="textTertiary" style={styles.center}>
           {t('subscribeFlow.autoRenew')}
         </ThemedText>
-        <ThemedText type="caption" themeColor="textTertiary" style={styles.center}>
-          {t('subscribeFlow.sandboxNote')}
-        </ThemedText>
+        {store.available ? null : (
+          <ThemedText type="caption" themeColor="textTertiary" style={styles.center}>
+            {t('subscribeFlow.sandboxNote')}
+          </ThemedText>
+        )}
       </ScrollView>
       <IconButton icon={ChevronLeft} label={t('actorProfile.back')} onPress={back} style={[styles.back, { top: insets.top + Spacing.two }]} />
     </View>

@@ -1,3 +1,4 @@
+import { TranslatableText } from '@/components/translatable-text';
 import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -139,7 +140,8 @@ function ReplyBubble({ item, locale, actorId, onQuote }: { item: FanReply; local
       </ThemedText>
       <ThemedView style={styles.bubbleLine}>
         <ThemedView style={[styles.bubble, { backgroundColor: theme.backgroundElement }]}>
-          <ThemedText>{item.body}</ThemedText>
+          {/* 태국·일본 팬 답장 등 다른 언어면 "번역 보기" */}
+          {item.body ? <TranslatableText actorId={actorId} messageId={item.id} text={item.body} /> : null}
         </ThemedView>
         <ThemedText type="small" themeColor="textSecondary" style={styles.time}>
           {new Date(item.createdAt).toLocaleString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}

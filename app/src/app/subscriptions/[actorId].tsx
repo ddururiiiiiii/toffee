@@ -9,6 +9,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { confirm } from '@/lib/confirm';
+import { openStoreSubscriptions, storeName } from '@/lib/store-subscriptions';
 import { useCancelPurchase } from '@/hooks/use-bundles';
 import { useMySubscriptions, useUnsubscribe } from '@/hooks/use-subscriptions';
 import { useTheme } from '@/hooks/use-theme';
@@ -37,8 +38,20 @@ export default function SubscriptionDetailScreen() {
   const single = sub.coveredBy.find((cover) => !cover.bundle);
   const bundleCover = single ? null : sub.coveredBy.find((cover) => cover.bundle);
   const cancelling = unsubscribe.isPending || cancelPurchase.isPending;
+  // 스토어 결제 구독이면 해지는 스토어에서(앱이 끊으면 결제는 계속되고 방만 닫힘 — 서버도 409로 막음)
+  const storePlatform = (single ?? bundleCover)?.iapPlatform;
 
   const cancel = async () => {
+    if (storePlatform) {
+      const ok = await confirm(
+        t('manage.cancelInStore'),
+        t('manage.cancelInStoreBody', { store: storeName(storePlatform) }),
+        t('manage.openStore', { store: storeName(storePlatform) }),
+        t('common.cancel'),
+      );
+      if (ok) void openStoreSubscriptions();
+      return;
+    }
     if (bundleCover?.bundle) {
       const ok = await confirm(
         t('bundle.cancelTitle'),
@@ -95,7 +108,12 @@ export default function SubscriptionDetailScreen() {
 
       <View style={styles.actions}>
         <Button title={t('manage.openChat')} onPress={() => router.push(`/chat/${actorId}`)} />
-        <Button title={bundleCover ? t('bundle.cancel') : t('manage.cancel')} variant="danger" loading={cancelling} onPress={cancel} />
+        <Button
+          title={storePlatform ? t('manage.cancelInStore') : bundleCover ? t('bundle.cancel') : t('manage.cancel')}
+          variant="danger"
+          loading={cancelling}
+          onPress={cancel}
+        />
       </View>
     </ScrollView>
   );

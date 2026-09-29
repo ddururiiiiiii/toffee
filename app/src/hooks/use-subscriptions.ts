@@ -14,7 +14,7 @@ export interface Subscription {
   notificationsMuted: boolean;
   actor: { id: string; chatDisplayName: string; chatProfileImageUrl: string | null; monthlyPriceCents: number };
   /** 이 방을 열어 주는 구매 — 개인 구독(bundle null) 또는 묶음. 묶음으로만 열렸으면 해지는 묶음 단위 */
-  coveredBy: { purchaseId: string; bundle: { id: string; name: string; priceCents: number } | null }[];
+  coveredBy: { purchaseId: string; iapPlatform?: 'IOS' | 'ANDROID' | null; bundle: { id: string; name: string; priceCents: number } | null }[];
   /** 마지막으로 채팅방을 본 뒤 온 스타 메시지 수 */
   unreadCount: number;
   /** 인박스 미리보기(서버가 최근 대화 순으로 정렬해서 줌) */
@@ -79,3 +79,32 @@ export function useSetNotificationsMuted(actorId: string) {
   });
 }
 
+
+/** 환불 요청(2026-09-29) — 스타 미발송(이용 기간 동안 스타 메시지 0개, 기간 끝난 뒤 7일 안), 활동 종료(결제 후 14일 안에 배우 활동 종료) */
+export interface RefundCandidate {
+  chargeId: string;
+  reason: 'STAR_IDLE' | 'ACTOR_RETIRED';
+  productName: string;
+  amountCents: number;
+  currency: string;
+  chargedAt: string;
+  periodEnd: string;
+  /** 활동 종료 사유면 종료된 때 */
+  endedAt: string | null;
+  deadline: string;
+  source: 'SANDBOX' | 'APPLE' | 'GOOGLE';
+  /** 애플 결제를 이미 안내받았으면 STORE_GUIDED */
+  requested: 'REFUNDED' | 'STORE_GUIDED' | null;
+}
+
+export function useRefundCandidates() {
+  return useQuery({ queryKey: ['refunds'], queryFn: () => apiClient.get<RefundCandidate[]>('/me/refunds') });
+}
+
+export function useRequestRefund() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (chargeId: string) => apiClient.post<{ status: 'REFUNDED' | 'STORE_GUIDED'; url?: string }>(`/me/refunds/${chargeId}`),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: ['refunds'] }),
+  });
+}

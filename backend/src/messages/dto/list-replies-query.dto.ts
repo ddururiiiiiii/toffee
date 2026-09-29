@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 
 export class ListRepliesQueryDto {
   // 특정 스타 메시지에 달린 팬 답장만 — 참조 ID라 @IsUUID 대신 @IsString
@@ -36,4 +36,12 @@ export class ListMessagesQueryDto {
   @IsString()
   @IsNotEmpty()
   before?: string;
+}
+
+/** 팬 채팅방 안 검색(2026-09-29) — q는 2~50자, 최신 → 오래된 순으로 limit개(before 이전) */
+export class SearchMessagesQueryDto extends ListMessagesQueryDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(50)
+  q!: string;
 }
