@@ -406,5 +406,27 @@
     "deleteBody": "All your information, including the date of birth you entered, will be deleted. This can't be undone.",
     "deleteConfirm": "Delete",
     "logout": "Log out"
+  },
+  "bundle": {
+    "sectionTitle": "Save with a bundle",
+    "sectionHint": "Subscribe to several actors at once for less than subscribing separately.",
+    "saveVsSingle": "{{percent}}% off vs. separately",
+    "saveDetail": "{{regular}} separately · {{percent}}% off",
+    "subscribeTo": "Bundle subscription",
+    "includes": "{{count}} actors included",
+    "singlePrice": "{{price}}/month on its own",
+    "replacesSingle": "Your current subscription to {{names}} will move into this bundle. Your chats continue as they are.",
+    "doneBody": "Your {{name}} bundle has started. You'll find every chat in the Inbox.",
+    "goInbox": "Go to Inbox",
+    "notFound": "Bundle not found",
+    "mine": "Bundles",
+    "rooms": "Chats",
+    "via": "Bundle · {{name}}",
+    "cancel": "Cancel bundle",
+    "cancelTitle": "Cancel bundle",
+    "cancelConfirm": "Cancelling {{name}} closes the chats with {{names}} (actors you subscribe to separately stay open). Previous chats won't be visible if you subscribe again.",
+    "cancelFromActor": "This actor is part of your {{name}} bundle. Cancelling closes the other chats in the bundle too. Previous chats won't be visible if you subscribe again.",
+    "cancelFailed": "Couldn't cancel. Please try again.",
+    "viaShort": "Included in a bundle"
   }
 }

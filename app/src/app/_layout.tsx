@@ -160,6 +160,7 @@ function RootLayout() {
               <Stack.Screen name="login" />
               <Stack.Screen name="actor/[id]" options={{ headerShown: false }} />
               <Stack.Screen name="subscribe/[actorId]" options={{ headerShown: false }} />
+              <Stack.Screen name="subscribe/bundle/[bundleId]" options={{ headerShown: false }} />
               <Stack.Screen name="subscriptions/index" options={{ headerShown: true, title: t('profile.manageSubscriptions') }} />
               <Stack.Screen name="subscriptions/[actorId]" options={{ headerShown: true, title: '' }} />
               <Stack.Screen name="settings/language" options={{ headerShown: true, title: t('profile.language') }} />
@@ -186,6 +187,9 @@ function RootLayout() {
               <Stack.Screen name="admin/actors/index" options={{ headerShown: true, title: '배우 관리' }} />
               <Stack.Screen name="admin/actors/new" options={{ headerShown: true, title: '배우 등록' }} />
               <Stack.Screen name="admin/actors/[id]" options={{ headerShown: true, title: '배우' }} />
+              <Stack.Screen name="admin/bundles/index" options={{ headerShown: true, title: '묶음 상품' }} />
+              <Stack.Screen name="admin/bundles/new" options={{ headerShown: true, title: '묶음 만들기' }} />
+              <Stack.Screen name="admin/bundles/[id]" options={{ headerShown: true, title: '묶음' }} />
               <Stack.Screen name="admin/agencies" options={{ headerShown: true, title: '소속사 관리' }} />
               <Stack.Screen name="admin/stats" options={{ headerShown: true, title: '통계' }} />
               <Stack.Screen name="admin/actions" options={{ headerShown: true, title: '작업 기록' }} />

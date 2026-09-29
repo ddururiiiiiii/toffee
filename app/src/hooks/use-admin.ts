@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { Bundle } from './use-bundles';
 import { apiClient } from '@/lib/api-client';
 
 // 같은 메시지 신고는 서버가 한 줄로 묶고(reportCount), 여러 명이 신고한 것부터 내려줌
@@ -184,6 +185,7 @@ export interface AdminActor {
   chatDisplayName: string;
   chatProfileImageUrl: string | null;
   monthlyPriceCents: number;
+  storeProductId: string | null;
   verified: boolean;
   /** 활동 종료 시각(종료 안 했으면 null) */
   retiredAt: string | null;
@@ -243,7 +245,7 @@ export function useCreateActor() {
 
 export function useUpdateActor(id: string) {
   return useActorMutation(
-    (input: { legalName?: string; chatDisplayName?: string; monthlyPriceCents?: number; verified?: boolean }) =>
+    (input: { legalName?: string; chatDisplayName?: string; monthlyPriceCents?: number; verified?: boolean; storeProductId?: string | null }) =>
       apiClient.patch<AdminActor>(`/admin/actors/${id}`, input),
   );
 }
@@ -377,3 +379,49 @@ export function useAdminStatsBreakdown() {
   });
 }
 
+// ── 묶음 상품(2026-09-29) ──
+
+export interface AdminBundle extends Bundle {
+  storeProductId: string | null;
+  active: boolean;
+  createdAt: string;
+  /** 지금 이 묶음을 구독 중인 팬 수 — 있으면 배우 구성을 못 바꿈 */
+  activePurchaseCount: number;
+}
+
+export interface BundleInput {
+  name?: string;
+  priceCents?: number;
+  actorIds?: string[];
+  storeProductId?: string | null;
+  active?: boolean;
+}
+
+export function useAdminBundles() {
+  return useQuery({ queryKey: ['admin', 'bundles'], queryFn: () => apiClient.get<AdminBundle[]>('/admin/bundles') });
+}
+
+export function useAdminBundle(id: string) {
+  return useQuery({ queryKey: ['admin', 'bundles', id], queryFn: () => apiClient.get<AdminBundle>(`/admin/bundles/${id}`), enabled: !!id });
+}
+
+function useBundleMutation<TInput>(request: (input: TInput) => Promise<AdminBundle>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: request,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'bundles'] });
+      void queryClient.invalidateQueries({ queryKey: ['bundles'] });
+    },
+  });
+}
+
+export function useCreateBundle() {
+  return useBundleMutation((input: Required<Pick<BundleInput, 'name' | 'priceCents' | 'actorIds'>> & BundleInput) =>
+    apiClient.post<AdminBundle>('/admin/bundles', input),
+  );
+}
+
+export function useUpdateBundle(id: string) {
+  return useBundleMutation((input: BundleInput) => apiClient.patch<AdminBundle>(`/admin/bundles/${id}`, input));
+}

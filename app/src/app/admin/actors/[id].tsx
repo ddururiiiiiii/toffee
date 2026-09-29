@@ -33,6 +33,7 @@ import { ApiError } from '@/lib/api-client';
 import { confirm } from '@/lib/confirm';
 import { uploadProfileImage } from '@/lib/upload-media';
 import { Spacing } from '@/constants/theme';
+import { STORE_PRODUCT_ID_PATTERN } from '@/utils/store-product';
 
 function errorText(error: unknown, fallback: string) {
   return error instanceof ApiError ? error.message : fallback;
@@ -90,14 +91,19 @@ function BasicInfo({ actor }: { actor: AdminActor }) {
   const [legalName, setLegalName] = useState(actor.legalName);
   const [chatDisplayName, setChatDisplayName] = useState(actor.chatDisplayName);
   const [price, setPrice] = useState(String(actor.monthlyPriceCents / 100));
+  const [productId, setProductId] = useState(actor.storeProductId ?? '');
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
 
   const save = () => {
     const monthlyPriceCents = parseBahtToCents(price);
+    const storeProductId = productId.trim() || null;
     if (!legalName.trim() || !chatDisplayName.trim()) return setMessage({ text: '이름을 비울 수 없어요.', error: true });
     if (monthlyPriceCents === null) return setMessage({ text: '월 구독료를 숫자로 입력해 주세요.', error: true });
+    if (storeProductId && !STORE_PRODUCT_ID_PATTERN.test(storeProductId)) {
+      return setMessage({ text: '스토어 상품 ID는 소문자·숫자·_·. 만 쓸 수 있어요(예: toffee.actor.nawin).', error: true });
+    }
     updateActor.mutate(
-      { legalName: legalName.trim(), chatDisplayName: chatDisplayName.trim(), monthlyPriceCents },
+      { legalName: legalName.trim(), chatDisplayName: chatDisplayName.trim(), monthlyPriceCents, storeProductId },
       {
         onSuccess: () => setMessage({ text: '저장했어요.' }),
         onError: (e) => setMessage({ text: errorText(e, '저장하지 못했어요.'), error: true }),
@@ -112,6 +118,15 @@ function BasicInfo({ actor }: { actor: AdminActor }) {
       <AdminField label="공식 이름(실명·활동명)" value={legalName} onChangeText={setLegalName} maxLength={100} />
       <AdminField label="닉네임(배우가 직접 바꿀 수 있음)" value={chatDisplayName} onChangeText={setChatDisplayName} maxLength={20} />
       <AdminField label="월 구독료(바트)" value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
+      <AdminField
+        label="스토어 상품 ID(앱스토어·플레이스토어에 등록한 구독 상품, 등록 전엔 비워 두기)"
+        value={productId}
+        onChangeText={setProductId}
+        autoCapitalize="none"
+        autoCorrect={false}
+        placeholder="예: toffee.actor.nawin"
+        maxLength={100}
+      />
       <ThemedView style={styles.chips}>
         <AdminChip
           label={actor.verified ? '✓ 공식 인증됨' : '공식 인증 안 됨'}

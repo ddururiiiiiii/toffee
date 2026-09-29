@@ -13,6 +13,8 @@ export interface Subscription {
   // 이 배우 알림 끄기(채팅방 🔔)
   notificationsMuted: boolean;
   actor: { id: string; chatDisplayName: string; chatProfileImageUrl: string | null; monthlyPriceCents: number };
+  /** 이 방을 열어 주는 구매 — 개인 구독(bundle null) 또는 묶음. 묶음으로만 열렸으면 해지는 묶음 단위 */
+  coveredBy: { purchaseId: string; bundle: { id: string; name: string; priceCents: number } | null }[];
   /** 마지막으로 채팅방을 본 뒤 온 스타 메시지 수 */
   unreadCount: number;
   /** 인박스 미리보기(서버가 최근 대화 순으로 정렬해서 줌) */

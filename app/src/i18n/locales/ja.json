@@ -406,5 +406,27 @@
     "deleteBody": "入力した生年月日を含むすべての情報が削除され、元に戻せません。",
     "deleteConfirm": "削除する",
     "logout": "ログアウト"
+  },
+  "bundle": {
+    "sectionTitle": "セットでお得に",
+    "sectionHint": "複数の俳優をまとめて購読すると、別々に購読するよりお得です。",
+    "saveVsSingle": "別々に購読するより{{percent}}%お得",
+    "saveDetail": "別々だと{{regular}} · {{percent}}%お得",
+    "subscribeTo": "セット購読",
+    "includes": "含まれる俳優 {{count}}人",
+    "singlePrice": "単独購読は月{{price}}",
+    "replacesSingle": "現在単独で購読中の{{names}}はセットに移ります。会話はそのまま続きます。",
+    "doneBody": "{{name}}のセット購読が始まりました。メッセージタブですべてのトークを見られます。",
+    "goInbox": "メッセージへ",
+    "notFound": "セットが見つかりません",
+    "mine": "セット購読",
+    "rooms": "トーク",
+    "via": "セット購読 · {{name}}",
+    "cancel": "セット購読を解約",
+    "cancelTitle": "セット購読の解約",
+    "cancelConfirm": "{{name}}を解約すると{{names}}とのトークも閉じます（単独で購読中の俳優はそのまま）。再購読しても以前の会話は表示されません。",
+    "cancelFromActor": "この俳優はセット購読（{{name}}）でご利用中です。解約するとセット内の他のトークも閉じます。再購読しても以前の会話は表示されません。",
+    "cancelFailed": "解約できませんでした。もう一度お試しください。",
+    "viaShort": "セット購読で利用中"
   }
 }

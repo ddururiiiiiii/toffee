@@ -6,7 +6,9 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight, ChevronLeft, SearchX } from 'lucide-react-native';
 
+import { BundleCard } from '@/components/bundle-card';
 import { MembershipBenefits } from '@/components/membership-benefits';
+import { useActorBundles } from '@/hooks/use-bundles';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -32,6 +34,9 @@ export default function ActorProfileScreen() {
   const { data: actor, isLoading, isError } = useActor(id);
   const { data: subscriptions } = useMySubscriptions();
   const isSubscribed = subscriptions?.some((sub) => sub.actorId === id) ?? false;
+  const { data: bundles } = useActorBundles(id);
+  const ownedBundleIds = new Set(subscriptions?.flatMap((sub) => sub.coveredBy.map((cover) => cover.bundle?.id)).filter(Boolean));
+  const offers = (bundles ?? []).filter((bundle) => !ownedBundleIds.has(bundle.id));
   const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
   if (isLoading) {
@@ -102,6 +107,23 @@ export default function ActorProfileScreen() {
               {isSubscribed ? t('actorProfile.subscribed') : t('actorProfile.noFreeTier')}
             </ThemedText>
           </View>
+
+          {/* 묶음으로 더 저렴하게 — 이미 구독 중인 묶음은 빼고, 활동 종료한 배우면 안 보임(서버가 걸러 줌) */}
+          {offers.length > 0 && !actor.retiredAt ? (
+            <View style={styles.bundles}>
+              <ThemedText type="headline">{t('bundle.sectionTitle')}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                {t('bundle.sectionHint')}
+              </ThemedText>
+              {offers.map((bundle) => (
+                <BundleCard
+                  key={bundle.id}
+                  bundle={bundle}
+                  onPress={() => router.push({ pathname: '/subscribe/bundle/[bundleId]', params: { bundleId: bundle.id } })}
+                />
+              ))}
+            </View>
+          ) : null}
         </View>
       </ScrollView>
       {/* 사진 위에 떠 있는 뒤로 버튼 */}
@@ -126,6 +148,7 @@ const styles = StyleSheet.create({
   cardHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Spacing.two, flexWrap: 'wrap' },
   price: { flexDirection: 'row', alignItems: 'baseline' },
   center: { textAlign: 'center', marginTop: -Spacing.two },
+  bundles: { marginTop: Spacing.five, gap: Spacing.two },
   backFloating: { position: 'absolute', left: Spacing.three, backgroundColor: 'rgba(15,17,21,0.35)' },
   backPlain: { margin: Spacing.three },
   loading: { marginTop: Spacing.six },

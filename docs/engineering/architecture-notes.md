@@ -997,3 +997,27 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   `locales/*.json` 6개 언어. 아이콘·스플래시는 `docs/product/brand/logo/t-icon-black-mono-a.png`에서 생성(흰 배경 제거,
   아이콘 배경 `#F3EFFD`), Expo 템플릿의 파란 스플래시 애니메이션(`animated-icon`)은 `splash-overlay`(네이티브 스플래시와
   같은 화면 → 250ms 페이드)로 교체.
+
+## 구매(Purchase)·묶음(Bundle)·방 이용권(Subscription), 성인만 가입 (2026-09-29)
+
+- **두 층 구조**: `Purchase`(결제 단위 — `actorId` 개인 구독 xor `bundleId` 묶음, DB CHECK 제약 `Purchase_target_check`,
+  `iap*` 필드는 Subscription에서 여기로 이동) → `Subscription`(사람×배우 방 이용권, 기존 그대로 `@@unique([userId, actorId])`,
+  startedAt·lastReadAt·notificationsMuted 유지). `SubscriptionsService.syncAccess(tx, userId, actorIds, prices)`가 유효한 구매로부터
+  방 열림/닫힘을 다시 계산: 새로 열리면 startedAt=now + STARTED 이벤트(가격은 배분값), 닫히면 CANCELLED, 이미 열린 방은 손대지 않음
+  (개인 → 묶음 전환에도 대화 유지). 구독·해지·검증은 전부 interactive `$transaction` 안에서.
+- 마이그레이션 `20260929100000_add_purchases_and_bundles`: 테이블 생성 → 기존 Subscription 한 줄당 개인 Purchase 하나로 백필
+  (`gen_random_uuid()`, 가격은 당시 배우 월 가격) → Subscription의 iap 컬럼 삭제. 새 DB·기존 DB 둘 다 드리프트 0 확인.
+- 엔드포인트: `POST /bundles/:id/subscribe`(샌드박스 가드), `GET /me/bundles`, `DELETE /me/purchases/:id`, `GET /actors/:id/bundles`,
+  `GET /bundles/:id`, `/admin/bundles` CRUD(`BundlesModule`). `DELETE /actors/:id/subscribe`는 개인 구독만 해지하고, 묶음으로만 열린
+  방이면 409 `COVERED_BY_BUNDLE`. `GET /me/subscriptions` 각 방에 `coveredBy[{purchaseId, bundle}]`.
+- 묶음 가격 배분 `allocateBundlePrice`(정가 비율, 반올림 차이는 마지막 배우). 한계: 개인 구독 중이던 배우를 묶음으로 옮길 땐 그 방이
+  이미 열려 있어서 STARTED 이벤트가 새로 안 생김 → 이벤트 기반 "신규 구독 금액" 통계엔 묶음 배분이 일부 빠짐. 정산은 이벤트가
+  아니라 Purchase 기준으로 만들 것.
+- 스토어 상품 ID: `Actor.storeProductId`·`Bundle.storeProductId`(둘 다 unique, 배우·묶음 통틀어 하나 — `ensureStoreProductIdFree`),
+  형식 `^[a-z0-9][a-z0-9_.]{0,99}$`(애플·구글 공통). 예전 `toffee_sub_{uuid}`는 하이픈 때문에 등록 불가였음. 앱 `usePurchaseSubscription(actorId, storeProductId)`.
+- `verifyPurchase`: 같은 영수증(iapTransactionId)이 다른 계정이면 409 `IAP_RECEIPT_IN_USE`(예전엔 unique 위반 500), 같은 계정이면
+  만료일 갱신. 묶음 결제 검증·상품↔배우 대조·만료 거절·스토어 알림은 결제 연결 때.
+- **성인만 가입**: `ParentalConsentStatus.UNDERAGE`(마이그레이션 `20260929090000`), `ADULTS_ONLY`(기본 켜짐, "false"면 예전 부모 동의),
+  `adultAgeFor(country)`(minor-age.ts). `GET /me/onboarding-status`에 `minimumAge`. 구독은 `UNDERAGE`면 403. 앱 `onboarding/underage`.
+- 운영자 작업 기록: `ACTOR_PRICE`(배우 가격·상품 ID 변경), `BUNDLE_CREATE`/`BUNDLE_UPDATE`, targetType `BUNDLE`.
+

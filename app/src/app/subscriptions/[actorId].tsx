@@ -9,6 +9,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { confirm } from '@/lib/confirm';
+import { useCancelPurchase } from '@/hooks/use-bundles';
 import { useMySubscriptions, useUnsubscribe } from '@/hooks/use-subscriptions';
 import { useTheme } from '@/hooks/use-theme';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -26,12 +27,28 @@ export default function SubscriptionDetailScreen() {
   const { data: subscriptions } = useMySubscriptions();
   const sub = subscriptions?.find((s) => s.actorId === actorId);
   const unsubscribe = useUnsubscribe(actorId);
+  const cancelPurchase = useCancelPurchase();
 
   if (!sub) {
     return <EmptyState icon={SearchX} title={t('manage.notFound')} />;
   }
 
+  // 묶음으로만 열린 방이면 해지는 묶음 단위(묶음에 든 다른 배우 방도 같이 닫힘) — 개인 구독이 있으면 개인 구독 해지
+  const single = sub.coveredBy.find((cover) => !cover.bundle);
+  const bundleCover = single ? null : sub.coveredBy.find((cover) => cover.bundle);
+  const cancelling = unsubscribe.isPending || cancelPurchase.isPending;
+
   const cancel = async () => {
+    if (bundleCover?.bundle) {
+      const ok = await confirm(
+        t('bundle.cancelTitle'),
+        t('bundle.cancelFromActor', { name: bundleCover.bundle.name }),
+        t('bundle.cancel'),
+        t('common.cancel'),
+      );
+      if (ok) cancelPurchase.mutate(bundleCover.purchaseId, { onSuccess: () => router.back() });
+      return;
+    }
     const ok = await confirm(
       t('mypage.unsubscribeTitle'),
       t('mypage.unsubscribeConfirm', { name: sub.actor.chatDisplayName }),
@@ -43,7 +60,9 @@ export default function SubscriptionDetailScreen() {
 
   const rows: [string, string][] = [
     [t('manage.status'), t('manage.active')],
-    [t('manage.price'), `${formatPrice(t, sub.actor.monthlyPriceCents)} ${t('actorProfile.perMonth')}`],
+    bundleCover?.bundle
+      ? [t('manage.price'), t('bundle.via', { name: bundleCover.bundle.name })]
+      : [t('manage.price'), `${formatPrice(t, sub.actor.monthlyPriceCents)} ${t('actorProfile.perMonth')}`],
     [t('manage.started'), new Date(sub.startedAt).toLocaleDateString(i18n.language)],
     [t('manage.nextBilling'), t('manage.nextBillingStore')],
   ];
@@ -76,7 +95,7 @@ export default function SubscriptionDetailScreen() {
 
       <View style={styles.actions}>
         <Button title={t('manage.openChat')} onPress={() => router.push(`/chat/${actorId}`)} />
-        <Button title={t('manage.cancel')} variant="danger" loading={unsubscribe.isPending} onPress={cancel} />
+        <Button title={bundleCover ? t('bundle.cancel') : t('manage.cancel')} variant="danger" loading={cancelling} onPress={cancel} />
       </View>
     </ScrollView>
   );

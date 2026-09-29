@@ -18,6 +18,8 @@ const LIST_SELECT = {
   chatDisplayName: true,
   chatProfileImageUrl: true,
   monthlyPriceCents: true,
+  // 개인 구독 스토어 상품 ID(없으면 아직 스토어 결제 불가 — 앱은 테스트 구독만)
+  storeProductId: true,
   // Discover의 "NEW" 표시용
   createdAt: true,
   retiredAt: true,

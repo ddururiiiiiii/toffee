@@ -34,8 +34,8 @@ export class AdminActorsController {
   }
 
   @Patch('actors/:id')
-  update(@Param('id') id: string, @Body() dto: UpdateActorDto) {
-    return this.adminActorsService.update(id, dto);
+  update(@CurrentUser() admin: AuthenticatedUser, @Param('id') id: string, @Body() dto: UpdateActorDto) {
+    return this.adminActorsService.update(admin.id, id, dto);
   }
 
   @Patch('actors/:id/images')

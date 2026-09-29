@@ -1,8 +1,5 @@
-import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Max, Min, ValidateIf } from 'class-validator';
-
-// 가격은 사타앙(1/100바트) 단위 정수 — 실제 결제 금액은 스토어 상품 가격이 기준이고, 이 값은 앱 표시용
-// + 동시구독 할인 계산용(STATUS "구독하기" 참고). 상한은 오입력 방지용 잠정값(฿10,000).
-const MAX_PRICE_CENTS = 1_000_000;
+import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, Max, Min, ValidateIf } from 'class-validator';
+import { MAX_PRICE_CENTS, STORE_PRODUCT_ID_PATTERN } from '../../common/store/store-product.js';
 
 export class CreateActorDto {
   @IsString()
@@ -48,6 +45,13 @@ export class UpdateActorDto {
   @IsOptional()
   @IsBoolean()
   verified?: boolean;
+
+  // 개인 구독 스토어 상품 ID — null이면 지움, 빼면 그대로
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @Matches(STORE_PRODUCT_ID_PATTERN)
+  storeProductId?: string | null;
 }
 
 // 프로필 이미지 교체 — 값은 POST /admin/uploads로 받은 objectKey, null이면 삭제, 필드를 빼면 그대로

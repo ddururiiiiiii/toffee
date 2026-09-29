@@ -219,6 +219,7 @@ export class AuthService {
     const active = await this.prisma.subscription.findMany({ where: { userId, cancelledAt: null }, select: { actorId: true } });
     await this.prisma.$transaction([
       this.prisma.subscription.updateMany({ where: { userId, cancelledAt: null }, data: { cancelledAt: now } }),
+      this.prisma.purchase.updateMany({ where: { userId, cancelledAt: null }, data: { cancelledAt: now } }),
       this.prisma.subscriptionEvent.createMany({
         data: active.map(({ actorId }) => ({ userId, actorId, type: SubscriptionEventType.CANCELLED, createdAt: now })),
       }),

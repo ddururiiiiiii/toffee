@@ -122,6 +122,7 @@ model User {
   authIdentities     AuthIdentity[]
   subscriptions      Subscription[]
   subscriptionEvents SubscriptionEvent[]
+  purchases          Purchase[]
   fanMessages        Message[]           @relation("FanMessages")
   agency             Agency?             @relation(fields: [agencyId], references: [id])
   pushDevices        PushDevice[]
@@ -186,6 +187,8 @@ model Actor {
   chatDisplayName         String
   chatProfileImageUrl     String?
   monthlyPriceCents       Int
+  // 개인 구독 스토어 상품 ID(애플·구글 공통, 소문자·숫자·_·.) — 등록 전엔 null(샌드박스 구독만). 2026-09-29
+  storeProductId          String?   @unique
   verified                Boolean   @default(false)
   selfUserId              String?   @unique
   // 현재 소속사(무소속이면 null) — 바꿀 때는 반드시 ActorAgencyHistory도 같이 갱신할 것
@@ -206,6 +209,8 @@ model Actor {
   pairingsAsFirst    GlCp[]               @relation("PairingActorOne")
   pairingsAsSecond   GlCp[]               @relation("PairingActorTwo")
   stories            Story[]
+  purchases          Purchase[]
+  bundles            BundleActor[]
 
   @@index([agencyId])
 }
@@ -256,23 +261,21 @@ model GlCp {
   @@unique([actorOneId, actorTwoId])
 }
 
+// 방(배우 개인방) 이용권 — 사람×배우당 한 줄. "이 팬이 이 채팅방을 볼 수 있는지"와 채팅방별 상태(대화가 보이기 시작한
+// 시점 startedAt, 읽음, 알림 끄기)를 가짐. 열림/닫힘(cancelledAt)은 직접 정하지 않고 **유효한 구매(Purchase)가 하나라도
+// 이 배우를 포함하면 열림**으로 서버가 다시 계산함(SubscriptionsService.syncAccess, 2026-09-29 묶음 구독 도입).
+// 결제 정보(스토어 영수증)는 Purchase로 옮김.
 model Subscription {
   // lastArtistMessageAt / lastFanReplyAt는 30일 무사용 환불 판정에 그대로 사용
-  // iapPlatform/iapTransactionId/iapExpiresAt는 실제 결제(IAP) 연동 전까지는 전부 null —
-  // 계약 성사 전 샌드박스 플로우에서는 startedAt/cancelledAt만으로 구독 상태를 판단함
-  id                  String       @id @default(uuid())
+  id                  String    @id @default(uuid())
   userId              String
   actorId             String
-  startedAt           DateTime     @default(now())
+  startedAt           DateTime  @default(now())
   lastArtistMessageAt DateTime?
   lastFanReplyAt      DateTime?
   cancelledAt         DateTime?
-  iapPlatform         IapPlatform?
-  // Apple의 originalTransactionId 또는 Google의 purchaseToken — 스토어 쪽 구독 인스턴스 식별자
-  iapTransactionId    String?      @unique
-  iapExpiresAt        DateTime?
   // 이 배우의 새 메시지 알림 끄기(카톡 채팅방 알림 끄기처럼) — 구독·메시지 수신은 그대로
-  notificationsMuted  Boolean      @default(false)
+  notificationsMuted  Boolean   @default(false)
   // 팬이 이 채팅방을 마지막으로 본 시각 — 인박스의 안 읽은 개수(이 시각 이후의 스타 메시지). 채팅방 조회 때 갱신
   lastReadAt          DateTime?
 
@@ -280,6 +283,59 @@ model Subscription {
   actor Actor @relation(fields: [actorId], references: [id], onDelete: Cascade)
 
   @@unique([userId, actorId])
+}
+
+// 구매(결제 단위) — 배우 개인 구독 1건(actorId) 또는 묶음 1건(bundleId), 둘 중 하나만. 방 이용권(Subscription)은
+// 유효한 구매들로부터 계산됨. 실제 결제(IAP) 연동 전(샌드박스)엔 iap* 전부 null이고 startedAt/cancelledAt만으로 판단.
+model Purchase {
+  id               String       @id @default(uuid())
+  userId           String
+  actorId          String?
+  bundleId         String?
+  // 구매 시점 월 가격(표시 가격 기준, 실제 청구는 스토어 상품 가격)
+  priceCents       Int?
+  startedAt        DateTime     @default(now())
+  cancelledAt      DateTime?
+  iapPlatform      IapPlatform?
+  // Apple의 originalTransactionId 또는 Google의 purchaseToken — 스토어 쪽 구독 인스턴스 식별자
+  iapTransactionId String?      @unique
+  iapExpiresAt     DateTime?
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actor  Actor?  @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  bundle Bundle? @relation(fields: [bundleId], references: [id], onDelete: Restrict)
+
+  @@index([userId, cancelledAt])
+  @@index([bundleId])
+  @@index([actorId])
+}
+
+// 묶음 상품 — 여러 배우 개인방을 할인가로 한 번에(2026-09-29 사용자 결정). 스토어엔 상품 하나로 등록하고, 사면 포함된
+// 방 이용권을 모두 열어 줌. 커플(CP)방이 생기면 여기에 커플방도 넣을 수 있게 할 예정(2차).
+model Bundle {
+  id             String   @id @default(uuid())
+  name           String
+  priceCents     Int
+  // 스토어에 등록한 구독 상품 ID(애플·구글 공통, 소문자·숫자·_·.) — 등록 전엔 null(샌드박스 구독만)
+  storeProductId String?  @unique
+  // 판매 중지(false)면 새로 살 수 없음 — 이미 산 팬은 유지
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  actors    BundleActor[]
+  purchases Purchase[]
+}
+
+model BundleActor {
+  bundleId String
+  actorId  String
+
+  bundle Bundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  actor  Actor  @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@id([bundleId, actorId])
+  @@index([actorId])
 }
 
 enum SubscriptionEventType {
@@ -438,7 +494,8 @@ model ActorFanBlock {
 model AdminAction {
   id         String   @id @default(uuid())
   adminId    String
-  // USER_SUSPEND / USER_BAN / USER_REACTIVATE / USER_ROLE / REPORT_RESOLVE / REPORT_DISMISS / ACTOR_RETIRE / ACTOR_RESTORE
+  // USER_SUSPEND / USER_BAN / USER_REACTIVATE / USER_ROLE / REPORT_RESOLVE / REPORT_DISMISS / ACTOR_RETIRE / ACTOR_RESTORE /
+  // ACTOR_PRICE / BUNDLE_CREATE / BUNDLE_UPDATE (audit.service.ts AdminActionType)
   action     String
   targetType String
   targetId   String

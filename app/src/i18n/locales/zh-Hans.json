@@ -406,5 +406,27 @@
     "deleteBody": "包括所填出生日期在内的所有信息都将被删除，且无法恢复。",
     "deleteConfirm": "删除",
     "logout": "退出登录"
+  },
+  "bundle": {
+    "sectionTitle": "套餐更划算",
+    "sectionHint": "一次订阅多位演员，比分别订阅更便宜。",
+    "saveVsSingle": "比单独订阅便宜 {{percent}}%",
+    "saveDetail": "单独订阅共 {{regular}} · 省 {{percent}}%",
+    "subscribeTo": "套餐订阅",
+    "includes": "包含 {{count}} 位演员",
+    "singlePrice": "单独订阅每月 {{price}}",
+    "replacesSingle": "你正在单独订阅的 {{names}} 将并入此套餐，聊天记录保持不变。",
+    "doneBody": "{{name}} 套餐订阅已开始，可在消息页查看所有聊天。",
+    "goInbox": "前往消息",
+    "notFound": "找不到该套餐",
+    "mine": "套餐订阅",
+    "rooms": "聊天室",
+    "via": "套餐 · {{name}}",
+    "cancel": "取消套餐",
+    "cancelTitle": "取消套餐",
+    "cancelConfirm": "取消 {{name}} 后，与 {{names}} 的聊天室将一起关闭（单独订阅的演员不受影响）。重新订阅也看不到之前的聊天。",
+    "cancelFromActor": "该演员包含在你的 {{name}} 套餐中。取消后套餐内其他聊天室也会关闭，重新订阅也看不到之前的聊天。",
+    "cancelFailed": "取消失败，请重试。",
+    "viaShort": "通过套餐使用"
   }
 }

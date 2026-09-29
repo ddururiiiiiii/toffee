@@ -9,6 +9,7 @@ import type { Prisma } from '../generated/prisma/client.js';
 import type { CreateActorDto, UpdateActorDto, UpdateActorImagesDto } from './dto/upsert-actor.dto.js';
 import { appError } from '../common/i18n/app-error.js';
 import { AuditService } from '../audit/audit.service.js';
+import { ensureStoreProductIdFree } from '../common/store/store-product.js';
 
 const ADMIN_ACTOR_SELECT = {
   id: true,
@@ -17,6 +18,7 @@ const ADMIN_ACTOR_SELECT = {
   chatDisplayName: true,
   chatProfileImageUrl: true,
   monthlyPriceCents: true,
+  storeProductId: true,
   verified: true,
   retiredAt: true,
   createdAt: true,
@@ -92,8 +94,10 @@ export class AdminActorsService {
     return this.findOne(actor.id);
   }
 
-  async update(id: string, dto: UpdateActorDto) {
-    await this.ensureActor(id);
+  async update(adminId: string, id: string, dto: UpdateActorDto) {
+    const before = await this.prisma.actor.findUnique({ where: { id }, select: { monthlyPriceCents: true, storeProductId: true } });
+    if (!before) throw new NotFoundException(appError('ACTOR_NOT_FOUND'));
+    await ensureStoreProductIdFree(this.prisma, dto.storeProductId, { actorId: id });
     await this.prisma.actor.update({
       where: { id },
       data: {
@@ -101,8 +105,18 @@ export class AdminActorsService {
         chatDisplayName: dto.chatDisplayName?.trim(),
         monthlyPriceCents: dto.monthlyPriceCents,
         verified: dto.verified,
+        storeProductId: dto.storeProductId,
       },
     });
+    // 가격·스토어 상품은 돈과 직결 — 바뀌면 운영자 작업 기록에
+    const priceChanged = dto.monthlyPriceCents !== undefined && dto.monthlyPriceCents !== before.monthlyPriceCents;
+    const productChanged = dto.storeProductId !== undefined && dto.storeProductId !== before.storeProductId;
+    if (priceChanged || productChanged) {
+      await this.audit.record(adminId, 'ACTOR_PRICE', 'ACTOR', id, {
+        from: { monthlyPriceCents: before.monthlyPriceCents, storeProductId: before.storeProductId },
+        to: { monthlyPriceCents: dto.monthlyPriceCents ?? before.monthlyPriceCents, storeProductId: dto.storeProductId === undefined ? before.storeProductId : dto.storeProductId },
+      });
+    }
     return this.findOne(id);
   }
 

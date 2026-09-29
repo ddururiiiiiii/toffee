@@ -10,7 +10,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
 const MENU: {
-  href: '/admin/reports' | '/admin/banned-words' | '/admin/users' | '/admin/actors' | '/admin/agencies' | '/admin/stats' | '/admin/actions';
+  href: '/admin/reports' | '/admin/banned-words' | '/admin/users' | '/admin/actors' | '/admin/bundles' | '/admin/agencies' | '/admin/stats' | '/admin/actions';
   label: string;
   description: string;
 }[] = [
@@ -19,6 +19,7 @@ const MENU: {
   { href: '/admin/banned-words', label: '금칙어 관리', description: '팬 답장에서 자동으로 차단할 단어를 관리해요' },
   { href: '/admin/users', label: '회원 관리', description: '회원 정지·영구차단, 배우·소속사 직원 계정 지정' },
   { href: '/admin/actors', label: '배우 관리', description: '배우 등록, 프로필 사진, 소속사 이적, 본인 계정 연결' },
+  { href: '/admin/bundles', label: '묶음 상품', description: '여러 배우를 할인가로 묶어 파는 구독 상품, 스토어 상품 ID' },
   { href: '/admin/agencies', label: '소속사 관리', description: '소속사 등록, 이름·로고 변경' },
   { href: '/admin/actions', label: '작업 기록', description: '누가 언제 정지·차단·역할 변경·신고 처리·배우 활동 종료를 했는지' },
 ];

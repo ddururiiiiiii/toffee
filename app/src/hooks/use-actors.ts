@@ -18,6 +18,8 @@ export interface Actor {
   chatDisplayName: string;
   chatProfileImageUrl: string | null;
   monthlyPriceCents: number;
+  /** 개인 구독 스토어 상품 ID — 없으면 아직 스토어 결제 불가(테스트 구독만) */
+  storeProductId?: string | null;
   createdAt?: string;
   /** 활동 종료한 배우(목록엔 안 나오고, 프로필 링크로 들어오면 신규 구독 대신 안내) */
   retiredAt?: string | null;

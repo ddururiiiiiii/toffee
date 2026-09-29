@@ -406,5 +406,27 @@
     "deleteBody": "包含所填出生日期在內的所有資訊都將被刪除，且無法復原。",
     "deleteConfirm": "刪除",
     "logout": "登出"
+  },
+  "bundle": {
+    "sectionTitle": "組合更划算",
+    "sectionHint": "一次訂閱多位演員，比分別訂閱更便宜。",
+    "saveVsSingle": "比單獨訂閱便宜 {{percent}}%",
+    "saveDetail": "單獨訂閱共 {{regular}} · 省 {{percent}}%",
+    "subscribeTo": "組合訂閱",
+    "includes": "包含 {{count}} 位演員",
+    "singlePrice": "單獨訂閱每月 {{price}}",
+    "replacesSingle": "你正在單獨訂閱的 {{names}} 將併入此組合，聊天紀錄保持不變。",
+    "doneBody": "{{name}} 組合訂閱已開始，可在訊息頁查看所有聊天。",
+    "goInbox": "前往訊息",
+    "notFound": "找不到該組合",
+    "mine": "組合訂閱",
+    "rooms": "聊天室",
+    "via": "組合 · {{name}}",
+    "cancel": "取消組合",
+    "cancelTitle": "取消組合",
+    "cancelConfirm": "取消 {{name}} 後，與 {{names}} 的聊天室將一起關閉（單獨訂閱的演員不受影響）。重新訂閱也看不到之前的聊天。",
+    "cancelFromActor": "此演員包含在你的 {{name}} 組合中。取消後組合內其他聊天室也會關閉，重新訂閱也看不到之前的聊天。",
+    "cancelFailed": "取消失敗，請再試一次。",
+    "viaShort": "透過組合使用"
   }
 }

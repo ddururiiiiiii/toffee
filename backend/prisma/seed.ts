@@ -21,6 +21,8 @@ async function main() {
   await prisma.storyView.deleteMany();
   await prisma.story.deleteMany();
   await prisma.subscription.deleteMany();
+  await prisma.purchase.deleteMany();
+  await prisma.bundle.deleteMany();
   await prisma.authIdentity.deleteMany();
   await prisma.glCp.deleteMany();
   await prisma.actorAgencyHistory.deleteMany();
@@ -123,6 +125,18 @@ async function main() {
       ...AGREED, ...ADULT, role: Role.USER, displayName: '수아', nickname: '누가누가', email: 'fan2@toffee.demo' },
   });
 
+  // 묶음 상품(2026-09-29) — 캐러멜 + 누가를 개인 구독 합계(฿198)보다 싸게
+  const pairBundle = await prisma.bundle.create({
+    data: {
+      name: '캐러멜 + 누가',
+      priceCents: 15900,
+      actors: { create: [{ actorId: caramel.id }, { actorId: nougat.id }] },
+    },
+  });
+
+  // 구매(결제 단위)와 방 이용권(Subscription)을 같이 — fan1은 캐러멜 개인 구독, fan2는 묶음으로 두 방
+  await prisma.purchase.create({ data: { userId: fan1.id, actorId: caramel.id, priceCents: caramel.monthlyPriceCents, startedAt: daysAgo(5) } });
+  await prisma.purchase.create({ data: { userId: fan2.id, bundleId: pairBundle.id, priceCents: pairBundle.priceCents, startedAt: daysAgo(20) } });
   const fan1Sub = await prisma.subscription.create({
     data: { userId: fan1.id, actorId: caramel.id, startedAt: daysAgo(5) },
   });
@@ -133,6 +147,7 @@ async function main() {
     data: { userId: fan2.id, actorId: nougat.id, startedAt: daysAgo(20) },
   });
   // 해지된 구독도 하나 넣어서 "방송 대상에서 제외되는지" 확인용
+  await prisma.purchase.create({ data: { userId: fan1.id, actorId: nougat.id, priceCents: nougat.monthlyPriceCents, startedAt: daysAgo(30), cancelledAt: daysAgo(2) } });
   const fan1NougatSub = await prisma.subscription.create({
     data: { userId: fan1.id, actorId: nougat.id, startedAt: daysAgo(30) },
   });

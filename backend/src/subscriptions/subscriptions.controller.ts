@@ -22,6 +22,25 @@ export class SubscriptionsController {
     return this.subscriptionsService.subscribe(user.id, actorId);
   }
 
+  // 묶음 구독(결제 없는 테스트) — 개인 구독과 같은 조건에서만 열림
+  @UseGuards(SandboxSubscribeGuard)
+  @Post('bundles/:bundleId/subscribe')
+  subscribeBundle(@CurrentUser() user: AuthenticatedUser, @Param('bundleId') bundleId: string) {
+    return this.subscriptionsService.subscribeBundle(user.id, bundleId);
+  }
+
+  // 내가 구독 중인 묶음(구독 관리 화면)
+  @Get('me/bundles')
+  listMyBundles(@CurrentUser() user: AuthenticatedUser) {
+    return this.subscriptionsService.listMyBundles(user.id);
+  }
+
+  // 구매 하나 해지(묶음 해지에 씀 — 배우 개인 구독은 DELETE actors/:id/subscribe로도 됨)
+  @Delete('me/purchases/:purchaseId')
+  cancelPurchase(@CurrentUser() user: AuthenticatedUser, @Param('purchaseId') purchaseId: string) {
+    return this.subscriptionsService.cancelPurchase(user.id, purchaseId);
+  }
+
   @Post('actors/:actorId/verify-purchase')
   verifyPurchase(
     @CurrentUser() user: AuthenticatedUser,

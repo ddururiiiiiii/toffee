@@ -26,6 +26,7 @@ import { UserThrottlerGuard } from './common/guards/user-throttler.guard.js';
 import { LocalizedExceptionFilter } from './common/filters/localized-exception.filter.js';
 import { AuditModule } from './audit/audit.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
+import { BundlesModule } from './bundles/bundles.module.js';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { RealtimeModule } from './realtime/realtime.module.js';
     AgenciesModule,
     BlocksModule,
     SubscriptionsModule,
+    BundlesModule,
     ModerationModule,
     AdminModule,
     ParentalConsentModule,

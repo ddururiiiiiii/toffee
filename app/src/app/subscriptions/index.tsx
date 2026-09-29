@@ -1,14 +1,19 @@
+import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, Sparkles } from 'lucide-react-native';
 
+import { BundleAvatars } from '@/components/bundle-card';
 import { ThemedText } from '@/components/themed-text';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Icon } from '@/components/ui/icon';
+import { useCancelPurchase, useMyBundles, type MyBundle } from '@/hooks/use-bundles';
 import { useMySubscriptions, type Subscription } from '@/hooks/use-subscriptions';
+import { ApiError } from '@/lib/api-client';
+import { confirm } from '@/lib/confirm';
 import { useTheme } from '@/hooks/use-theme';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { formatPrice } from '@/utils/price';
@@ -19,6 +24,7 @@ export default function ManageSubscriptionsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { data: subscriptions, isLoading } = useMySubscriptions();
+  const { data: bundles } = useMyBundles();
 
   return (
     <FlatList
@@ -26,6 +32,7 @@ export default function ManageSubscriptionsScreen() {
       contentContainerStyle={styles.list}
       data={subscriptions ?? []}
       keyExtractor={(item) => item.id}
+      ListHeaderComponent={bundles?.length ? <MyBundlesSection bundles={bundles} /> : null}
       renderItem={({ item }) => <SubscriptionCard sub={item} onPress={() => router.push({ pathname: '/subscriptions/[actorId]', params: { actorId: item.actorId } })} />}
       ListEmptyComponent={
         isLoading ? (
@@ -42,9 +49,60 @@ export default function ManageSubscriptionsScreen() {
   );
 }
 
+/**
+ * 묶음 구독 카드(2026-09-29) — 묶음은 한 번에 해지(포함된 배우 중 따로 개인 구독한 배우는 그대로). 실제 결제가 붙으면
+ * 해지는 스토어에서 하고 서버가 반영하게 바뀜(지금은 테스트 구독이라 여기서 바로).
+ */
+function MyBundlesSection({ bundles }: { bundles: MyBundle[] }) {
+  const theme = useTheme();
+  const { t } = useTranslation();
+  const cancel = useCancelPurchase();
+  const [error, setError] = useState<string | null>(null);
+
+  const startCancel = async (item: MyBundle) => {
+    const names = item.bundle.actors.map((actor) => actor.chatDisplayName).join(', ');
+    const ok = await confirm(t('bundle.cancelTitle'), t('bundle.cancelConfirm', { name: item.bundle.name, names }), t('bundle.cancel'), t('common.cancel'));
+    if (!ok) return;
+    setError(null);
+    cancel.mutate(item.purchaseId, { onError: (e) => setError(e instanceof ApiError ? e.message : t('bundle.cancelFailed')) });
+  };
+
+  return (
+    <View style={styles.section}>
+      <ThemedText type="headline">{t('bundle.mine')}</ThemedText>
+      {bundles.map((item) => (
+        <View key={item.purchaseId} style={[styles.bundleCard, { backgroundColor: theme.backgroundElement }]}>
+          <View style={styles.bundleHead}>
+            <BundleAvatars actors={item.bundle.actors} size={44} />
+            <View style={styles.body}>
+              <ThemedText type="headline" numberOfLines={1}>
+                {item.bundle.name}
+              </ThemedText>
+              <ThemedText type="smallMedium">
+                {formatPrice(t, item.bundle.priceCents)} {t('actorProfile.perMonth')}
+              </ThemedText>
+            </View>
+          </View>
+          <Button title={t('bundle.cancel')} variant="ghost" size="md" loading={cancel.isPending && cancel.variables === item.purchaseId} onPress={() => void startCancel(item)} />
+        </View>
+      ))}
+      {error ? (
+        <ThemedText type="small" themeColor="danger">
+          {error}
+        </ThemedText>
+      ) : null}
+      <ThemedText type="headline" style={styles.roomsTitle}>
+        {t('bundle.rooms')}
+      </ThemedText>
+    </View>
+  );
+}
+
 function SubscriptionCard({ sub, onPress }: { sub: Subscription; onPress: () => void }) {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
+  // 묶음으로만 열린 방이면 "묶음" 표시(가격은 묶음 카드에)
+  const viaBundle = sub.coveredBy.length > 0 && sub.coveredBy.every((cover) => cover.bundle);
   return (
     <Pressable
       onPress={onPress}
@@ -56,7 +114,9 @@ function SubscriptionCard({ sub, onPress }: { sub: Subscription; onPress: () => 
           {sub.actor.chatDisplayName}
         </ThemedText>
         <ThemedText type="smallMedium">
-          {formatPrice(t, sub.actor.monthlyPriceCents)} {t('actorProfile.perMonth')}
+          {viaBundle
+            ? t('bundle.viaShort')
+            : `${formatPrice(t, sub.actor.monthlyPriceCents)} ${t('actorProfile.perMonth')}`}
         </ThemedText>
         <ThemedText type="caption" themeColor="textTertiary">
           {t('manage.since', { date: new Date(sub.startedAt).toLocaleDateString(i18n.language) })}
@@ -78,4 +138,8 @@ const styles = StyleSheet.create({
   body: { flex: 1, gap: 2 },
   status: { borderRadius: Radius.pill, paddingHorizontal: 10, paddingVertical: 3 },
   loading: { marginTop: Spacing.six },
+  section: { gap: Spacing.three },
+  bundleCard: { borderRadius: Radius.lg, padding: Spacing.three, gap: Spacing.two },
+  bundleHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  roomsTitle: { marginTop: Spacing.two },
 });

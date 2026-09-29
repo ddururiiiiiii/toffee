@@ -406,5 +406,27 @@
     "deleteBody": "입력한 생년월일을 포함해 내 정보가 모두 삭제되고 되돌릴 수 없어요.",
     "deleteConfirm": "삭제하기",
     "logout": "로그아웃"
+  },
+  "bundle": {
+    "sectionTitle": "묶음으로 더 저렴하게",
+    "sectionHint": "여러 배우를 한 번에 구독하면 따로 구독할 때보다 싸요.",
+    "saveVsSingle": "따로 구독보다 {{percent}}% 할인",
+    "saveDetail": "따로 구독하면 {{regular}} · {{percent}}% 할인",
+    "subscribeTo": "묶음 구독",
+    "includes": "포함된 배우 {{count}}명",
+    "singlePrice": "따로 구독 시 월 {{price}}",
+    "replacesSingle": "지금 따로 구독 중인 {{names}}은(는) 묶음으로 옮겨져요. 대화는 그대로 이어져요.",
+    "doneBody": "{{name}} 묶음 구독이 시작됐어요. 메시지 탭에서 모든 대화방을 볼 수 있어요.",
+    "goInbox": "메시지로 가기",
+    "notFound": "묶음 상품을 찾을 수 없어요",
+    "mine": "묶음 구독",
+    "rooms": "대화방",
+    "via": "묶음 구독 · {{name}}",
+    "cancel": "묶음 구독 해지",
+    "cancelTitle": "묶음 구독 해지",
+    "cancelConfirm": "{{name}}을(를) 해지하면 {{names}} 대화방이 함께 닫혀요(따로 구독 중인 배우는 그대로). 다시 구독해도 이전 대화는 보이지 않아요.",
+    "cancelFromActor": "이 배우는 묶음 구독({{name}})으로 이용 중이에요. 해지하면 묶음에 든 다른 배우 대화방도 함께 닫혀요. 다시 구독해도 이전 대화는 보이지 않아요.",
+    "cancelFailed": "해지하지 못했어요. 다시 시도해 주세요.",
+    "viaShort": "묶음 구독으로 이용 중"
   }
 }
