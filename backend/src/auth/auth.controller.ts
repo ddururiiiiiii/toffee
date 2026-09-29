@@ -6,6 +6,7 @@ import { AppleLoginDto } from './dto/apple-login.dto.js';
 import { NaverLoginDto } from './dto/naver-login.dto.js';
 import { KakaoLoginDto } from './dto/kakao-login.dto.js';
 import { LineLoginDto } from './dto/line-login.dto.js';
+import { WebCodeLoginDto } from './dto/web-code-login.dto.js';
 import { DevLoginDto } from './dto/dev-login.dto.js';
 import { UpdateLocaleDto } from './dto/update-locale.dto.js';
 import { PushDeviceDto } from './dto/push-device.dto.js';
@@ -69,6 +70,31 @@ export class AuthController {
     const identity = await this.authService.verifyLineToken(dto.idToken);
     const user = await this.authService.findOrCreateUser(AuthProvider.LINE, identity);
     return this.authService.issueAccessToken(user);
+  }
+
+  // PC 웹 로그인 — 회사 로그인 페이지가 돌려준 code를 서버가 교환(앱은 위의 토큰 방식)
+  @Public()
+  @Throttle(LOGIN_THROTTLE)
+  @Post('kakao/web')
+  async loginWithKakaoWeb(@Body() dto: WebCodeLoginDto) {
+    const identity = await this.authService.verifyKakaoWebCode(dto.code, dto.redirectUri);
+    return this.authService.issueAccessToken(await this.authService.findOrCreateUser(AuthProvider.KAKAO, identity));
+  }
+
+  @Public()
+  @Throttle(LOGIN_THROTTLE)
+  @Post('naver/web')
+  async loginWithNaverWeb(@Body() dto: WebCodeLoginDto) {
+    const identity = await this.authService.verifyNaverWebCode(dto.code, dto.state, dto.redirectUri);
+    return this.authService.issueAccessToken(await this.authService.findOrCreateUser(AuthProvider.NAVER, identity));
+  }
+
+  @Public()
+  @Throttle(LOGIN_THROTTLE)
+  @Post('line/web')
+  async loginWithLineWeb(@Body() dto: WebCodeLoginDto) {
+    const identity = await this.authService.verifyLineWebCode(dto.code, dto.redirectUri);
+    return this.authService.issueAccessToken(await this.authService.findOrCreateUser(AuthProvider.LINE, identity));
   }
 
   @Public()

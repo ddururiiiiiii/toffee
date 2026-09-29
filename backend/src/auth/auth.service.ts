@@ -162,6 +162,103 @@ export class AuthService {
     };
   }
 
+  // ── PC 웹 로그인: 1회용 code → 토큰(2026-09-29) ─────────────────────
+  // 앱은 SDK가 토큰을 바로 주지만 웹은 회사 로그인 페이지 → 우리 주소로 code가 돌아옴 → 서버가 비밀키로 토큰 교환 → 앱과 같은 확인.
+  // 같은 회사 "앱"(카카오 앱·네이버 애플리케이션·LINE 채널)에 웹 플랫폼을 추가해 써야 회원 식별값이 앱과 같아서 같은 계정으로 로그인됨.
+
+  /** 돌아올 주소가 우리 웹인지 — WEB_LOGIN_ORIGINS(쉼표)에 없는 주소로 받은 code는 거절. 설정이 없으면 웹 로그인 자체가 꺼짐 */
+  private ensureWebRedirect(redirectUri: string, provider: string) {
+    const origins = (this.configService.get<string>('WEB_LOGIN_ORIGINS') ?? '').split(',').map((value) => value.trim()).filter(Boolean);
+    let origin: string | null = null;
+    try {
+      origin = new URL(redirectUri).origin;
+    } catch {
+      origin = null;
+    }
+    if (!origin || !origins.includes(origin)) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider }));
+  }
+
+  private async postForm<T>(url: string, form: Record<string, string>, provider: string): Promise<T> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(form),
+        signal: controller.signal,
+      });
+    } catch {
+      throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider }));
+    } finally {
+      clearTimeout(timeout);
+    }
+    if (!res.ok) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider }));
+    return (await res.json()) as T;
+  }
+
+  private required(key: string, provider: string): string {
+    const value = this.configService.get<string>(key);
+    if (!value) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider }));
+    return value;
+  }
+
+  /** 카카오 웹: REST API 키(+ 클라이언트 시크릿을 켰으면 그것도)로 code → access token → 앱과 같은 확인(앱 ID 포함) */
+  async verifyKakaoWebCode(code: string, redirectUri: string): Promise<ExternalIdentity> {
+    this.ensureWebRedirect(redirectUri, 'Kakao');
+    const secret = this.configService.get<string>('KAKAO_CLIENT_SECRET');
+    const body = await this.postForm<{ access_token?: string }>(
+      'https://kauth.kakao.com/oauth/token',
+      {
+        grant_type: 'authorization_code',
+        client_id: this.required('KAKAO_REST_API_KEY', 'Kakao'),
+        redirect_uri: redirectUri,
+        code,
+        ...(secret ? { client_secret: secret } : {}),
+      },
+      'Kakao',
+    );
+    if (!body.access_token) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'Kakao' }));
+    return this.verifyKakaoToken(body.access_token);
+  }
+
+  /** 네이버 웹: 앱과 같은 애플리케이션의 Client ID/Secret으로 code(+state) → access token → 앱과 같은 확인 */
+  async verifyNaverWebCode(code: string, state: string | undefined, redirectUri: string): Promise<ExternalIdentity> {
+    this.ensureWebRedirect(redirectUri, 'Naver');
+    const body = await this.postForm<{ access_token?: string }>(
+      'https://nid.naver.com/oauth2.0/token',
+      {
+        grant_type: 'authorization_code',
+        client_id: this.required('NAVER_CLIENT_ID', 'Naver'),
+        client_secret: this.required('NAVER_CLIENT_SECRET', 'Naver'),
+        code,
+        state: state ?? '',
+      },
+      'Naver',
+    );
+    if (!body.access_token) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'Naver' }));
+    return this.verifyNaverToken(body.access_token);
+  }
+
+  /** LINE 웹: 채널 ID·시크릿으로 code → id_token → 앱과 같은 확인(LINE_CHANNEL_ID 목록에 이 채널도 있어야 함) */
+  async verifyLineWebCode(code: string, redirectUri: string): Promise<ExternalIdentity> {
+    this.ensureWebRedirect(redirectUri, 'LINE');
+    const body = await this.postForm<{ id_token?: string }>(
+      'https://api.line.me/oauth2/v2.1/token',
+      {
+        grant_type: 'authorization_code',
+        client_id: this.required('LINE_WEB_CHANNEL_ID', 'LINE'),
+        client_secret: this.required('LINE_WEB_CHANNEL_SECRET', 'LINE'),
+        redirect_uri: redirectUri,
+        code,
+      },
+      'LINE',
+    );
+    if (!body.id_token) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'LINE' }));
+    return this.verifyLineToken(body.id_token);
+  }
+
   private async fetchJson<T>(url: string, accessToken: string, provider: string): Promise<T> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);

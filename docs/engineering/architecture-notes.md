@@ -1172,3 +1172,17 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
 - 테스트: `settlements.service.spec.ts`(메모리 DB — 마감 후 환불 −조정, 늦은 기록 +조정, 마감 전 환불은 조정 없음, 순서·중복·미종료 거절).
   로컬 확인: 8월 마감 → 8월 결제 환불 → 9월 조정 −฿99, CSV 반영.
 - 앱: `useSettlementClose`, 정산 화면 마감 상태 줄(자물쇠·마감/마감 취소 버튼 — `canClose`는 운영자 화면만), 조정 카드·열.
+
+## PC 웹 소셜 로그인(authorization code) (2026-09-29)
+
+- 서버: `POST /auth/{kakao|naver|line}/web`(`WebCodeLoginDto` code·redirectUri·state) → `AuthService.verify{Kakao|Naver|Line}WebCode`: redirectUri의
+  origin이 `WEB_LOGIN_ORIGINS`(쉼표)에 있어야 함(없으면 웹 로그인 꺼짐) → 토큰 교환(카카오 `kauth.kakao.com/oauth/token` REST 키 + 선택 client
+  secret, 네이버 `nid.naver.com/oauth2.0/token` client id/secret + state, LINE `api.line.me/oauth2/v2.1/token` 웹 채널 id/secret) → 기존
+  `verifyKakaoToken`(앱 ID 확인 포함)·`verifyNaverToken`·`verifyLineToken`(aud로 채널 선택 — `LINE_WEB_CHANNEL_ID`가 `LINE_CHANNEL_ID` 목록에 있어야 함).
+  로그인 제한(5회/분)은 앱 로그인과 같음. 테스트: 허용 안 된 origin·설정 없음은 외부 호출 없이 거절, 카카오·LINE 교환 흐름(fetch 목).
+- 앱(웹): `lib/social-sign-in.web.ts` — `startRedirectLogin`(state = 16바이트 무작위, `sessionStorage`에 `provider:state`, redirect `<origin>/oauth/<provider>`,
+  LINE은 scope `profile openid`), `consumeRedirectState`(1회용). `app/oauth/[provider].tsx`: state 확인 후 1회만 서버 호출(ref 가드) → `login()`, AuthGate는
+  `oauth`를 로그인 화면처럼 취급. 버튼 색·순서는 `components/social-button-style.ts`로 앱·웹 공유. 키: `EXPO_PUBLIC_WEB_KAKAO_REST_API_KEY`·
+  `EXPO_PUBLIC_WEB_NAVER_CLIENT_ID`·`EXPO_PUBLIC_WEB_LINE_CHANNEL_ID`. 브라우저 확인: 버튼 → 카카오 authorize URL(client_id·redirect_uri·state),
+  위조 state 거절(서버 호출 없음), 맞는 state면 code 1회 전송.
+- 애플 웹은 Services ID + client secret(JWT, .p8 서명)가 필요해서 보류.

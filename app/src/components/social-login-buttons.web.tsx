@@ -1,8 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { GOOGLE_WEB_CLIENT_ID } from '@/lib/social-sign-in.web';
+import { ThemedText } from '@/components/themed-text';
+import { orderedProviders, PROVIDER_STYLE } from '@/components/social-button-style';
+import { availableProviders, GOOGLE_WEB_CLIENT_ID, isRedirectProvider, startRedirectLogin } from '@/lib/social-sign-in.web';
+import { Radius, Spacing } from '@/constants/theme';
 import type { SocialCredential } from '@/lib/social-types';
 
 interface GoogleIdentity {
@@ -35,9 +38,9 @@ function loadGoogleIdentity(): Promise<GoogleIdentity> {
 }
 
 /**
- * 웹 로그인 버튼(2026-09-29) — 구글 공식 버튼(Google Identity Services). 누르면 구글 팝업 → idToken(credential)을 받아 앱과 같은
- * POST /auth/google로. 클라이언트 ID(EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)가 없으면 아무것도 안 그림. 구글 콘솔의 "승인된 JavaScript
- * 원본"에 이 사이트 주소를 넣어야 함.
+ * 웹 로그인 버튼(2026-09-29) — 구글은 공식 버튼(Google Identity Services, 팝업 → idToken → 앱과 같은 POST /auth/google, 구글 콘솔
+ * "승인된 JavaScript 원본"에 이 사이트 주소). 카카오·네이버·LINE은 누르면 그 회사 로그인 페이지로 이동했다가 /oauth/<회사>로 돌아옴
+ * (app/oauth/[provider].tsx). 키가 없는 로그인은 안 보임.
  */
 export function SocialLoginButtons({
   onCredential,
@@ -74,6 +77,31 @@ export function SocialLoginButtons({
     };
   }, [i18n.language, onCredential, onError, t]);
 
-  if (!GOOGLE_WEB_CLIENT_ID) return null;
-  return <View ref={container} style={{ alignItems: 'center', minHeight: 44 }} />;
+  const redirects = orderedProviders(availableProviders(), i18n.language).filter(isRedirectProvider);
+  if (!GOOGLE_WEB_CLIENT_ID && redirects.length === 0) return null;
+  return (
+    <View style={styles.list}>
+      {redirects.map((provider) => {
+        const look = PROVIDER_STYLE[provider];
+        return (
+          <Pressable
+            key={provider}
+            onPress={() => startRedirectLogin(provider)}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.button, { backgroundColor: look.background, opacity: pressed ? 0.85 : 1 }]}>
+            <ThemedText type="smallBold" style={{ color: look.text }}>
+              {t(`login.continueWith.${provider}`)}
+            </ThemedText>
+          </Pressable>
+        );
+      })}
+      {GOOGLE_WEB_CLIENT_ID ? <View ref={container} style={styles.google} /> : null}
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  list: { gap: Spacing.two },
+  button: { height: 50, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
+  google: { alignItems: 'center', minHeight: 44 },
+});

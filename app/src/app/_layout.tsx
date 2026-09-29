@@ -60,7 +60,8 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isLoading) return;
-    const onLoginScreen = segments[0] === 'login';
+    // /oauth/<회사>: PC 웹 소셜 로그인에서 돌아오는 화면(로그인 전) — 로그인 화면처럼 취급
+    const onLoginScreen = segments[0] === 'login' || segments[0] === 'oauth';
     if (!token) {
       if (!onLoginScreen) router.replace('/login');
       return;
@@ -163,6 +164,7 @@ function RootLayout() {
               }}>
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="login" />
+              <Stack.Screen name="oauth/[provider]" options={{ headerShown: false }} />
               <Stack.Screen name="actor/[id]" options={{ headerShown: false }} />
               <Stack.Screen name="subscribe/[actorId]" options={{ headerShown: false }} />
               <Stack.Screen name="subscribe/bundle/[bundleId]" options={{ headerShown: false }} />

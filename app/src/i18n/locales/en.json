@@ -36,7 +36,8 @@
       "line": "Continue with LINE",
       "kakao": "Continue with Kakao",
       "naver": "Continue with NAVER"
-    }
+    },
+    "backToLogin": "Back to sign-in"
   },
   "actors": {
     "title": "Find actors",

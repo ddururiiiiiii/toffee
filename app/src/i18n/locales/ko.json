@@ -36,7 +36,8 @@
       "line": "LINE으로 계속하기",
       "kakao": "카카오로 계속하기",
       "naver": "네이버로 계속하기"
-    }
+    },
+    "backToLogin": "로그인 화면으로"
   },
   "actors": {
     "title": "배우 찾기",

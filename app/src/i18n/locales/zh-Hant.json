@@ -36,7 +36,8 @@
       "line": "透過 LINE 繼續",
       "kakao": "透過 Kakao 繼續",
       "naver": "透過 NAVER 繼續"
-    }
+    },
+    "backToLogin": "返回登入"
   },
   "actors": {
     "title": "尋找演員",

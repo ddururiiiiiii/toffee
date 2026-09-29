@@ -36,7 +36,8 @@
       "line": "LINEで続ける",
       "kakao": "Kakaoで続ける",
       "naver": "NAVERで続ける"
-    }
+    },
+    "backToLogin": "ログイン画面へ"
   },
   "actors": {
     "title": "俳優をさがす",
