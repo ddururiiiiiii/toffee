@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { MessagesService } from './messages.service.js';
-import { ListMessagesQueryDto, ListRepliesQueryDto } from './dto/list-replies-query.dto.js';
+import { ListMessagesQueryDto, ListRepliesQueryDto, SearchMessagesQueryDto } from './dto/list-replies-query.dto.js';
 import { SendReplyDto } from './dto/send-reply.dto.js';
 import { SendBroadcastDto } from './dto/send-broadcast.dto.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
@@ -59,6 +59,12 @@ export class MessagesController {
   @Get('media')
   listMedia(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string, @Query() query: ListMessagesQueryDto) {
     return this.messagesService.listMediaForFan(user.id, actorId, { limit: query.limit, before: query.before });
+  }
+
+  // 팬 채팅방 안 검색
+  @Get('search')
+  search(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string, @Query() query: SearchMessagesQueryDto) {
+    return this.messagesService.searchForFan(user.id, actorId, query.q, { limit: query.limit, before: query.before });
   }
 
   // 팬 화면 "남은 답장 N개"

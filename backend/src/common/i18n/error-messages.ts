@@ -377,6 +377,14 @@ export const ERROR_MESSAGES = {
     'zh-Hans': '这两位演员的情侣房间已存在。',
     'zh-Hant': '這兩位演員的情侶房間已存在。',
   },
+  SEARCH_QUERY_TOO_SHORT: {
+    ko: '검색어를 두 글자 이상 입력해 주세요.',
+    en: 'Enter at least 2 characters to search.',
+    th: 'กรุณาพิมพ์คำค้นหาอย่างน้อย 2 ตัวอักษร',
+    ja: '検索ワードを2文字以上入力してください。',
+    'zh-Hans': '请输入至少 2 个字进行搜索。',
+    'zh-Hant': '請輸入至少 2 個字進行搜尋。',
+  },
   NOT_FOR_COUPLE: {
     ko: '커플방에는 할 수 없는 설정이에요(소속사·본인 계정은 멤버 배우 쪽에서 정해져요).',
     en: "This setting isn't available for couple rooms (agency and account come from the member actors).",

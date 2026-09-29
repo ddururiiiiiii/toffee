@@ -450,5 +450,17 @@
     "discoverTitle": "情侣房间",
     "roomLabel": "情侣房间",
     "soloLabel": "个人房间"
+  },
+  "chatSearch": {
+    "open": "搜索聊天",
+    "placeholder": "搜索消息",
+    "close": "关闭搜索",
+    "older": "上一个结果",
+    "newer": "下一个结果",
+    "count": "{{current}}/{{total}}",
+    "countMore": "{{current}}/{{total}}+",
+    "noResults": "没有找到",
+    "tooShort": "至少 2 个字",
+    "notLoaded": "无法加载到该消息"
   }
 }

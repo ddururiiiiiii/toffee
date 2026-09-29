@@ -450,5 +450,17 @@
     "discoverTitle": "カップルルーム",
     "roomLabel": "カップルルーム",
     "soloLabel": "個人ルーム"
+  },
+  "chatSearch": {
+    "open": "トーク内検索",
+    "placeholder": "メッセージを検索",
+    "close": "検索を閉じる",
+    "older": "前の結果",
+    "newer": "次の結果",
+    "count": "{{current}}/{{total}}",
+    "countMore": "{{current}}/{{total}}+",
+    "noResults": "見つかりません",
+    "tooShort": "2文字以上",
+    "notLoaded": "そのメッセージまで読み込めませんでした"
   }
 }

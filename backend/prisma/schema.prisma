@@ -407,6 +407,8 @@ model Message {
   reports      Report[]
 
   @@index([replyToMessageId])
+  // 팬 대화방 나눠 받기·방 안 검색·사진 모아보기가 전부 "이 방의 메시지를 시간순으로" 찾음(2026-09-29)
+  @@index([actorId, createdAt])
 }
 
 // 원문은 한 번만 저장, 언어별 번역본은 필요할 때 생성해서 여기 캐싱 (lazy translation)

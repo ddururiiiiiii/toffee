@@ -86,6 +86,11 @@ const REPLY_PREVIEW_MESSAGES = 10;
 const REPLY_PREVIEW_PER_MESSAGE = 20;
 const REPLY_PREVIEW_LENGTH = 80;
 
+// Prisma의 contains는 LIKE의 %·_를 그대로 넘겨서 "%%"가 전부와 맞음 — 글자 그대로 찾도록 이스케이프(Postgres 기본 이스케이프 문자 \\)
+export function escapeLike(text: string): string {
+  return text.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
+
 function personalize(body: string, fanName: string): string {
   return body.replaceAll(NAME_PLACEHOLDER, fanName);
 }
@@ -207,6 +212,46 @@ export class MessagesService {
       this.prisma.message.count({ where }),
     ]);
     return { items: await this.mediaService.withReadUrls(items), total };
+  }
+
+  /**
+   * 팬 채팅방 안 검색(2026-09-29) — 이 팬이 볼 수 있는 메시지(구독 시작 이후, 지워지지 않은 스타 메시지 + 본인 답장) 중 글에
+   * q가 들어간 것만, 최신 → 오래된 순으로 limit개(before 이전). 스타 글의 {{name}} 자리엔 팬 이름이 들어가므로, 팬 이름에 q가
+   * 들어 있으면 그 자리가 있는 글도 같이 찾음. 결과를 누르면 앱이 대화방의 해당 위치로 이동함(id만 있으면 됨).
+   */
+  async searchForFan(userId: string, actorId: string, q: string, page: { limit?: number; before?: string } = {}) {
+    const subscription = await ensureActiveSubscription(this.prisma, userId, actorId);
+    const query = q.trim();
+    if (query.length < 2) throw new BadRequestException(appError('SEARCH_QUERY_TOO_SHORT'));
+    const fan = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { nickname: true, displayName: true } });
+    const fanName = fan.nickname ?? fan.displayName;
+    const matchesName = !!fanName && fanName.toLocaleLowerCase().includes(query.toLocaleLowerCase());
+    const messages = await this.prisma.message.findMany({
+      where: {
+        actorId,
+        createdAt: { gte: subscription.startedAt },
+        deletedAt: null,
+        AND: [
+          { OR: [{ senderType: MessageSenderType.ARTIST }, { fanUserId: userId }] },
+          {
+            OR: [
+              { body: { contains: escapeLike(query), mode: 'insensitive' } },
+              ...(matchesName ? [{ senderType: MessageSenderType.ARTIST, body: { contains: NAME_PLACEHOLDER } }] : []),
+            ],
+          },
+        ],
+      },
+      select: { id: true, senderType: true, senderActorId: true, body: true, mediaType: true, createdAt: true },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: page.limit ?? 30,
+      ...(page.before ? { cursor: { id: page.before }, skip: 1 } : {}),
+    });
+    return this.withSenders(
+      messages.map((message) => ({
+        ...message,
+        body: message.senderType === MessageSenderType.ARTIST && message.body ? personalize(message.body, fanName) : message.body,
+      })),
+    );
   }
 
   async sendReply(userId: string, actorId: string, dto: SendReplyDto) {

@@ -1074,3 +1074,19 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
 - 앱: `Actor.kind/coupleMembers`, `CoupleCard`, 배우 프로필 커플방 절·커플방 멤버 줄, 둘러보기 커플방 줄, 채팅 말풍선 보낸 배우 이름
   (보낸 배우가 바뀌면 묶음 분리), 스튜디오 목록 개인방/커플방 라벨·메시지 보낸 배우, 콘솔 라벨, 운영자 `admin/actors/new-couple`.
 
+## 채팅방 안 검색 (2026-09-29)
+
+- API `GET /actors/:actorId/messages/search?q=&limit=&before=`(`SearchMessagesQueryDto`, q 2~50자) → `MessagesService.searchForFan`.
+  범위는 `listForFan`과 같음(구독 시작 이후, `deletedAt: null`, 스타 메시지 OR 본인 답장). 본문은 `contains + mode insensitive`(ILIKE).
+  **Prisma `contains`는 `%`·`_`를 이스케이프하지 않아서** "%%"가 전부와 맞았음 → `escapeLike()`로 이스케이프(단위 테스트). 팬 이름에 q가
+  들어 있으면 `{{name}}`이 있는 스타 메시지도 같이 찾고, 응답 본문은 personalize 후. 결과는 가벼운 필드(id·senderType·body·mediaType·
+  createdAt·sender)만.
+- 인덱스: `Message`에 `(actorId, createdAt)`가 없었음(기존은 PK·replyToMessageId뿐) — 팬 대화 나눠 받기·검색·모아보기가 모두 이 조건이라
+  `@@index([actorId, createdAt])` 추가(마이그레이션 `20260929130000_message_actor_created_index`). 부분 문자열 검색은 이 인덱스로 방 단위
+  행만 훑음 — 방당 메시지가 수만 개가 되면 `pg_trgm` GIN 인덱스 검토.
+- 앱: `useChatSearch`(infinite, 30개씩). 채팅 화면에 방 안 검색 바(350ms 디바운스, ▲/▼, 결과 끝에서 다음 결과 묶음). 알림 `focus`와 검색 결과가
+  같은 이동 로직을 씀 — 대상이 불러온 목록에 없으면 `fetchNextPage`를 찾을 때까지(최대 `MAX_FOCUS_PAGES`=20 × 50개). 이전엔 알림 focus가
+  첫 50개 밖이면 그냥 무시됐음(같이 고쳐짐). 강조 해제 타이머를 별도 effect로 분리(폴링으로 목록이 바뀌면 cleanup이 타이머를 지워 강조가
+  안 꺼지던 문제). `IconButton`에 `disabled` 추가.
+- 한계: 많이 불러온 상태에서 폴링(연결 끊겼을 때)은 불러온 페이지를 전부 다시 받음 — react-query infinite 기본 동작. 실시간 연결 중엔
+  30초 간격이라 부담 작음.

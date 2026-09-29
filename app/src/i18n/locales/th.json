@@ -450,5 +450,17 @@
     "discoverTitle": "ห้องคู่",
     "roomLabel": "ห้องคู่",
     "soloLabel": "ห้องเดี่ยว"
+  },
+  "chatSearch": {
+    "open": "ค้นหาในแชท",
+    "placeholder": "ค้นหาข้อความ",
+    "close": "ปิดการค้นหา",
+    "older": "ผลลัพธ์ก่อนหน้า",
+    "newer": "ผลลัพธ์ถัดไป",
+    "count": "{{current}}/{{total}}",
+    "countMore": "{{current}}/{{total}}+",
+    "noResults": "ไม่พบข้อความ",
+    "tooShort": "อย่างน้อย 2 ตัวอักษร",
+    "notLoaded": "เลื่อนไปถึงข้อความนั้นไม่ได้"
   }
 }

@@ -450,5 +450,17 @@
     "discoverTitle": "情侶房間",
     "roomLabel": "情侶房間",
     "soloLabel": "個人房間"
+  },
+  "chatSearch": {
+    "open": "搜尋聊天",
+    "placeholder": "搜尋訊息",
+    "close": "關閉搜尋",
+    "older": "上一個結果",
+    "newer": "下一個結果",
+    "count": "{{current}}/{{total}}",
+    "countMore": "{{current}}/{{total}}+",
+    "noResults": "沒有找到",
+    "tooShort": "至少 2 個字",
+    "notLoaded": "無法載入到該訊息"
   }
 }

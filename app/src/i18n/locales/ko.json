@@ -450,5 +450,17 @@
     "discoverTitle": "커플방",
     "roomLabel": "커플방",
     "soloLabel": "개인방"
+  },
+  "chatSearch": {
+    "open": "대화 검색",
+    "placeholder": "대화 내용 검색",
+    "close": "검색 닫기",
+    "older": "이전 결과",
+    "newer": "다음 결과",
+    "count": "{{current}}/{{total}}",
+    "countMore": "{{current}}/{{total}}+",
+    "noResults": "찾는 내용이 없어요",
+    "tooShort": "두 글자 이상",
+    "notLoaded": "이 메시지까지 불러오지 못했어요"
   }
 }

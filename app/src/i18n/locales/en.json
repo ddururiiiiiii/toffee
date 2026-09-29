@@ -450,5 +450,17 @@
     "discoverTitle": "Couple rooms",
     "roomLabel": "Couple room",
     "soloLabel": "My room"
+  },
+  "chatSearch": {
+    "open": "Search chat",
+    "placeholder": "Search messages",
+    "close": "Close search",
+    "older": "Previous result",
+    "newer": "Next result",
+    "count": "{{current}}/{{total}}",
+    "countMore": "{{current}}/{{total}}+",
+    "noResults": "No matches",
+    "tooShort": "2+ characters",
+    "notLoaded": "Couldn't scroll back that far"
   }
 }

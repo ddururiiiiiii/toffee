@@ -117,3 +117,26 @@ export function useChatMedia(actorId: string | undefined) {
   });
 }
 
+
+export type ChatSearchHit = Pick<ChatMessage, 'id' | 'senderType' | 'body' | 'mediaType' | 'createdAt' | 'sender'>;
+const SEARCH_PAGE_SIZE = 30;
+
+/**
+ * 채팅방 안 검색(2026-09-29) — 글에 검색어가 들어간 메시지(스타 메시지 + 내 답장), 최신 → 오래된 순 30개씩. 2글자 미만이면
+ * 안 보냄. 결과는 id만 써서 대화방의 그 위치로 이동함.
+ */
+export function useChatSearch(actorId: string | undefined, query: string) {
+  const q = query.trim();
+  return useInfiniteQuery({
+    queryKey: ['chat-search', actorId, q],
+    queryFn: ({ pageParam }) =>
+      apiClient.get<ChatSearchHit[]>(
+        `/actors/${actorId}/messages/search?limit=${SEARCH_PAGE_SIZE}&q=${encodeURIComponent(q)}` +
+          (pageParam ? `&before=${encodeURIComponent(pageParam)}` : ''),
+      ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => (lastPage.length === SEARCH_PAGE_SIZE ? lastPage[lastPage.length - 1].id : undefined),
+    enabled: !!actorId && q.length >= 2,
+    staleTime: 30_000,
+  });
+}

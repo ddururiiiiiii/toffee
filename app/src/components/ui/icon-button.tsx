@@ -13,6 +13,7 @@ export function IconButton({
   color,
   size = 22,
   style,
+  disabled,
 }: {
   icon: LucideIcon;
   onPress?: () => void;
@@ -21,18 +22,21 @@ export function IconButton({
   color?: string;
   size?: number;
   style?: StyleProp<ViewStyle>;
+  disabled?: boolean;
 }) {
   const theme = useTheme();
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
+      accessibilityState={disabled ? { disabled: true } : undefined}
       accessibilityRole="button"
       accessibilityLabel={label}
       hitSlop={6}
       style={({ pressed }) => [
         styles.base,
         filled && { backgroundColor: theme.backgroundElement },
-        { opacity: pressed ? 0.6 : 1 },
+        { opacity: disabled ? 0.3 : pressed ? 0.6 : 1 },
         style,
       ]}>
       <Icon as={icon} size={size} color={color} />
