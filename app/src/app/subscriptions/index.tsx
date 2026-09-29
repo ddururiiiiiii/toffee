@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronRight, Sparkles } from 'lucide-react-native';
 
 import { BundleAvatars } from '@/components/bundle-card';
-import { IdleRefundSection } from '@/components/idle-refund-section';
+import { RefundSection } from '@/components/refund-section';
 import { ThemedText } from '@/components/themed-text';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -38,8 +38,8 @@ export default function ManageSubscriptionsScreen() {
       keyExtractor={(item) => item.id}
       ListHeaderComponent={
         <>
-          {/* 스타 미발송 환불 — 대상이 있을 때만 */}
-          <IdleRefundSection />
+          {/* 환불 요청(스타 미발송·활동 종료) — 대상이 있을 때만 */}
+          <RefundSection />
           {bundles?.length ? <MyBundlesSection bundles={bundles} /> : null}
         </>
       }

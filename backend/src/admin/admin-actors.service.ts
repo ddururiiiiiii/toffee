@@ -11,6 +11,8 @@ import { appError } from '../common/i18n/app-error.js';
 import { AuditService } from '../audit/audit.service.js';
 import { ensureStoreProductIdFree } from '../common/store/store-product.js';
 import { escapeLike } from '../common/utils/escape-like.js';
+import { PushService } from '../notifications/push.service.js';
+import { pushStrings } from '../notifications/push-messages.js';
 
 const ADMIN_ACTOR_SELECT = {
   id: true,
@@ -44,17 +46,38 @@ export class AdminActorsService {
     private readonly actors: ActorsService,
     private readonly agencies: AdminAgenciesService,
     private readonly audit: AuditService,
+    private readonly push: PushService,
   ) {}
 
   /**
    * 배우 활동 종료/재개(잠정 정책, STATUS 정책 표): 종료하면 둘러보기·검색에서 숨기고 신규 구독을 막음. 이미 구독 중인 팬은
-   * 대화를 계속 볼 수 있음. 스토어 결제가 붙으면 스토어 상품 판매도 같이 멈춰야 갱신이 안 됨(운영 절차).
+   * 대화를 계속 볼 수 있음. 스토어 결제가 붙으면 스토어 상품 판매도 같이 멈춰야 갱신이 안 됨(운영 절차). 입대도 "종료"로, 전역하면 "재개".
+   * 종료하면 그 배우의 방(개인방 + 들어 있는 커플방)을 구독 중인 팬에게 알림 — 결제 후 14일 안이면 구독 관리에서 환불 요청 가능(2026-09-29).
    */
   async setRetired(adminId: string, id: string, retired: boolean) {
-    await this.ensureActor(id);
+    const actor = await this.ensureActor(id);
+    const wasRetired = !!actor.retiredAt;
     await this.prisma.actor.update({ where: { id }, data: { retiredAt: retired ? new Date() : null } });
     await this.audit.record(adminId, retired ? 'ACTOR_RETIRE' : 'ACTOR_RESTORE', 'ACTOR', id);
+    if (retired && !wasRetired) await this.notifyRetired(id, actor.chatDisplayName);
     return this.findOne(id);
+  }
+
+  private async notifyRetired(actorId: string, name: string) {
+    const couples = await this.prisma.coupleMember.findMany({ where: { memberId: actorId }, select: { coupleId: true } });
+    const subs = await this.prisma.subscription.findMany({
+      where: { actorId: { in: [actorId, ...couples.map((couple) => couple.coupleId)] }, cancelledAt: null },
+      select: { userId: true },
+    });
+    const days = Number(process.env.RETIRE_REFUND_DAYS) || 14;
+    await this.push.sendToUsers(
+      [...new Set(subs.map((sub) => sub.userId))],
+      (recipient) => {
+        const t = pushStrings(recipient.locale);
+        return { title: t.retiredFanTitle(name), body: t.retiredFanBody(days) };
+      },
+      { type: 'actor-retired', actorId },
+    );
   }
 
   async findAll(query?: string) {
@@ -189,8 +212,9 @@ export class AdminActorsService {
   }
 
   private async ensureActor(id: string) {
-    const actor = await this.prisma.actor.findUnique({ where: { id }, select: { id: true } });
+    const actor = await this.prisma.actor.findUnique({ where: { id }, select: { id: true, retiredAt: true, chatDisplayName: true } });
     if (!actor) throw new NotFoundException(appError('ACTOR_NOT_FOUND'));
+    return actor;
   }
 
   private async toResponse({ _count, ...row }: AdminActorRow) {

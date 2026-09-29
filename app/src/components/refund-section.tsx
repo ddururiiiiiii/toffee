@@ -6,7 +6,7 @@ import { ReceiptText } from 'lucide-react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
-import { useIdleRefunds, useRequestIdleRefund, type IdleRefundCandidate } from '@/hooks/use-subscriptions';
+import { useRefundCandidates, useRequestRefund, type RefundCandidate } from '@/hooks/use-subscriptions';
 import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { confirm } from '@/lib/confirm';
@@ -14,18 +14,18 @@ import { Radius, Spacing } from '@/constants/theme';
 import { formatPrice } from '@/utils/price';
 
 /**
- * 스타 미발송 환불(2026-09-29) — 구독 관리 맨 위. 이용 기간 동안 스타 메시지가 하나도 없었던 결제가 있으면(기간 끝난 뒤 7일 안) 카드로
- * 보여 주고 환불 요청. 테스트·구글 결제는 바로 환불, 애플 결제는 우리가 환불할 수 없어서 애플 환불 요청 페이지를 엶. 대상이 없으면 안 보임.
+ * 환불 요청(2026-09-29) — 구독 관리 맨 위. 이용 기간 동안 스타 메시지가 하나도 없었던 결제(기간 끝난 뒤 7일 안), 결제 후 14일 안에 배우 활동이
+ * 끝난 결제가 있으면 카드로 보여 주고 환불 요청. 테스트·구글 결제는 바로 환불, 애플 결제는 우리가 환불할 수 없어서 애플 환불 요청 페이지를 엶. 대상이 없으면 안 보임.
  */
-export function IdleRefundSection() {
+export function RefundSection() {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { data } = useIdleRefunds();
+  const { data } = useRefundCandidates();
   // 요청·결과 안내는 구역에서 — 환불되면 그 카드는 목록에서 빠져서(카드 안에 두면 결과를 못 보여 줌)
-  const request = useRequestIdleRefund();
+  const request = useRequestRefund();
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<{ chargeId: string; message: string } | null>(null);
-  const submit = (item: IdleRefundCandidate) => {
+  const submit = (item: RefundCandidate) => {
     setError(null);
     request.mutate(item.chargeId, {
       onSuccess: (result) => {
@@ -57,7 +57,7 @@ export function IdleRefundSection() {
   );
 }
 
-function RefundCard({ item, onRequest, busy, error }: { item: IdleRefundCandidate; onRequest: () => void; busy: boolean; error: string | null }) {
+function RefundCard({ item, onRequest, busy, error }: { item: RefundCandidate; onRequest: () => void; busy: boolean; error: string | null }) {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
   const date = (iso: string) => new Date(iso).toLocaleDateString(i18n.language);
@@ -82,7 +82,9 @@ function RefundCard({ item, onRequest, busy, error }: { item: IdleRefundCandidat
         <View style={styles.body}>
           <ThemedText type="smallBold">{item.productName}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            {t('idleRefund.reason', { from: date(item.chargedAt), to: lastDay })}
+            {item.reason === 'ACTOR_RETIRED' && item.endedAt
+              ? t('idleRefund.reasonRetired', { date: date(item.endedAt) })
+              : t('idleRefund.reason', { from: date(item.chargedAt), to: lastDay })}
           </ThemedText>
           <ThemedText type="caption" themeColor="textTertiary">
             {t('idleRefund.deadline', { date: date(item.deadline), amount: formatPrice(t, item.amountCents) })}

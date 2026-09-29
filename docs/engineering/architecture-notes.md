@@ -1175,7 +1175,7 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
 
 ## 스타 미발송 환불 IdleRefund + 환불 기준 경고 (2026-09-29)
 
-- 판정 `subscriptions/idle-refund.service.ts` `IdleRefundService.candidates(userId)`: 내 `PurchaseCharge` 중 `refundedAt null`이고
+- (같은 날 이어서 `refund.service.ts` `RefundService`로 이름 바꾸고 활동 종료 사유 추가 — 아래 절) 판정 `IdleRefundService.candidates(userId)`: 내 `PurchaseCharge` 중 `refundedAt null`이고
   `periodEnd ∈ (now − IDLE_REFUND_REQUEST_DAYS(7), now]`, 그 결제의 `ChargeAllocation.roomId`(묶음이면 여러 방) 전부에서 `[chargedAt, periodEnd)` 동안
   `Message(senderType ARTIST, deletedAt null)` 0개. allocation이 없는 결제는 대상 아님. 팬 답장은 안 봄.
 - 요청 `request(userId, chargeId)`: 후보 재확인 → SANDBOX `refundedAt` 직접, GOOGLE `IapVerificationService.refundGoogleOrder(orderId)`
@@ -1189,6 +1189,20 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
   `refundWarningLeft(stage)`로 경고 단계면 배우 + `notifyActorStaff` + ADMIN(ACTIVE) 전원에 `idleRefundTitle/Body`. 30~34일은 반복 단계 28 < 저장된 29라 안 울림.
 - 앱: `components/idle-refund-section.tsx`(구독 관리 ListHeader 맨 위, 대상 없으면 안 보임). mutation은 구역에 둠 — 환불되면 카드가 목록에서 빠져서
   카드 안 콜백은 안 불림(처음엔 결과 문구가 안 보였음). 테스트: `idle-refund.service.spec.ts`, `idle-reminder.spec.ts`, `store-purchases.spec.ts`.
+
+## 환불 확장: 활동 종료·입대 + 운영자 목록 (2026-09-29)
+
+- `subscriptions/refund.service.ts` `RefundService`(이전 IdleRefundService). 후보 조회: `refundedAt null`, `periodEnd > now − REFUND_REQUEST_DAYS`,
+  `chargedAt ≤ now`인 내 결제마다 사유 하나 — **ACTOR_RETIRED** 먼저: 결제의 allocation 방이 전부 종료(`roomsEndedAt` — 방의 종료 시각 = 방 `retiredAt`과
+  커플 멤버 `retiredAt` 중 가장 이른 것, 묶음은 그중 가장 늦은 것)이고 종료 시각 `< chargedAt + RETIRE_REFUND_DAYS(14)`·`< periodEnd`·`≤ now`
+  (결제 전 이미 종료된 방의 갱신 결제도 대상) → 기간 중에도 바로 요청, 기한 `periodEnd + 7일`. 아니면 **STAR_IDLE**(기존 규칙). 재개하면 `retiredAt null`이라 후보에서 빠짐.
+- API 이름 정리: `GET /me/refunds`, `POST /me/refunds/:chargeId`(앱만 쓰던 `/me/refunds/idle`은 제거). `RefundRequest.reason`에 `ACTOR_RETIRED`.
+- 활동 종료 알림: `AdminActorsService.setRetired`가 새로 종료할 때만(`wasRetired` 아니면) 그 배우 방 + 들어 있는 커플방(`CoupleMember.memberId`)의
+  활성 구독 팬에게 `retiredFanTitle/Body` 푸시(AdminModule이 NotificationsModule import).
+- 운영자 목록: `AdminRefundsController` `GET /admin/refunds?reason=`(ADMIN) → `RefundService.adminList` — 최근 200건, 팬(지금 닉네임·이메일, 탈퇴면 null),
+  결제의 allocation 배우·소속사, `charge.refundedAt`(애플 안내 건이 실제로 환불됐는지 — 애플 REFUND 알림이 채움). 앱 `app/admin/refunds.tsx`(한국어 전용).
+- 확인: 단위 테스트(기간 중 종료 즉시 대상·14일 지나 종료는 아님·결제 전 종료된 방 갱신 결제는 대상·묶음 일부 종료는 아님), 로컬에서 Chanon 종료 →
+  팬 후보 ACTOR_RETIRED → 환불 → 운영자 목록 → 재개·데이터 정리.
 
 ## 검색 속도: pg_trgm GIN 색인 (2026-09-29)
 

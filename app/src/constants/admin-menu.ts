@@ -9,6 +9,7 @@ export type AdminHref =
   | '/admin/agencies'
   | '/admin/stats'
   | '/admin/settlements'
+  | '/admin/refunds'
   | '/admin/actions';
 
 export const ADMIN_MENU: { href: AdminHref; label: string; description: string; webOnly?: boolean }[] = [
@@ -20,5 +21,6 @@ export const ADMIN_MENU: { href: AdminHref; label: string; description: string; 
   { href: '/admin/actors', label: '배우 관리', description: '배우 등록, 프로필 사진, 소속사 이적, 본인 계정 연결' },
   { href: '/admin/bundles', label: '묶음 상품', description: '여러 배우를 할인가로 묶어 파는 구독 상품, 스토어 상품 ID' },
   { href: '/admin/agencies', label: '소속사 관리', description: '소속사 등록, 이름·로고·정산 배분율' },
+  { href: '/admin/refunds', label: '환불 요청', description: '스타 미발송·활동 종료 환불 요청, 애플 환불 여부, 배우·소속사별' },
   { href: '/admin/actions', label: '작업 기록', description: '누가 언제 정지·차단·역할 변경·신고 처리·가격·정산 비율을 바꿨는지' },
 ];

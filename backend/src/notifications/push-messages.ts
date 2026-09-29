@@ -19,6 +19,9 @@ interface PushStrings {
   // 환불 기준(30일 미발송) 경고 — 배우·소속사·운영자 공통
   idleRefundTitle: (room: string, daysLeft: number) => string;
   idleRefundBody: (days: number, fans: number) => string;
+  // 배우 활동 종료·입대 — 구독 팬에게(환불 안내)
+  retiredFanTitle: (actor: string) => string;
+  retiredFanBody: (days: number) => string;
 }
 
 const STRINGS: Record<SupportedLocale, PushStrings> = {
@@ -34,6 +37,8 @@ const STRINGS: Record<SupportedLocale, PushStrings> = {
     idleStaffBody: (fans) => `구독 중인 팬 ${fans}명`,
     idleRefundTitle: (room, left) => `${room} · ${left === 1 ? '내일' : `${left}일 뒤`}부터 팬이 환불을 요청할 수 있어요`,
     idleRefundBody: (days, fans) => `${days}일째 메시지가 없어요. 30일 동안 메시지가 없으면 팬 ${fans}명이 그 달 구독료 환불을 요청할 수 있어요. 지금 한 마디 남겨 주세요.`,
+    retiredFanTitle: (actor) => `${actor}님의 활동이 종료됐어요`,
+    retiredFanBody: (days) => `지난 대화는 계속 볼 수 있어요. 결제한 지 ${days}일 안이라면 구독 관리에서 이번 달 환불을 요청할 수 있어요.`,
   },
   en: {
     media: { TEXT: 'You have a new message', PHOTO: 'Sent a photo', AUDIO: 'Sent a voice message', VIDEO: 'Sent a video' },
@@ -47,6 +52,8 @@ const STRINGS: Record<SupportedLocale, PushStrings> = {
     idleStaffBody: (fans) => `${fans} active subscribers`,
     idleRefundTitle: (room, left) => `${room} · fans can request refunds ${left === 1 ? 'from tomorrow' : `in ${left} days`}`,
     idleRefundBody: (days, fans) => `No messages for ${days} days. After 30 days without a message, ${fans} fans can request a refund for that month. Please send a message now.`,
+    retiredFanTitle: (actor) => `${actor} has ended their activity`,
+    retiredFanBody: (days) => `You can still read past messages. If you paid within the last ${days} days, you can request a refund for this month in Manage subscriptions.`,
   },
   th: {
     media: { TEXT: 'มีข้อความใหม่', PHOTO: 'ส่งรูปภาพ', AUDIO: 'ส่งข้อความเสียง', VIDEO: 'ส่งวิดีโอ' },
@@ -60,6 +67,8 @@ const STRINGS: Record<SupportedLocale, PushStrings> = {
     idleStaffBody: (fans) => `ผู้สมัครสมาชิก ${fans} คน`,
     idleRefundTitle: (room, left) => `${room} · แฟนจะขอคืนเงินได้${left === 1 ? 'ตั้งแต่พรุ่งนี้' : `ในอีก ${left} วัน`}`,
     idleRefundBody: (days, fans) => `ไม่มีข้อความมา ${days} วันแล้ว หากไม่มีข้อความครบ 30 วัน แฟน ${fans} คนจะขอคืนเงินค่าสมาชิกของเดือนนั้นได้ ส่งข้อความสักประโยคตอนนี้เลย`,
+    retiredFanTitle: (actor) => `${actor} ยุติกิจกรรมแล้ว`,
+    retiredFanBody: (days) => `ยังดูข้อความเก่าได้ตามปกติ หากชำระเงินภายใน ${days} วันที่ผ่านมา สามารถขอคืนเงินของเดือนนี้ได้ที่จัดการการสมัครสมาชิก`,
   },
   ja: {
     media: {
@@ -78,6 +87,8 @@ const STRINGS: Record<SupportedLocale, PushStrings> = {
     idleStaffBody: (fans) => `購読中のファン${fans}人`,
     idleRefundTitle: (room, left) => `${room}・${left === 1 ? '明日' : `${left}日後`}からファンが返金を申請できます`,
     idleRefundBody: (days, fans) => `${days}日間メッセージがありません。30日間メッセージがないと、ファン${fans}人がその月の購読料の返金を申請できます。今ひとこと送ってください。`,
+    retiredFanTitle: (actor) => `${actor}さんの活動が終了しました`,
+    retiredFanBody: (days) => `これまでのメッセージは引き続き見られます。お支払いから${days}日以内なら、購読管理から今月分の返金を申請できます。`,
   },
   'zh-Hans': {
     media: { TEXT: '你有一条新消息', PHOTO: '发送了一张照片', AUDIO: '发送了一条语音消息', VIDEO: '发送了一段视频' },
@@ -91,6 +102,8 @@ const STRINGS: Record<SupportedLocale, PushStrings> = {
     idleStaffBody: (fans) => `订阅中的粉丝 ${fans} 人`,
     idleRefundTitle: (room, left) => `${room} · ${left === 1 ? '明天起' : `${left} 天后`}粉丝可申请退款`,
     idleRefundBody: (days, fans) => `已 ${days} 天没有消息。30 天没有消息的话，${fans} 位粉丝可以申请当月订阅费退款。现在就发一句吧。`,
+    retiredFanTitle: (actor) => `${actor} 已结束活动`,
+    retiredFanBody: (days) => `仍可查看以往的消息。如果是 ${days} 天内付款的，可以在订阅管理中申请本月退款。`,
   },
   'zh-Hant': {
     media: { TEXT: '你有一則新訊息', PHOTO: '傳送了一張照片', AUDIO: '傳送了一則語音訊息', VIDEO: '傳送了一段影片' },
@@ -104,6 +117,8 @@ const STRINGS: Record<SupportedLocale, PushStrings> = {
     idleStaffBody: (fans) => `訂閱中的粉絲 ${fans} 人`,
     idleRefundTitle: (room, left) => `${room} · ${left === 1 ? '明天起' : `${left} 天後`}粉絲可申請退款`,
     idleRefundBody: (days, fans) => `已 ${days} 天沒有訊息。30 天沒有訊息的話，${fans} 位粉絲可以申請當月訂閱費退款。現在就傳一句吧。`,
+    retiredFanTitle: (actor) => `${actor} 已結束活動`,
+    retiredFanBody: (days) => `仍可查看以往的訊息。如果是 ${days} 天內付款的，可以在訂閱管理中申請本月退款。`,
   },
 };
 

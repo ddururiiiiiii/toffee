@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { SandboxSubscribeGuard } from '../common/guards/sandbox-subscribe.guard.js';
 import { SubscriptionsService } from './subscriptions.service.js';
-import { IdleRefundService } from './idle-refund.service.js';
+import { RefundService } from './refund.service.js';
 import { RestorePurchasesDto, VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
 import { SetNotificationsDto } from './dto/set-notifications.dto.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
@@ -11,7 +11,7 @@ import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
 export class SubscriptionsController {
   constructor(
     private readonly subscriptionsService: SubscriptionsService,
-    private readonly idleRefunds: IdleRefundService,
+    private readonly refunds: RefundService,
   ) {}
 
   @Get('me/subscriptions')
@@ -71,15 +71,15 @@ export class SubscriptionsController {
     return this.subscriptionsService.unsubscribe(user.id, actorId);
   }
 
-  // 스타 미발송 환불 — 지금 요청할 수 있는 내 결제(구독 관리 화면)
-  @Get('me/refunds/idle')
-  listIdleRefunds(@CurrentUser() user: AuthenticatedUser) {
-    return this.idleRefunds.candidates(user.id);
+  // 환불 요청(스타 미발송·활동 종료) — 지금 요청할 수 있는 내 결제(구독 관리 화면)
+  @Get('me/refunds')
+  listRefundable(@CurrentUser() user: AuthenticatedUser) {
+    return this.refunds.candidates(user.id);
   }
 
-  @Post('me/refunds/idle/:chargeId')
-  requestIdleRefund(@CurrentUser() user: AuthenticatedUser, @Param('chargeId') chargeId: string) {
-    return this.idleRefunds.request(user.id, chargeId);
+  @Post('me/refunds/:chargeId')
+  requestRefund(@CurrentUser() user: AuthenticatedUser, @Param('chargeId') chargeId: string) {
+    return this.refunds.request(user.id, chargeId);
   }
 
   // 배우별 알림 끄기(채팅방 🔔)

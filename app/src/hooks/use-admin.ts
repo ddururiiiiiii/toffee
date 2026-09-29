@@ -440,3 +440,28 @@ export function useCreateCouple() {
   );
 }
 
+
+/** 운영자 환불 요청 목록(2026-09-29) — 스타 미발송·활동 종료 */
+export interface AdminRefundEntry {
+  id: string;
+  reason: 'STAR_IDLE' | 'ACTOR_RETIRED';
+  source: 'SANDBOX' | 'APPLE' | 'GOOGLE';
+  /** REFUNDED = 우리가 환불까지, STORE_GUIDED = 애플 환불 페이지 안내(애플이 환불하면 refundedAt이 채워짐) */
+  status: 'REFUNDED' | 'STORE_GUIDED';
+  requestedAt: string;
+  fan: { id: string; name: string; email: string | null } | null;
+  productName: string;
+  amountCents: number;
+  chargedAt: string;
+  periodEnd: string;
+  refundedAt: string | null;
+  actors: string[];
+  agencies: (string | null)[];
+}
+
+export function useAdminRefunds(reason?: AdminRefundEntry['reason']) {
+  return useQuery({
+    queryKey: ['admin', 'refunds', reason ?? null],
+    queryFn: () => apiClient.get<AdminRefundEntry[]>(`/admin/refunds${reason ? `?reason=${reason}` : ''}`),
+  });
+}

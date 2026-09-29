@@ -241,7 +241,7 @@ function SelfAccountSection({ actor }: { actor: AdminActor }) {
   );
 }
 
-// 활동 종료(계약 종료 등) — 둘러보기·검색에서 숨기고 신규 구독을 막음. 기존 구독 팬은 대화 유지(잠정 정책). 작업 기록에 남음
+// 활동 종료(계약 종료·입대 등) — 둘러보기·검색에서 숨기고 신규 구독을 막음. 기존 구독 팬은 대화 유지 + 알림, 결제 후 14일 안이면 환불 요청 가능(잠정 정책). 작업 기록에 남음
 function RetireSection({ actor }: { actor: AdminActor }) {
   const setRetired = useSetActorRetired(actor.id);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
@@ -250,7 +250,7 @@ function RetireSection({ actor }: { actor: AdminActor }) {
     const ok = await confirm(
       retiring ? '활동 종료' : '활동 재개',
       retiring
-        ? `${actor.legalName} 배우를 둘러보기·검색에서 숨기고 신규 구독을 막을까요?\n\n지금 구독 중인 팬(${actor.activeSubscriberCount}명)은 대화를 계속 볼 수 있어요. 스토어 결제가 붙으면 스토어 상품 판매도 같이 멈춰야 갱신이 안 돼요.`
+        ? `${actor.legalName} 배우를 둘러보기·검색에서 숨기고 신규 구독을 막을까요?\n\n지금 구독 중인 팬(${actor.activeSubscriberCount}명)은 대화를 계속 볼 수 있어요. 구독 팬에게 활동 종료 알림이 가고, 결제한 지 14일 안인 팬은 그 달 환불을 요청할 수 있어요. 입대도 활동 종료로 처리하고 전역하면 재개해 주세요. 스토어 결제가 붙으면 스토어 상품 판매도 같이 멈춰야 갱신이 안 돼요.`
         : `${actor.legalName} 배우를 다시 둘러보기에 보이고 구독을 받을까요?`,
       retiring ? '활동 종료' : '활동 재개',
       '취소',

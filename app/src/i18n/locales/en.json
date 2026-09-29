@@ -558,6 +558,7 @@
     "refunded": "Refunded. It may take a few days to reach your payment method.",
     "guided": "We opened Apple's refund page. Apple will review and refund.",
     "guidedBefore": "We've shown you Apple's refund page. If you haven't requested yet, you can open it again.",
-    "failed": "Couldn't process the refund request. Please try again in a moment."
+    "failed": "Couldn't process the refund request. Please try again in a moment.",
+    "reasonRetired": "The actor ended their activity on {{date}}, within 14 days of your payment, so you can get a full refund for this period."
   }
 }
