@@ -12,8 +12,8 @@ import i18n from '@/i18n';
  * 폴링을 길게(30초, 혹시 놓친 신호 대비), 끊겨 있으면 예전처럼 짧게 — `useLiveInterval` (2026-09-29)
  */
 interface RealtimeEvent {
-  kind: 'artist-message' | 'message-removed' | 'fan-reply';
-  actorId: string;
+  kind: 'artist-message' | 'message-removed' | 'fan-reply' | 'access-changed';
+  actorId?: string;
   messageId?: string;
 }
 
@@ -39,7 +39,14 @@ export function useLiveInterval(fallbackMs: number): number {
 }
 
 function applyEvent(queryClient: QueryClient, event: RealtimeEvent) {
+  // 내 구독이 바뀜(다른 기기에서 구독·해지 등) — 인박스·구독 관리. 서버도 이 연결이 받을 방 목록을 바로 다시 읽음
+  if (event.kind === 'access-changed') {
+    void queryClient.invalidateQueries({ queryKey: ['my-subscriptions'] });
+    void queryClient.invalidateQueries({ queryKey: ['my-bundles'] });
+    return;
+  }
   const { actorId } = event;
+  if (!actorId) return;
   if (event.kind === 'fan-reply') {
     // 스타 화면(답장 줄·답장 수)·답장 채팅·소속사 답장 탭
     void queryClient.invalidateQueries({ queryKey: ['actor-broadcasts', actorId] });
@@ -68,9 +75,9 @@ function parseBlock(block: string): { type: string; data: string } | null {
 
 /**
  * 로그인한 동안 연결을 유지(앱이 뒤로 가면 끊고, 돌아오면 다시). 끊기면 1초 → 최대 30초 간격으로 재시도.
- * `audienceKey`가 바뀌면(구독 목록이 바뀜) 다시 연결 — 서버가 받을 채팅방 목록을 연결 때 읽어서.
+ * 구독이 바뀌면 서버가 access-changed 신호로 받을 채팅방 목록을 알아서 다시 읽음(예전엔 앱이 다시 연결했음).
  */
-export function useRealtimeSync(token: string | null, audienceKey: string) {
+export function useRealtimeSync(token: string | null) {
   const queryClient = useQueryClient();
   useEffect(() => {
     if (!token) return;
@@ -155,5 +162,5 @@ export function useRealtimeSync(token: string | null, audienceKey: string) {
       appState.remove();
       disconnect();
     };
-  }, [token, audienceKey, queryClient]);
+  }, [token, queryClient]);
 }

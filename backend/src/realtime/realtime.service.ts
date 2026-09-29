@@ -13,10 +13,13 @@ const CHANNEL = 'toffee_realtime';
  * - fan-reply: 팬 답장 → 스타·소속사만(팬 답장은 다른 팬에게 안 보임)
  */
 export interface RealtimeEvent {
-  kind: 'artist-message' | 'message-removed' | 'fan-reply';
-  actorId: string;
+  kind: 'artist-message' | 'message-removed' | 'fan-reply' | 'access-changed';
+  /** access-changed엔 없음(사람 단위 신호) */
+  actorId?: string;
   /** fan-reply: 답장이 달린 스타 메시지 */
   messageId?: string;
+  /** access-changed: 구독이 바뀐 사람 — 그 사람 연결만 볼 수 있는 방 목록을 다시 읽음(2026-09-29 부하 테스트 후) */
+  userId?: string;
 }
 
 /**

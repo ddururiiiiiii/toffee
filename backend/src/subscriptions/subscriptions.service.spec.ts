@@ -4,6 +4,7 @@ import { CURRENT_TERMS_VERSION } from '../common/legal/terms.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { IapVerificationService } from './iap-verification.service.js';
 import type { MediaService } from '../storage/media.service.js';
+import type { RealtimeService } from '../realtime/realtime.service.js';
 
 interface Purchase {
   id: string;
@@ -89,7 +90,7 @@ function fakeDb(user: Record<string, unknown> = DONE_USER) {
     },
     $transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn(db),
   };
-  const service = new SubscriptionsService(db as unknown as PrismaService, {} as IapVerificationService, {} as MediaService);
+  const service = new SubscriptionsService(db as unknown as PrismaService, {} as IapVerificationService, {} as MediaService, { publish: () => Promise.resolve() } as unknown as RealtimeService);
   const open = (actorId: string) => subs.find((s) => s.actorId === actorId && !s.cancelledAt);
   return { service, purchases, subs, events, actors, bundles, open };
 }

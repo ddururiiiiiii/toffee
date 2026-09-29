@@ -1039,3 +1039,21 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   `PLAYBACK_AUDIO_MODE`(playsInSilentMode·shouldPlayInBackground·doNotMix)를 앱 시작과 스튜디오 녹음 종료 때 적용, expo-audio
   플러그인 `enableBackgroundPlayback: true`. 실기기에서 확인 필요(웹은 해당 없음).
 
+## 출시 준비: Docker·설정 점검·공개 약관·부하 테스트 (2026-09-29)
+
+- `backend/Dockerfile`(node:22-slim 2단계, openssl은 Prisma 마이그레이션 엔진용), `docker-entrypoint.sh`(`RUN_MIGRATIONS` 기본 true →
+  `prisma migrate deploy` 후 `node --import ./dist/instrument.js dist/main`), `.dockerignore`. 이 세션에선 Debian 패키지 서버가 막혀
+  full `node:22` 변형으로 빌드·실행 확인(새 DB에 마이그레이션 25개 적용, `/health/ready`·`/legal/*`·`/support` 200, SIGTERM 즉시 종료).
+- `common/config/env-check.ts` — 필수(`DATABASE_URL`, `JWT_SECRET`), 운영(`NODE_ENV=production`)에서 JWT 32자 미만·`ENABLE_DEV_LOGIN`·
+  `ENABLE_SANDBOX_SUBSCRIBE`·`API_PUBLIC_URL` 없음이면 `main.ts`가 로그 남기고 `exit(1)`. 외부 서비스 키 누락은 경고만.
+  `main.ts`: `TRUST_PROXY`(숫자=홉 수), `enableShutdownHooks()`. `RealtimeService.onModuleDestroy`의 subject.complete → SSE 스트림 complete.
+- `GET /health/ready`(`SELECT 1`, 실패 503). 헬스·약관·지원 페이지는 `@SkipThrottle`.
+- `legal/` — 약관·개인정보처리방침 초안 원본(`legal-texts.ts`), `GET /legal/:doc`(HTML, `?lang`·Accept-Language로 초안 안내 언어),
+  `GET /legal/:doc/sections`(앱 `LegalDocument`가 씀), `GET /support`(`SUPPORT_EMAIL`). 앱 `terms.tsx`/`privacy.tsx`는 서버 글을 받음.
+- `backend/scripts/load-test.mjs` — 가짜 구독자 M명을 DB에 넣고 SSE N개를 연 뒤 스타 메시지 발송 시간·신호 도착 분포를 잼(끝나면 정리).
+  로컬 결과(연결 3,000·구독자 10,000): 연결 3,000개 동시 열림 약 9초, 발송 API 0.2~0.3초, 신호 도착 p95 0.2초, 메모리 241→545MB.
+  이 테스트로 찾아 고친 것: ① SSE `ready`를 방 목록 로드 전에 보내서 그 사이 신호가 버려질 수 있었음 → 로드 후 `ready`
+  ② 연결마다 1분마다 방 목록 재조회(3,000개면 DB 부하 상시) → 구독이 바뀌면 `access-changed`(SubscriptionsService가 publish,
+  그 사용자 연결만 재조회 + 앱이 인박스 새로고침), 안전 새로고침은 10분 + 흩뜨림 ③ 발송 API가 푸시 전송(FCM 500건씩)을 기다림 →
+  기다리지 않음(void, 실패는 원래도 best-effort). 앱 `useRealtimeSync(token)`는 구독 변경 때 재연결하지 않음.
+

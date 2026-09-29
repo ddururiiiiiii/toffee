@@ -8,9 +8,11 @@ import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../common/types/authenticated-user.js';
 import { RealtimeService, type RealtimeEvent } from './realtime.service.js';
 
-// 연결을 유지하려고 보내는 빈 신호 간격(중간 프록시가 조용한 연결을 끊지 않게), 볼 수 있는 배우 목록을 다시 읽는 간격
+// 연결을 유지하려고 보내는 빈 신호 간격(중간 프록시가 조용한 연결을 끊지 않게)
 const HEARTBEAT_MS = 25_000;
-const AUDIENCE_REFRESH_MS = 60_000;
+// 볼 수 있는 배우 목록 안전 새로고침 간격 — 구독이 바뀌면 access-changed 신호로 바로 다시 읽으므로 이건 역할·소속 변경 같은
+// 드문 경우용. 예전엔 1분마다라 연결 3,000개면 DB 조회가 끊임없었음(2026-09-29 부하 테스트). 연결마다 시점을 흩뜨림
+const AUDIENCE_REFRESH_MS = 10 * 60_000;
 
 interface Audience {
   admin: boolean;
@@ -43,12 +45,23 @@ export class RealtimeController {
             audience = next;
           })
           .catch(() => {});
-      void refresh();
-      const refreshTimer = setInterval(() => void refresh(), AUDIENCE_REFRESH_MS);
+      // 볼 수 있는 방 목록을 다 읽은 뒤에 "준비됨" — 예전엔 먼저 보내서, 읽는 사이에 온 신호가 조용히 버려질 수 있었음
+      void refresh().then(() => {
+        if (!subscriber.closed) subscriber.next({ type: 'ready', data: '' });
+      });
+      const refreshTimer = setInterval(() => void refresh(), AUDIENCE_REFRESH_MS + Math.floor(Math.random() * 60_000));
       const heartbeat = setInterval(() => subscriber.next({ type: 'ping', data: '' }), HEARTBEAT_MS);
-      subscriber.next({ type: 'ready', data: '' });
-      const subscription = this.realtime.events$.subscribe((event) => {
-        if (audience && canReceive(audience, event)) subscriber.next({ type: 'change', data: event });
+      const subscription = this.realtime.events$.subscribe({
+        next: (event) => {
+          if (event.kind === 'access-changed') {
+            // 내 구독이 바뀜 — 방 목록을 다시 읽고 앱에도 알려 줌(인박스·구독 관리 새로고침)
+            if (event.userId === user.id) void refresh().then(() => subscriber.next({ type: 'change', data: event }));
+            return;
+          }
+          if (audience && canReceive(audience, event)) subscriber.next({ type: 'change', data: event });
+        },
+        // 서버가 꺼질 때(배포·재시작) 연결을 닫아 줌 — 앱은 알아서 다른 서버로 다시 연결
+        complete: () => subscriber.complete(),
       });
       return () => {
         clearInterval(refreshTimer);
@@ -76,6 +89,7 @@ export class RealtimeController {
 }
 
 export function canReceive(audience: Audience, event: RealtimeEvent): boolean {
+  if (!event.actorId) return false;
   if (audience.admin || audience.staff.has(event.actorId)) return true;
   return event.kind !== 'fan-reply' && audience.subscribed.has(event.actorId);
 }

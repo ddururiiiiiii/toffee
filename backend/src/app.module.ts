@@ -27,6 +27,7 @@ import { LocalizedExceptionFilter } from './common/filters/localized-exception.f
 import { AuditModule } from './audit/audit.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
 import { BundlesModule } from './bundles/bundles.module.js';
+import { LegalModule } from './legal/legal.module.js';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { BundlesModule } from './bundles/bundles.module.js';
     BlocksModule,
     SubscriptionsModule,
     BundlesModule,
+    LegalModule,
     ModerationModule,
     AdminModule,
     ParentalConsentModule,

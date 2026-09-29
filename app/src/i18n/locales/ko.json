@@ -135,7 +135,8 @@
   "legal": {
     "draftTitle": "이 문서는 초안입니다",
     "draftBody": "정식 출시 전 반드시 변호사 검토를 거쳐야 하며, 지금은 법적 효력이 없습니다.",
-    "koreanOnly": ""
+    "koreanOnly": "",
+    "loadFailed": "문서를 불러오지 못했어요"
   },
   "studio": {
     "screen": "스튜디오",

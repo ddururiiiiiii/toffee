@@ -290,7 +290,9 @@ export class MessagesService {
       const text = fanName ? personalize(dto.body, fanName) : dto.body;
       return text.slice(0, PUSH_PREVIEW_LENGTH);
     };
-    await this.pushService
+    // 푸시는 기다리지 않음 — 구독자가 많으면(수천 명, FCM 500건씩) 스타 화면의 "보내기"가 몇 초씩 걸려서(2026-09-29 부하 테스트).
+    // 메시지는 이미 저장·실시간 신호가 나갔고, 푸시 실패는 원래도 발송 성공으로 처리(best-effort)
+    void this.pushService
       .sendToUsers(
         notifyQuotedFan ? pushRecipients.filter((userId) => userId !== quotedFanId) : pushRecipients,
         ({ locale, displayName }) => ({ title: actor.chatDisplayName, body: preview(locale, displayName) }),
@@ -298,7 +300,7 @@ export class MessagesService {
       )
       .catch(() => {});
     if (notifyQuotedFan && quotedFanId) {
-      await this.pushService
+      void this.pushService
         .sendToUser(
           quotedFanId,
           ({ locale, displayName }) => ({
@@ -310,7 +312,7 @@ export class MessagesService {
         .catch(() => {});
     }
     // 소속사 모니터링용 알림 — 팬 알림과 별개, 실패해도 발송 자체엔 영향 없음(모니터링은 원문 그대로라 치환 안 함)
-    await this.pushService
+    void this.pushService
       .notifyActorStaff(
         actorId,
         ({ locale }) => ({

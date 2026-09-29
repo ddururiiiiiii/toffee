@@ -135,7 +135,8 @@
   "legal": {
     "draftTitle": "This document is a draft",
     "draftBody": "It must be reviewed by a lawyer before launch and currently has no legal effect.",
-    "koreanOnly": "This draft is currently available in Korean only."
+    "koreanOnly": "This draft is currently available in Korean only.",
+    "loadFailed": "Couldn't load this document"
   },
   "studio": {
     "screen": "Studio",

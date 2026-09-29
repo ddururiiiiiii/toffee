@@ -135,7 +135,8 @@
   "legal": {
     "draftTitle": "本文件为草案",
     "draftBody": "正式上线前必须经过律师审核，目前不具有法律效力。",
-    "koreanOnly": "此草案目前仅提供韩语版本。"
+    "koreanOnly": "此草案目前仅提供韩语版本。",
+    "loadFailed": "无法加载文档"
   },
   "studio": {
     "screen": "工作室",

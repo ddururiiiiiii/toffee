@@ -8,6 +8,7 @@ import { MediaService } from '../storage/media.service.js';
 import { appError } from '../common/i18n/app-error.js';
 import { CURRENT_TERMS_VERSION } from '../common/legal/terms.js';
 import { allocateBundlePrice } from './allocate-price.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 
 const LAST_MESSAGE_PREVIEW = 80;
 
@@ -35,6 +36,7 @@ export class SubscriptionsService {
     private readonly prisma: PrismaService,
     private readonly iapVerificationService: IapVerificationService,
     private readonly media: MediaService,
+    private readonly realtime: RealtimeService,
   ) {}
 
   /**
@@ -143,6 +145,7 @@ export class SubscriptionsService {
       await this.syncAccess(tx, userId, [actorId], new Map([[actorId, actor.monthlyPriceCents]]));
       return tx.subscription.findUniqueOrThrow({ where: { userId_actorId: { userId, actorId } } });
     });
+    this.accessChanged(userId);
     return { subscription, basePriceCents: actor.monthlyPriceCents, effectivePriceCents: actor.monthlyPriceCents, bundleDiscountApplied: false };
   }
 
@@ -171,6 +174,7 @@ export class SubscriptionsService {
       await this.syncAccess(tx, userId, actorIds, shares);
       return solos.map((solo) => solo.actorId!);
     });
+    this.accessChanged(userId);
     return { bundleId, priceCents: bundle.priceCents, actorIds, replacedActorIds };
   }
 
@@ -198,6 +202,7 @@ export class SubscriptionsService {
       await this.syncAccess(tx, userId, [actorId], new Map([[actorId, actor.monthlyPriceCents]]));
       return tx.subscription.findUniqueOrThrow({ where: { userId_actorId: { userId, actorId } } });
     });
+    this.accessChanged(userId);
     return { subscription, basePriceCents: actor.monthlyPriceCents, effectivePriceCents: actor.monthlyPriceCents, bundleDiscountApplied: false };
   }
 
@@ -224,6 +229,7 @@ export class SubscriptionsService {
       await tx.purchase.update({ where: { id: purchase.id }, data: { cancelledAt: new Date() } });
       await this.syncAccess(tx, userId, actorIdsOf(purchase), new Map());
     });
+    this.accessChanged(userId);
     return { purchaseId: purchase.id, actorIds: actorIdsOf(purchase) };
   }
 
@@ -262,6 +268,11 @@ export class SubscriptionsService {
         await tx.subscriptionEvent.create({ data: { userId, actorId, type: SubscriptionEventType.CANCELLED } });
       }
     }
+  }
+
+  // 이 사람의 구독이 바뀜 — 열려 있는 실시간 연결이 볼 수 있는 방 목록을 바로 다시 읽게(앱은 인박스를 새로고침)
+  private accessChanged(userId: string) {
+    void this.realtime.publish({ kind: 'access-changed', userId });
   }
 
   private activePurchases(db: Db, userId: string): Promise<PurchaseRow[]> {

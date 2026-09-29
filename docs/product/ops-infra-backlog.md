@@ -71,7 +71,7 @@
 | 에러 모니터링 | Sentry (코드 연동 완료) | sentry.io 프로젝트 2개 생성(백엔드: NestJS / 앱: React Native `toffee-app`), DSN을 환경변수에 입력, 앱 소스맵용 토큰 |
 | GitHub Actions 사용 시간 | CI는 main에 올릴 때만 실행(2026-09-28) — 무료 시간이 젤리와 합산돼 한도가 찼음 | Organization으로 옮기면 무료 시간이 따로 잡힘(위 1번과 같이 처리). 필요하면 지출 한도 설정 확인 |
 | 의존성 취약점 알림 | Dependabot (설정 파일 추가 완료) | GitHub 저장소 설정에서 알림 켜져 있는지 확인 |
-| 백엔드 호스팅 / DB | **미정** | 호스팅 결정 → 배포 자동화(CD), DB 자동 백업. 앱 개발/운영 설정 분리는 코드 완료(2026-09-29, `app.config.ts`/`eas.json`). 프록시 뒤에 두면 Express `trust proxy` 설정(로그인 요청 횟수 제한이 IP 기준이라). 실시간 연결(SSE)이 오래 열려 있으므로 호스팅의 요청 타임아웃·연결 유지 제한 확인 |
+| 백엔드 호스팅 / DB | **미정** — 코드 쪽은 준비 끝(2026-09-29) | 호스팅 고르기(Docker 이미지를 돌릴 수 있는 곳이면 됨: Railway·Render·Fly.io 등) + 관리형 Postgres(자동 백업). 올릴 때: `backend/Dockerfile`로 배포, 환경변수는 `backend/.env.example` 그대로(빠지면 서버가 켜질 때 로그에 알려 줌), 헬스체크 `GET /health`(살아 있는지)·`/health/ready`(DB까지), 서버 여러 대면 `RUN_MIGRATIONS=false` + 배포 단계에서 `npx prisma migrate deploy` 한 번, 프록시 뒤면 `TRUST_PROXY=1`. **서버 메모리 1GB 이상**(부하 테스트: 실시간 연결 3,000개에 약 550MB). 실시간 연결(SSE)이 오래 열려 있으므로 호스팅의 요청 타임아웃(최소 몇 분)·연결 유지 제한 확인. 앱 개발/운영 설정 분리는 완료(`app.config.ts`/`eas.json`) |
 | 영상 스트리밍 | 당분간 불필요(압축 업로드 + 다운로드 재생) | 영상이 많아지면 Cloudflare Stream 검토 |
 
 ## 3. 사업·법무

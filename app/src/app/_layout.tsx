@@ -22,7 +22,6 @@ import { useSyncLocale } from '@/hooks/use-sync-locale';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { useOnboardingStatus } from '@/hooks/use-onboarding';
-import { useMySubscriptions } from '@/hooks/use-subscriptions';
 import { useRealtimeSync } from '@/lib/realtime';
 import { applyPlaybackAudioMode } from '@/lib/audio-mode';
 import { OfflineBanner } from '@/components/offline-banner';
@@ -118,10 +117,7 @@ function SessionEffects() {
   useSyncLocale();
   usePushNotifications();
   const { token } = useAuth();
-  const { data: subscriptions } = useMySubscriptions();
-  // 구독이 바뀌면 다시 연결(서버가 연결할 때 받을 채팅방 목록을 읽음)
-  const audienceKey = (subscriptions ?? []).map((sub) => sub.actorId).sort().join(',');
-  useRealtimeSync(token, audienceKey);
+  useRealtimeSync(token);
   return null;
 }
 
