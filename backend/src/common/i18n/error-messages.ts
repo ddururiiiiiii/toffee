@@ -385,6 +385,14 @@ export const ERROR_MESSAGES = {
     'zh-Hans': '请输入至少 2 个字进行搜索。',
     'zh-Hant': '請輸入至少 2 個字進行搜尋。',
   },
+  SETTLEMENT_MONTH_INVALID: {
+    ko: '정산 월은 2026-09 같은 형식이어야 해요.',
+    en: 'Settlement month must look like 2026-09.',
+    th: 'เดือนที่สรุปยอดต้องอยู่ในรูปแบบ 2026-09',
+    ja: '精算月は 2026-09 の形式で指定してください。',
+    'zh-Hans': '结算月份格式应为 2026-09。',
+    'zh-Hant': '結算月份格式應為 2026-09。',
+  },
   NOT_FOR_COUPLE: {
     ko: '커플방에는 할 수 없는 설정이에요(소속사·본인 계정은 멤버 배우 쪽에서 정해져요).',
     en: "This setting isn't available for couple rooms (agency and account come from the member actors).",

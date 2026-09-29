@@ -144,6 +144,8 @@ export interface AdminAgency {
   id: string;
   name: string;
   logoUrl: string | null;
+  // 정산 배분율(%) — null이면 서버 기본값(잠정 70)
+  revenueSharePercent: number | null;
   createdAt: string;
   actorCount: number;
   staffCount: number;
@@ -167,7 +169,7 @@ export function useCreateAgency() {
 export function useUpdateAgency() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...input }: { id: string; name?: string; logoUrl?: string | null }) =>
+    mutationFn: ({ id, ...input }: { id: string; name?: string; logoUrl?: string | null; revenueSharePercent?: number | null }) =>
       apiClient.patch<AdminAgency>(`/admin/agencies/${id}`, input),
     onSuccess: () => {
       invalidateAdminAccounts(queryClient);

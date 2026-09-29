@@ -57,6 +57,13 @@ enum IapPlatform {
   ANDROID
 }
 
+// 결제 1건이 어디서 왔는지 — SANDBOX는 결제 없는 테스트 구독(ENABLE_SANDBOX_SUBSCRIBE), 정산에선 기본으로 뺌
+enum ChargeSource {
+  SANDBOX
+  APPLE
+  GOOGLE
+}
+
 enum UserStatus {
   ACTIVE
   SUSPENDED
@@ -226,6 +233,8 @@ model Actor {
   stories            Story[]
   purchases          Purchase[]
   bundles            BundleActor[]
+  allocationsAsRoom  ChargeAllocation[]   @relation("AllocationRoom")
+  allocationsAsActor ChargeAllocation[]   @relation("AllocationActor")
 
   @@index([agencyId])
 }
@@ -239,9 +248,13 @@ model Agency {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // 정산 배분율(스토어 수수료 뺀 금액 중 소속사 몫, %) — null이면 기본값(AGENCY_REVENUE_SHARE_PERCENT, 잠정 70). 계약마다 다를 수 있음
+  revenueSharePercent Int?
+
   actors       Actor[]
   staff        User[]
   actorHistory ActorAgencyHistory[]
+  allocations  ChargeAllocation[]
 }
 
 // 배우의 소속사 이력 — 이적 시점 기준으로 정산을 나누거나 계약 분쟁에 대응하기 위한
@@ -307,6 +320,8 @@ model Purchase {
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   actor  Actor?  @relation(fields: [actorId], references: [id], onDelete: Cascade)
   bundle Bundle? @relation(fields: [bundleId], references: [id], onDelete: Restrict)
+
+  charges PurchaseCharge[]
 
   @@index([userId, cancelledAt])
   @@index([bundleId])
@@ -528,4 +543,59 @@ model CoupleMember {
 
   @@id([coupleId, memberId])
   @@index([memberId])
+}
+
+/**
+ * 결제 1건(첫 결제·매달 갱신) — 정산의 기준(2026-09-29). 구매(Purchase)는 "지금 무엇을 샀나"라 갱신 때 덮어써지지만, 결제 기록은
+ * 건별로 쌓이고 지우지 않음(팬이 탈퇴해 구매가 지워져도 purchaseId만 비고 남음 — 세무·정산 근거). 금액·상품은 그 순간 값을 복사해 둠.
+ */
+model PurchaseCharge {
+  id                 String       @id @default(uuid())
+  purchaseId         String?
+  // 무엇을 샀나(그 순간 복사) — 배우 개인(=방) 또는 묶음
+  actorId            String?
+  bundleId           String?
+  productName        String
+  amountCents        Int
+  currency           String       @default("THB")
+  chargedAt          DateTime
+  // 이 결제로 이용할 수 있는 끝(보통 한 달 뒤)
+  periodEnd          DateTime
+  source             ChargeSource
+  // 스토어 쪽 결제 건 식별자(애플 transactionId — 갱신마다 새로 생김, 구글 orderId) — 같은 알림이 두 번 와도 한 번만
+  storeTransactionId String?      @unique
+  refundedAt         DateTime?
+  createdAt          DateTime     @default(now())
+
+  purchase    Purchase?          @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+  allocations ChargeAllocation[]
+
+  // 같은 구매의 같은 시각 결제는 한 번만(샌드박스 갱신·빈 기록 채우기가 여러 서버에서 동시에 돌아도 안전)
+  @@unique([purchaseId, chargedAt])
+  @@index([chargedAt])
+}
+
+/**
+ * 결제 1건을 배우별로 나눈 몫 — 결제 순간 기준으로 계산해 고정(나중에 소속사를 옮기거나 정가가 바뀌어도 과거 정산은 그대로).
+ * 개인방: 그 배우 100%. 커플방: 두 배우 반씩. 묶음: 포함된 방의 개인 정가 비율로 나눈 뒤 커플방이면 다시 반씩.
+ */
+model ChargeAllocation {
+  id          String  @id @default(uuid())
+  chargeId    String
+  // 돈이 나온 방(개인방이면 그 배우, 커플방이면 커플방)
+  roomId      String
+  // 몫을 받는 배우(개인 배우만)
+  actorId     String
+  // 결제 순간의 소속사(없으면 무소속 — 배우 본인에게 정산)
+  agencyId    String?
+  amountCents Int
+
+  charge PurchaseCharge @relation(fields: [chargeId], references: [id], onDelete: Cascade)
+  room   Actor          @relation("AllocationRoom", fields: [roomId], references: [id], onDelete: Restrict)
+  actor  Actor          @relation("AllocationActor", fields: [actorId], references: [id], onDelete: Restrict)
+  agency Agency?        @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+
+  @@index([chargeId])
+  @@index([agencyId])
+  @@index([actorId])
 }

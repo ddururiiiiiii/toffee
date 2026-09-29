@@ -1090,3 +1090,31 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   안 꺼지던 문제). `IconButton`에 `disabled` 추가.
 - 한계: 많이 불러온 상태에서 폴링(연결 끊겼을 때)은 불러온 페이지를 전부 다시 받음 — react-query infinite 기본 동작. 실시간 연결 중엔
   30초 간격이라 부담 작음.
+
+## 정산: 결제 기록(PurchaseCharge)·배분(ChargeAllocation), PC 넓은 화면 (2026-09-29)
+
+- 스키마(`20260929140000_purchase_charges_settlement`): `PurchaseCharge`(결제 1건 — purchaseId는 SetNull로 팬 탈퇴 후에도 남음, actorId/
+  bundleId/productName/amountCents/currency 복사, chargedAt/periodEnd, `ChargeSource` SANDBOX/APPLE/GOOGLE, storeTransactionId unique,
+  refundedAt, `@@unique([purchaseId, chargedAt])`), `ChargeAllocation`(chargeId Cascade, roomId·actorId·agencyId는 Restrict — 돈 기록이 있는
+  배우·소속사는 못 지움), `Agency.revenueSharePercent Int?`.
+- `settlements/allocate-charge.ts`: `allocateCharge(amount, rooms)` — 방이 여럿이면 `allocateBundlePrice`(정가 비율), 커플방은 멤버에게 같은
+  가중치로 다시 나눔. 반올림은 마지막 몫. `addMonths`는 월말 보정.
+- `ChargeLedgerService.record(tx, purchaseId, input)`: 멱등(같은 purchase+chargedAt 또는 storeTransactionId면 기존 행, 동시 생성은 P2002 잡아서
+  재조회). 배우 소속사는 `ActorAgencyHistory`에서 chargedAt을 포함하는 행, 이력이 아예 없는 배우만 현재 `agencyId`. 호출처: `subscribe`/
+  `subscribeBundle`(SANDBOX), `verifyPurchase`(새 구매 = 첫 결제, 기존 구매의 만료일이 늘었으면 이전 만료 시각에 갱신 결제).
+  `fillMissing()`(부팅 시 비동기 + 매시간 cron): 샌드박스 구매는 startedAt + k개월(해지 전·지금 이전), 스토어 구매는 기록이 없을 때 첫 결제만.
+  기존 데이터 백필도 이걸로(마이그레이션 SQL엔 백필 없음). 로컬 12건 백필·재시작 후 중복 0 확인.
+- `SettlementsService.report(month, { agencyId, includeSandbox })`: 태국 시간 월 범위(`monthRange`), allocation을 결제 순간 소속사 → 배우 →
+  방으로 모음, 환불은 refundedCents로 분리. `splitRevenue`: 수수료 = round(gross×fee%), 지급 = round(net×share%), 토피 = 나머지(합 보존).
+  수수료·지급은 배우 단위로 계산해 합산(소속사 합계 = 배우 합). `includeSandbox` 기본값 = `ENABLE_SANDBOX_SUBSCRIBE`. `toCsv`는 BOM + 배우별/
+  배우×방별.
+- API: `GET /settlements?month=YYYY-MM[&agencyId&includeSandbox]`, `GET /settlements/export?...&detail=true`(text/csv) — ADMIN·AGENCY_STAFF,
+  `scopeFor`가 직원이면 자기 agencyId로 강제(요청의 agencyId 무시). `PATCH /admin/agencies/:id`에 `revenueSharePercent`(0~100, null = 기본값),
+  변경 시 감사 기록 `AGENCY_SHARE`(targetType AGENCY, 이름 해석 추가). 운영자 작업 기록 화면에 빠져 있던 ACTOR_PRICE·BUNDLE_*·COUPLE_CREATE 라벨도 추가.
+- 설정: `STORE_FEE_PERCENT`(15), `AGENCY_REVENUE_SHARE_PERCENT`(70).
+- 앱: `hooks/use-settlements.ts`(`apiClient.getText`로 CSV → Blob 다운로드, 웹에서만 enabled), `components/settlement-report.tsx`(i18n 6개
+  언어 — 소속사 콘솔이 태국어일 수 있어서), `admin/settlements`, `console/settlements`. `components/wide-shell.tsx`: 웹 && 폭 ≥ 1024 && 경로가
+  /admin·/console이면 루트 Stack을 왼쪽 메뉴(248px) + 내용으로 감쌈(라우트 구조는 그대로). 운영자 메뉴는 `constants/admin-menu.ts`로 분리해
+  홈 목록과 공유.
+- 남은 일: 스토어 갱신·환불 알림으로 PurchaseCharge 기록(결제 연결 작업), 실제 결제 금액·통화(애플 JWS price/currency, 구글 orderId), 정산 마감
+  (월 확정 스냅샷), 지급 처리 기록.

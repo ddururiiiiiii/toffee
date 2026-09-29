@@ -19,7 +19,7 @@ export function onUnauthorized(handler: ((message: string) => void) | null) {
   unauthorizedHandler = handler;
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}, as: 'json' | 'text' = 'json'): Promise<T> {
   const token = await loadToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -41,11 +41,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   // 본문 없는 성공 응답(204, 또는 void를 돌려주는 POST의 201)은 undefined — 예전엔 201 빈 본문을 JSON으로 읽다가
   // 실패해서, 부모 동의 메일이 실제로는 발송됐는데 화면엔 "보내지 못했어요"가 떴음
   const bodyText = res.status === 204 ? '' : await res.text();
+  if (as === 'text') return bodyText as T;
   return (bodyText ? JSON.parse(bodyText) : undefined) as T;
 }
 
 export const apiClient = {
   get: <T>(path: string) => request<T>(path),
+  // CSV 같은 글자 응답(정산 내려받기)
+  getText: (path: string) => request<string>(path, {}, 'text'),
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined }),
   put: <T>(path: string, body?: unknown) =>

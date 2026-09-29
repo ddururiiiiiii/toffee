@@ -1,3 +1,4 @@
+import { WideShell } from '@/components/wide-shell';
 import { InAppBanner } from '@/components/in-app-banner';
 import { useEffect, type ReactNode } from 'react';
 import {
@@ -148,6 +149,7 @@ function RootLayout() {
           <SplashOverlay />
           <OfflineBanner />
           <AuthGate>
+            <WideShell>
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -183,6 +185,7 @@ function RootLayout() {
               />
               <Stack.Screen name="console/index" options={{ headerShown: true, title: t('screens.console') }} />
               <Stack.Screen name="console/[actorId]" options={{ headerShown: true, title: '' }} />
+              <Stack.Screen name="console/settlements" options={{ headerShown: true, title: t('settlement.title') }} />
               {/* 운영자 화면은 운영자(한국어) 전용이라 의도적으로 다국어 처리 안 함 */}
               <Stack.Screen name="admin/index" options={{ headerShown: true, title: '운영자' }} />
               <Stack.Screen name="admin/reports" options={{ headerShown: true, title: '신고 처리' }} />
@@ -197,6 +200,7 @@ function RootLayout() {
               <Stack.Screen name="admin/bundles/[id]" options={{ headerShown: true, title: '묶음' }} />
               <Stack.Screen name="admin/agencies" options={{ headerShown: true, title: '소속사 관리' }} />
               <Stack.Screen name="admin/stats" options={{ headerShown: true, title: '통계' }} />
+              <Stack.Screen name="admin/settlements" options={{ headerShown: true, title: '정산' }} />
               <Stack.Screen name="admin/actions" options={{ headerShown: true, title: '작업 기록' }} />
               <Stack.Screen name="onboarding/terms" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/birth-date" options={{ headerShown: false }} />
@@ -206,6 +210,7 @@ function RootLayout() {
               <Stack.Screen name="terms" options={{ headerShown: true, title: t('screens.terms') }} />
               <Stack.Screen name="privacy" options={{ headerShown: true, title: t('screens.privacy') }} />
             </Stack>
+            </WideShell>
             <InAppBanner />
           </AuthGate>
         </ThemeProvider>

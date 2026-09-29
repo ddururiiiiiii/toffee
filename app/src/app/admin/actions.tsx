@@ -15,6 +15,11 @@ const ACTION_LABELS: Record<string, string> = {
   REPORT_DISMISS: '신고 기각',
   ACTOR_RETIRE: '배우 활동 종료',
   ACTOR_RESTORE: '배우 활동 재개',
+  ACTOR_PRICE: '가격·스토어 상품 변경',
+  BUNDLE_CREATE: '묶음 만들기',
+  BUNDLE_UPDATE: '묶음 변경',
+  COUPLE_CREATE: '커플방 만들기',
+  AGENCY_SHARE: '소속사 정산 배분율 변경',
 };
 
 function detailText(entry: AdminActionEntry): string {
@@ -24,6 +29,8 @@ function detailText(entry: AdminActionEntry): string {
   if (typeof d.note === 'string' && d.note) parts.push(`메모 "${d.note}"`);
   if (typeof d.until === 'string') parts.push(`해제 ${new Date(d.until).toLocaleString('ko-KR')}`);
   if (typeof d.from === 'string' && typeof d.to === 'string') parts.push(`${d.from} → ${d.to}`);
+  // 정산 배분율(숫자, null = 기본값)
+  if (entry.action === 'AGENCY_SHARE') parts.push(`${d.from ?? '기본값'} → ${d.to ?? '기본값'}${typeof d.to === 'number' ? '%' : ''}`);
   return parts.join(' · ');
 }
 

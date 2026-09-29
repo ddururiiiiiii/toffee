@@ -5,11 +5,13 @@ import type { CreateAgencyDto, UpdateAgencyDto } from './dto/upsert-agency.dto.j
 import { MediaService } from '../storage/media.service.js';
 import { isStorageKey, profileImagePrefix } from '../storage/media-policy.js';
 import { appError } from '../common/i18n/app-error.js';
+import { AuditService } from '../audit/audit.service.js';
 
 const ADMIN_AGENCY_SELECT = {
   id: true,
   name: true,
   logoUrl: true,
+  revenueSharePercent: true,
   createdAt: true,
   _count: { select: { actors: true, staff: true } },
 } as const;
@@ -19,6 +21,7 @@ export class AdminAgenciesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly media: MediaService,
+    private readonly audit: AuditService,
   ) {}
 
   // 운영자용 목록 — 팬 공개 목록(GET /agencies)과 달리 스태프 수까지
@@ -39,22 +42,26 @@ export class AdminAgenciesService {
   }
 
   // logoUrl: POST /admin/uploads(target AGENCY)로 받은 키, 외부 주소, 또는 null(삭제)
-  async update(id: string, dto: UpdateAgencyDto) {
-    const existing = await this.prisma.agency.findUnique({ where: { id }, select: { logoUrl: true } });
+  async update(adminId: string, id: string, dto: UpdateAgencyDto) {
+    const existing = await this.prisma.agency.findUnique({ where: { id }, select: { logoUrl: true, revenueSharePercent: true } });
     if (!existing) throw new NotFoundException(appError('AGENCY_NOT_FOUND'));
     const name = dto.name?.trim();
     if (name !== undefined) await this.ensureNameAvailable(name, id);
     if (isStorageKey(dto.logoUrl) && dto.logoUrl !== existing.logoUrl) {
       await this.media.verifyAt(profileImagePrefix('AGENCY', id), 'PHOTO', dto.logoUrl);
     }
-    const agency = await this.prisma.agency.update({ where: { id }, data: { name, logoUrl: dto.logoUrl }, select: ADMIN_AGENCY_SELECT });
+    const agency = await this.prisma.agency.update({ where: { id }, data: { name, logoUrl: dto.logoUrl, revenueSharePercent: dto.revenueSharePercent }, select: ADMIN_AGENCY_SELECT });
+    // 정산 비율은 돈과 직결 — 누가 언제 바꿨는지 기록
+    if (dto.revenueSharePercent !== undefined && dto.revenueSharePercent !== existing.revenueSharePercent) {
+      await this.audit.record(adminId, 'AGENCY_SHARE', 'AGENCY', id, { from: existing.revenueSharePercent, to: dto.revenueSharePercent });
+    }
     if (dto.logoUrl !== undefined && dto.logoUrl !== existing.logoUrl && isStorageKey(existing.logoUrl)) {
       await this.media.deleteQuietly(existing.logoUrl);
     }
     return this.toResponse(agency);
   }
 
-  private async toResponse({ _count, ...agency }: { id: string; name: string; logoUrl: string | null; createdAt: Date; _count: { actors: number; staff: number } }) {
+  private async toResponse({ _count, ...agency }: { id: string; name: string; logoUrl: string | null; revenueSharePercent: number | null; createdAt: Date; _count: { actors: number; staff: number } }) {
     return { ...agency, logoUrl: await this.media.resolveImageUrl(agency.logoUrl), actorCount: _count.actors, staffCount: _count.staff };
   }
 

@@ -21,6 +21,9 @@ function AgencyRow({ agency }: { agency: AdminAgency }) {
   const updateAgency = useUpdateAgency();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(agency.name);
+  // 정산 배분율 — 비우면 기본값(서버 AGENCY_REVENUE_SHARE_PERCENT, 잠정 70%)
+  const [editingShare, setEditingShare] = useState(false);
+  const [share, setShare] = useState(agency.revenueSharePercent?.toString() ?? '');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -29,6 +32,16 @@ function AgencyRow({ agency }: { agency: AdminAgency }) {
     updateAgency.mutate(
       { id: agency.id, name: name.trim() },
       { onSuccess: () => setEditing(false), onError: (e) => setMessage(errorText(e, '저장하지 못했어요.')) },
+    );
+  };
+
+  const saveShare = () => {
+    const text = share.trim();
+    const value = text === '' ? null : Number(text);
+    if (value !== null && (!Number.isInteger(value) || value < 0 || value > 100)) return setMessage('0~100 사이 정수로 입력해 주세요.');
+    updateAgency.mutate(
+      { id: agency.id, revenueSharePercent: value },
+      { onSuccess: () => (setEditingShare(false), setMessage(null)), onError: (e) => setMessage(errorText(e, '저장하지 못했어요.')) },
     );
   };
 
@@ -60,11 +73,26 @@ function AgencyRow({ agency }: { agency: AdminAgency }) {
         <ThemedView style={styles.rowBody}>
           <ThemedText type="smallBold">{agency.name}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            배우 {agency.actorCount}명 · 직원 {agency.staffCount}명
+            배우 {agency.actorCount}명 · 직원 {agency.staffCount}명 · 정산 배분{' '}
+            {agency.revenueSharePercent === null ? '기본값' : `${agency.revenueSharePercent}%`}
           </ThemedText>
         </ThemedView>
       </ThemedView>
-      {editing ? (
+      {editingShare ? (
+        <>
+          <AdminField
+            label="정산 배분율(%) — 스토어 수수료 뺀 금액 중 소속사 몫, 비우면 기본값"
+            value={share}
+            onChangeText={setShare}
+            keyboardType="number-pad"
+            maxLength={3}
+          />
+          <ThemedView style={styles.chips}>
+            <AdminChip label="저장" selected disabled={updateAgency.isPending} onPress={saveShare} />
+            <AdminChip label="취소" onPress={() => (setEditingShare(false), setShare(agency.revenueSharePercent?.toString() ?? ''))} />
+          </ThemedView>
+        </>
+      ) : editing ? (
         <>
           <AdminField label="소속사 이름" value={name} onChangeText={setName} maxLength={100} />
           <ThemedView style={styles.chips}>
@@ -75,6 +103,7 @@ function AgencyRow({ agency }: { agency: AdminAgency }) {
       ) : (
         <ThemedView style={styles.chips}>
           <AdminChip label="이름 바꾸기" onPress={() => setEditing(true)} />
+          <AdminChip label="정산 배분율" onPress={() => setEditingShare(true)} />
           <AdminChip label={busy ? '올리는 중…' : agency.logoUrl ? '로고 바꾸기' : '로고 올리기'} disabled={busy} onPress={changeLogo} />
           {agency.logoUrl ? <AdminChip label="로고 삭제" danger disabled={busy} onPress={removeLogo} /> : null}
         </ThemedView>

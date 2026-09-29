@@ -1,4 +1,4 @@
-import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Platform, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 import type { Actor } from '@/hooks/use-actors';
+import { useWideLayout } from '@/components/wide-shell';
 
 function ActorRow({ actor, onPress }: { actor: Actor; onPress: () => void }) {
   const theme = useTheme();
@@ -36,9 +37,22 @@ export default function ConsoleHomeScreen() {
   const { t } = useTranslation();
   const { logout } = useAuth();
   const { data: actors, isLoading } = useMyActors();
+  // 정산은 PC 웹 전용 — 넓은 화면에선 왼쪽 메뉴에 있어서 여기엔 좁은 웹 창일 때만
+  const wide = useWideLayout();
+  const showSettlementLink = Platform.OS === 'web' && !wide;
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
+      {showSettlementLink ? (
+        <Pressable onPress={() => router.push('/console/settlements')} style={[styles.row, styles.settlementLink, { backgroundColor: theme.backgroundElement }]}>
+          <ThemedView style={styles.rowBody}>
+            <ThemedText type="smallBold">{t('settlement.title')}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {t('settlement.menuHint')}
+            </ThemedText>
+          </ThemedView>
+        </Pressable>
+      ) : null}
       <ThemedText type="smallBold" style={styles.sectionLabel}>
         {t('console.title')}
       </ThemedText>
@@ -71,6 +85,7 @@ export default function ConsoleHomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  settlementLink: { marginHorizontal: Spacing.four, marginTop: Spacing.three },
   container: { flex: 1 },
   sectionLabel: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three },
   list: { padding: Spacing.four, gap: Spacing.three },

@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { IapVerificationService } from './iap-verification.service.js';
-import { MessageSenderType, ParentalConsentStatus, SubscriptionEventType } from '../generated/prisma/enums.js';
+import { ChargeSource, MessageSenderType, ParentalConsentStatus, SubscriptionEventType } from '../generated/prisma/enums.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import type { VerifyPurchaseDto } from './dto/verify-purchase.dto.js';
 import { MediaService } from '../storage/media.service.js';
@@ -10,6 +10,7 @@ import { CURRENT_TERMS_VERSION } from '../common/legal/terms.js';
 import { allocateBundlePrice } from './allocate-price.js';
 import { roomRetired } from '../common/authorization/actor-access.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
+import { ChargeLedgerService, sourceOf } from '../settlements/charge-ledger.service.js';
 
 const LAST_MESSAGE_PREVIEW = 80;
 
@@ -38,6 +39,7 @@ export class SubscriptionsService {
     private readonly iapVerificationService: IapVerificationService,
     private readonly media: MediaService,
     private readonly realtime: RealtimeService,
+    private readonly ledger: ChargeLedgerService,
   ) {}
 
   /**
@@ -142,7 +144,9 @@ export class SubscriptionsService {
       const existing = await tx.subscription.findUnique({ where: { userId_actorId: { userId, actorId } } });
       // 개인 구독이든 묶음이든 이미 열려 있으면 또 살 필요 없음
       if (existing && !existing.cancelledAt) throw new BadRequestException(appError('ALREADY_SUBSCRIBED'));
-      await tx.purchase.create({ data: { userId, actorId, priceCents: actor.monthlyPriceCents } });
+      const purchase = await tx.purchase.create({ data: { userId, actorId, priceCents: actor.monthlyPriceCents } });
+      // 정산용 결제 기록(샌드박스 — 정산에선 기본 제외)
+      await this.ledger.record(tx, purchase.id, { chargedAt: purchase.startedAt, source: ChargeSource.SANDBOX });
       await this.syncAccess(tx, userId, [actorId], new Map([[actorId, actor.monthlyPriceCents]]));
       return tx.subscription.findUniqueOrThrow({ where: { userId_actorId: { userId, actorId } } });
     });
@@ -167,7 +171,8 @@ export class SubscriptionsService {
         where: { userId, cancelledAt: null, actorId: { in: actorIds } },
         select: { id: true, actorId: true, iapPlatform: true },
       });
-      await tx.purchase.create({ data: { userId, bundleId, priceCents: bundle.priceCents } });
+      const purchase = await tx.purchase.create({ data: { userId, bundleId, priceCents: bundle.priceCents } });
+      await this.ledger.record(tx, purchase.id, { chargedAt: purchase.startedAt, source: ChargeSource.SANDBOX });
       const sandboxSolos = solos.filter((solo) => !solo.iapPlatform);
       if (sandboxSolos.length) {
         await tx.purchase.updateMany({ where: { id: { in: sandboxSolos.map((solo) => solo.id) } }, data: { cancelledAt: new Date() } });
@@ -195,10 +200,14 @@ export class SubscriptionsService {
       if (existing && existing.userId !== userId) throw new ConflictException(appError('IAP_RECEIPT_IN_USE'));
       const iap = { iapPlatform: dto.platform, iapTransactionId: verified.transactionId, iapExpiresAt: verified.expiresAt };
       if (existing) {
-        // 갱신·복원 — 같은 구매의 만료일만 늘림
+        // 갱신·복원 — 같은 구매의 만료일만 늘림. 만료일이 늘었으면 그 사이에 갱신 결제가 있었던 것(스토어 알림이 먼저 기록했으면 중복 안 됨)
         await tx.purchase.update({ where: { id: existing.id }, data: { ...iap, cancelledAt: null } });
+        if (existing.iapExpiresAt && verified.expiresAt > existing.iapExpiresAt) {
+          await this.ledger.record(tx, existing.id, { chargedAt: existing.iapExpiresAt, periodEnd: verified.expiresAt, source: sourceOf(dto.platform) });
+        }
       } else {
-        await tx.purchase.create({ data: { userId, actorId, priceCents: actor.monthlyPriceCents, ...iap } });
+        const purchase = await tx.purchase.create({ data: { userId, actorId, priceCents: actor.monthlyPriceCents, ...iap } });
+        await this.ledger.record(tx, purchase.id, { chargedAt: purchase.startedAt, periodEnd: verified.expiresAt, source: sourceOf(dto.platform) });
       }
       await this.syncAccess(tx, userId, [actorId], new Map([[actorId, actor.monthlyPriceCents]]));
       return tx.subscription.findUniqueOrThrow({ where: { userId_actorId: { userId, actorId } } });
