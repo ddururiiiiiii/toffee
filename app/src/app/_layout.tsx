@@ -24,6 +24,9 @@ import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { useOnboardingStatus } from '@/hooks/use-onboarding';
 import { useMySubscriptions } from '@/hooks/use-subscriptions';
 import { useRealtimeSync } from '@/lib/realtime';
+import { applyPlaybackAudioMode } from '@/lib/audio-mode';
+import { OfflineBanner } from '@/components/offline-banner';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // DSN이 비어 있으면(로컬 개발) SDK가 아무것도 전송하지 않고 조용히 꺼진 채로 동작함.
 // 앱 쪽은 요청 바디/헤더를 자동 수집하지 않고 사용자 정보도 붙이지 않음(PII 없음).
@@ -33,6 +36,8 @@ Sentry.init({
 });
 
 SplashScreen.preventAutoHideAsync();
+// 음성 메시지: 무음 모드에서도 들리고 화면을 꺼도 이어서 재생
+applyPlaybackAudioMode();
 
 const queryClient = new QueryClient();
 
@@ -138,12 +143,14 @@ function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <QueryClientProvider client={queryClient}>
       <LocalePreferenceProvider>
       <AuthProvider>
         <SessionEffects />
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <SplashOverlay />
+          <OfflineBanner />
           <AuthGate>
             <Stack
               screenOptions={{
@@ -170,6 +177,7 @@ function RootLayout() {
               <Stack.Screen name="report" options={{ headerShown: true, title: t('report.title'), presentation: 'modal' }} />
               <Stack.Screen name="blocks/[actorId]" options={{ headerShown: true, title: t('block.manage') }} />
               <Stack.Screen name="media-viewer" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+              <Stack.Screen name="media-gallery/[actorId]" options={{ headerShown: true, title: t('gallery.title') }} />
               <Stack.Screen name="studio/index" options={{ headerShown: true, title: t('studio.screen') }} />
               <Stack.Screen name="studio/[actorId]/index" options={{ headerShown: true, title: '' }} />
               <Stack.Screen name="studio/[actorId]/profile" options={{ headerShown: true, title: t('studioProfile.title') }} />
@@ -207,5 +215,6 @@ function RootLayout() {
       </AuthProvider>
       </LocalePreferenceProvider>
     </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

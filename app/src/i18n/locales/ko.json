@@ -69,7 +69,10 @@
     "messageActions": "길게 눌러 신고",
     "newMessages": "새 메시지 {{count}}개 ↓",
     "notSubscribedTitle": "구독이 끝났어요",
-    "waitingTitle": "구독을 시작했어요"
+    "waitingTitle": "구독을 시작했어요",
+    "copy": "복사",
+    "copied": "복사했어요",
+    "copyFailed": "복사하지 못했어요"
   },
   "mypage": {
     "title": "마이페이지",
@@ -191,7 +194,9 @@
     "open": "크게 보기",
     "saveNoticeTitle": "개인 소장용으로만 저장할 수 있어요",
     "saveNoticeBody": "배우가 보낸 사진·영상·음성은 구독자 본인만 볼 수 있는 콘텐츠예요. 다른 사람에게 공유하거나 SNS 등에 올리면 이용약관에 따라 이용이 제한될 수 있어요.",
-    "saveNoticeAgree": "동의하고 저장"
+    "saveNoticeAgree": "동의하고 저장",
+    "previous": "이전",
+    "next": "다음"
   },
   "push": {
     "channelMessages": "새 메시지"
@@ -428,5 +433,14 @@
     "cancelFromActor": "이 배우는 묶음 구독({{name}})으로 이용 중이에요. 해지하면 묶음에 든 다른 배우 대화방도 함께 닫혀요. 다시 구독해도 이전 대화는 보이지 않아요.",
     "cancelFailed": "해지하지 못했어요. 다시 시도해 주세요.",
     "viaShort": "묶음 구독으로 이용 중"
+  },
+  "gallery": {
+    "title": "사진·영상",
+    "open": "사진·영상 모아보기",
+    "count": "사진·영상 {{count}}개",
+    "empty": "아직 받은 사진·영상이 없어요"
+  },
+  "network": {
+    "offline": "인터넷 연결이 끊겼어요"
   }
 }

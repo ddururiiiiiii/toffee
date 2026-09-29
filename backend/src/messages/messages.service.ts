@@ -162,6 +162,35 @@ export class MessagesService {
     );
   }
 
+  /**
+   * 팬 채팅방 "사진·영상 모아보기"·전체 화면 넘겨보기(2026-09-29) — 이 팬이 볼 수 있는(구독 시작 이후, 지워지지 않은) 스타의
+   * 사진·영상만, 최신 → 오래된 순으로 limit개(before 이전). total은 "3 / 12" 표시용.
+   */
+  async listMediaForFan(userId: string, actorId: string, page: { limit?: number; before?: string } = {}) {
+    const subscription = await ensureActiveSubscription(this.prisma, userId, actorId);
+    const where = {
+      actorId,
+      senderType: MessageSenderType.ARTIST,
+      deletedAt: null,
+      createdAt: { gte: subscription.startedAt },
+      mediaType: { in: [MessageMediaType.PHOTO, MessageMediaType.VIDEO] },
+      // 저장소에 올린 파일(mediaKey) 또는 예전 방식 주소(mediaUrl) — 둘 다 없는 건 뺌
+      OR: [{ mediaKey: { not: null } }, { mediaUrl: { not: null } }],
+    };
+    const limit = page.limit ?? 60;
+    const [items, total] = await Promise.all([
+      this.prisma.message.findMany({
+        where,
+        select: { id: true, mediaType: true, mediaUrl: true, mediaKey: true, thumbnailKey: true, thumbhash: true, mediaDurationMs: true, createdAt: true },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: limit,
+        ...(page.before ? { cursor: { id: page.before }, skip: 1 } : {}),
+      }),
+      this.prisma.message.count({ where }),
+    ]);
+    return { items: await this.mediaService.withReadUrls(items), total };
+  }
+
   async sendReply(userId: string, actorId: string, dto: SendReplyDto) {
     const subscription = await ensureActiveSubscription(this.prisma, userId, actorId);
     // 채널 차단: 구독·열람은 그대로지만 답장은 못 보냄(잠정 정책 — 차단 사실을 알림, STATUS.md)
@@ -221,6 +250,7 @@ export class MessagesService {
         body: dto.body,
         mediaKey,
         thumbnailKey,
+        thumbhash: dto.mediaType === MessageMediaType.PHOTO || dto.mediaType === MessageMediaType.VIDEO ? (dto.thumbhash ?? null) : null,
         replyToMessageId: dto.replyToMessageId ?? null,
         // 길이는 음성·영상 모두(말풍선에 표시), 음파는 음성만
         ...(dto.mediaType === MessageMediaType.AUDIO || dto.mediaType === MessageMediaType.VIDEO

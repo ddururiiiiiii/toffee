@@ -10,6 +10,8 @@ const BAR_COUNT = 32;
 
 // 한 번에 하나만 재생(카톡처럼) — 다른 음성을 누르면 재생 중이던 것을 멈춤
 let pauseActive: (() => void) | null = null;
+// 이어 듣기(2026-09-29): 화면에 있는 음성 메시지마다 "처음부터 재생" 함수를 등록해 두고, 하나가 끝나면 nextId를 재생
+const starters = new Map<string, () => void>();
 
 interface Props {
   id: string;
@@ -20,10 +22,12 @@ interface Props {
   tone: 'light' | 'dark';
   /** 있으면 끝에 ⤓(저장) 버튼 — 음성은 크게 보기 화면이 없어서 말풍선에서 바로 저장 */
   onSave?: () => void;
+  /** 이 음성이 끝나면 이어서 재생할 다음(더 최신) 음성 메시지 id */
+  nextId?: string;
 }
 
 /** 카톡식 음성 메시지 — ▶ 버튼 + 음파 막대(재생된 부분은 진하게) + 길이 */
-export function VoiceMessage({ id, url, durationMs, waveform, tone, onSave }: Props) {
+export function VoiceMessage({ id, url, durationMs, waveform, tone, onSave, nextId }: Props) {
   // 목록에 음성이 많아도 누르기 전엔 파일을 받지 않도록 빈 플레이어로 시작해서 처음 재생할 때 연결
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
@@ -34,13 +38,6 @@ export function VoiceMessage({ id, url, durationMs, waveform, tone, onSave }: Pr
     [id, waveform],
   );
 
-  useEffect(() => {
-    if (status.didJustFinish) {
-      player.pause();
-      void player.seekTo(0);
-    }
-  }, [status.didJustFinish, player]);
-
   // 렌더마다 새 함수가 되면 "지금 재생 중인 게 나인지" 비교가 깨져서 고정(player는 안 바뀜)
   const stop = useCallback(() => player.pause(), [player]);
   useEffect(
@@ -50,12 +47,8 @@ export function VoiceMessage({ id, url, durationMs, waveform, tone, onSave }: Pr
     [stop],
   );
 
-  const toggle = () => {
+  const start = useCallback(() => {
     if (!url) return;
-    if (status.playing) {
-      player.pause();
-      return;
-    }
     if (pauseActive && pauseActive !== stop) pauseActive();
     pauseActive = stop;
     // 서명 URL은 시간이 지나면 바뀌므로 달라졌으면 다시 연결
@@ -64,6 +57,29 @@ export function VoiceMessage({ id, url, durationMs, waveform, tone, onSave }: Pr
       loadedUrl.current = url;
     }
     player.play();
+  }, [player, stop, url]);
+
+  useEffect(() => {
+    starters.set(id, start);
+    return () => {
+      if (starters.get(id) === start) starters.delete(id);
+    };
+  }, [id, start]);
+
+  // 끝나면 처음으로 되감고, 다음 음성이 화면에 있으면 이어서 재생
+  useEffect(() => {
+    if (!status.didJustFinish) return;
+    player.pause();
+    void player.seekTo(0);
+    if (nextId) starters.get(nextId)?.();
+  }, [status.didJustFinish, player, nextId]);
+
+  const toggle = () => {
+    if (status.playing) {
+      player.pause();
+      return;
+    }
+    start();
   };
 
   const total = status.duration > 0 ? status.duration : (durationMs ?? 0) / 1000;

@@ -14,7 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ArrowUp, Bell, BellOff, CloudOff, Flag, Lock, MessageCircleHeart, X } from 'lucide-react-native';
+import * as Clipboard from 'expo-clipboard';
+import { ArrowUp, Bell, BellOff, CloudOff, Copy, Flag, Images, Lock, MessageCircleHeart, X } from 'lucide-react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Avatar } from '@/components/ui/avatar';
@@ -43,7 +44,7 @@ const sameDay = (a: string, b: string) => new Date(a).toDateString() === new Dat
 /**
  * 팬 채팅방 — 시안 2A Minimal Premium(docs/product/brand/exploration/2a-chat-minimal-premium.png) + DESIGN_GUIDE §9.
  * 실제 1:1 DM처럼 조용하고 여백 있게: 스타는 왼쪽 Cloud 말풍선(묶음 끝에 작은 프로필 사진), 팬은 오른쪽 Periwinkle.
- * 팬은 글·이모지만(사진·음성·영상 없음). 신고는 스타 말풍선을 길게 눌러서(말풍선마다 버튼을 늘어놓지 않음).
+ * 팬은 글·이모지만(사진·음성·영상 없음). 말풍선을 길게 누르면 복사(글이 있을 때)·신고(스타 메시지) 메뉴(말풍선마다 버튼을 늘어놓지 않음).
  * 목록은 최신이 맨 아래인 뒤집힌 목록 — 맨 아래를 보고 있으면 새 메시지를 따라가고, 위로 올려 읽는 중이면 끌어내리지
  * 않고 "새 메시지 N개 ↓"만(예전엔 사진 로딩·폴링 때마다 맨 아래로 끌려 내려갔음). 위 끝까지 올리면 이전 대화를 더 불러옴.
  */
@@ -112,22 +113,29 @@ export default function ChatRoomScreen() {
             </ThemedText>
           </View>
         ) : null,
-      // 카톡처럼 채팅방별 알림 끄기 — 구독 중일 때만
+      // 구독 중일 때만: 사진·영상 모아보기(카톡 서랍처럼), 채팅방별 알림 끄기
       headerRight: subscription
         ? () => (
-            <IconButton
-              icon={subscription.notificationsMuted ? BellOff : Bell}
-              label={t(subscription.notificationsMuted ? 'chat.notificationsOff' : 'chat.notificationsOn')}
-              color={subscription.notificationsMuted ? theme.textTertiary : theme.text}
-              onPress={() => {
-                setNotice(t(subscription.notificationsMuted ? 'chat.unmuted' : 'chat.muted'));
-                setMuted.mutate(!subscription.notificationsMuted);
-              }}
-            />
+            <View style={styles.headerActions}>
+              <IconButton
+                icon={Images}
+                label={t('gallery.open')}
+                onPress={() => router.push({ pathname: '/media-gallery/[actorId]', params: { actorId } })}
+              />
+              <IconButton
+                icon={subscription.notificationsMuted ? BellOff : Bell}
+                label={t(subscription.notificationsMuted ? 'chat.notificationsOff' : 'chat.notificationsOn')}
+                color={subscription.notificationsMuted ? theme.textTertiary : theme.text}
+                onPress={() => {
+                  setNotice(t(subscription.notificationsMuted ? 'chat.unmuted' : 'chat.muted'));
+                  setMuted.mutate(!subscription.notificationsMuted);
+                }}
+              />
+            </View>
           )
         : undefined,
     });
-  }, [actor, navigation, subscription, setMuted, t, theme]);
+  }, [actor, actorId, navigation, router, subscription, setMuted, t, theme]);
 
   // 알림 안내 등 짧은 문구는 잠깐 보였다 사라짐
   useEffect(() => {
@@ -156,6 +164,26 @@ export default function ChatRoomScreen() {
         setNotice(err instanceof ApiError ? err.message : t('chat.sendFailed'));
       },
     });
+  };
+
+  // 음성 메시지 이어 듣기 — 각 음성 다음(더 최신)에 오는 음성(카톡처럼 하나 끝나면 다음 것 재생)
+  const nextVoice = useMemo(() => {
+    const map = new Map<string, string>();
+    let newer: string | undefined;
+    for (const message of messages) {
+      if (message.mediaType !== 'AUDIO') continue;
+      if (newer) map.set(message.id, newer);
+      newer = message.id;
+    }
+    return map;
+  }, [messages]);
+
+  const copyText = (message: ChatMessage) => {
+    setMenuFor(null);
+    if (!message.body) return;
+    Clipboard.setStringAsync(message.body)
+      .then(() => setNotice(t('chat.copied')))
+      .catch(() => setNotice(t('chat.copyFailed')));
   };
 
   // 버블 방식: 팬 답장은 가장 최근 스타 메시지에 붙음 — 구독 후 스타 메시지가 아직 없으면 입력창 대신 안내
@@ -232,6 +260,9 @@ export default function ChatRoomScreen() {
                   router.push({ pathname: '/report', params: { messageId: item.id } });
                 }}
                 onSaveVoice={() => saveVoice(item)}
+                onCopy={() => copyText(item)}
+                actorId={actorId}
+                nextVoiceId={nextVoice.get(item.id)}
               />
             </View>
           );
@@ -327,6 +358,9 @@ function MessageRow({
   onCloseMenu,
   onReport,
   onSaveVoice,
+  onCopy,
+  actorId,
+  nextVoiceId,
 }: {
   message: ChatMessage;
   avatarUri?: string | null;
@@ -338,27 +372,44 @@ function MessageRow({
   onCloseMenu: () => void;
   onReport: () => void;
   onSaveVoice: () => void;
+  onCopy: () => void;
+  actorId: string;
+  nextVoiceId?: string;
 }) {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
   const isArtist = message.senderType === 'ARTIST';
   const isMedia = message.mediaType === 'PHOTO' || message.mediaType === 'VIDEO';
   const time = new Date(message.createdAt).toLocaleTimeString(i18n.language, { hour: 'numeric', minute: '2-digit' });
+  // 길게 누르면: 글이 있으면 복사(카톡처럼, 내 답장도), 스타 메시지면 신고
+  const hasMenu = isArtist || !!message.body;
 
   const bubble = (
     <Pressable
-      onLongPress={isArtist ? onOpenMenu : undefined}
+      onLongPress={hasMenu ? onOpenMenu : undefined}
       delayLongPress={350}
-      accessibilityHint={isArtist ? t('chat.messageActions') : undefined}
-      accessibilityActions={isArtist ? [{ name: 'report', label: t('chat.report') }] : undefined}
+      accessibilityHint={hasMenu ? t('chat.messageActions') : undefined}
+      accessibilityActions={[
+        ...(message.body ? [{ name: 'copy', label: t('chat.copy') }] : []),
+        ...(isArtist ? [{ name: 'report', label: t('chat.report') }] : []),
+      ]}
       onAccessibilityAction={(event) => {
         if (event.nativeEvent.actionName === 'report') onReport();
+        if (event.nativeEvent.actionName === 'copy') onCopy();
       }}
       style={[styles.bubbleWrap, highlighted && { borderRadius: Radius.lg + 2, borderWidth: 2, borderColor: theme.tint }]}>
       {isMedia ? (
         <View style={styles.mediaGroup}>
           {message.replyTo && <QuoteBlock quote={message.replyTo} tone="dark" />}
-          <MediaTile id={message.id} url={message.mediaUrl} mediaType={message.mediaType as 'PHOTO' | 'VIDEO'} durationMs={message.mediaDurationMs} thumbnailUrl={message.thumbnailUrl} />
+          <MediaTile
+            id={message.id}
+            url={message.mediaUrl}
+            mediaType={message.mediaType as 'PHOTO' | 'VIDEO'}
+            durationMs={message.mediaDurationMs}
+            thumbnailUrl={message.thumbnailUrl}
+            thumbhash={message.thumbhash}
+            actorId={actorId}
+          />
           {message.body ? (
             <View style={[styles.bubble, { backgroundColor: theme.backgroundElement }]}>
               <ThemedText>{message.body}</ThemedText>
@@ -369,7 +420,15 @@ function MessageRow({
         <View style={[styles.bubble, { backgroundColor: isArtist ? theme.backgroundElement : theme.tintSoft }]}>
           {message.replyTo && <QuoteBlock quote={message.replyTo} tone="dark" />}
           {message.mediaType === 'AUDIO' ? (
-            <VoiceMessage id={message.id} url={message.mediaUrl} durationMs={message.mediaDurationMs} waveform={message.waveform} tone="dark" onSave={onSaveVoice} />
+            <VoiceMessage
+              id={message.id}
+              url={message.mediaUrl}
+              durationMs={message.mediaDurationMs}
+              waveform={message.waveform}
+              tone="dark"
+              onSave={onSaveVoice}
+              nextId={nextVoiceId}
+            />
           ) : null}
           {message.body ? <ThemedText>{message.body}</ThemedText> : null}
         </View>
@@ -389,12 +448,20 @@ function MessageRow({
           {bubble}
           {menuOpen && (
             <View style={[styles.menu, { backgroundColor: theme.background, borderColor: theme.border }]}>
-              <Pressable onPress={onReport} style={styles.menuItem} accessibilityRole="button">
-                <Icon as={Flag} size={16} color={theme.danger} />
-                <ThemedText type="smallBold" themeColor="danger">
-                  {t('chat.report')}
-                </ThemedText>
-              </Pressable>
+              {message.body ? (
+                <Pressable onPress={onCopy} style={styles.menuItem} accessibilityRole="button">
+                  <Icon as={Copy} size={16} color={theme.text} />
+                  <ThemedText type="smallBold">{t('chat.copy')}</ThemedText>
+                </Pressable>
+              ) : null}
+              {isArtist ? (
+                <Pressable onPress={onReport} style={styles.menuItem} accessibilityRole="button">
+                  <Icon as={Flag} size={16} color={theme.danger} />
+                  <ThemedText type="smallBold" themeColor="danger">
+                    {t('chat.report')}
+                  </ThemedText>
+                </Pressable>
+              ) : null}
               <IconButton icon={X} size={16} label={t('chat.closeMenu')} onPress={onCloseMenu} style={styles.menuClose} />
             </View>
           )}
@@ -413,6 +480,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
   headerTitle: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, maxWidth: 240 },
+  headerActions: { flexDirection: 'row', alignItems: 'center' },
   listArea: { flex: 1 },
   list: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.three },
   // 뒤집힌 목록 안의 빈 화면은 위아래가 뒤집혀 보이지 않게
@@ -440,7 +508,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     paddingLeft: Spacing.three,
   },
-  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: Spacing.two },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: Spacing.two, paddingRight: Spacing.three },
   menuClose: { width: 36, height: 36 },
   newPill: {
     position: 'absolute',

@@ -377,6 +377,8 @@ model Message {
   mediaKey         String?
   // 영상 썸네일(첫 장면 사진) — 스타 앱이 영상을 보낼 때 같이 올림(purpose message의 PHOTO). 없으면 앱이 어두운 타일로
   thumbnailKey     String?
+  // 사진·영상을 불러오는 동안 보여줄 흐린 미리보기(ThumbHash, 앱이 올릴 때 계산해서 보냄, 2026-09-29) — 없으면 빈 배경
+  thumbhash        String?
   // 음성·영상 길이(말풍선 표시용)와 음성 음파(카톡처럼) — 음파는 녹음할 때 앱이 측정한 음량을 0~1로
   // 줄여 보냄(최대 64칸). 없으면 앱이 메시지 id로 만든 모양을 대신 그림.
   mediaDurationMs  Int?

@@ -69,7 +69,10 @@
     "messageActions": "长按可举报",
     "newMessages": "{{count}} 条新消息 ↓",
     "notSubscribedTitle": "订阅已结束",
-    "waitingTitle": "已开始订阅"
+    "waitingTitle": "已开始订阅",
+    "copy": "复制",
+    "copied": "已复制",
+    "copyFailed": "复制失败"
   },
   "mypage": {
     "title": "我的",
@@ -191,7 +194,9 @@
     "open": "查看",
     "saveNoticeTitle": "仅限个人收藏",
     "saveNoticeBody": "演员发送的照片、视频和语音仅供订阅者本人观看。分享给他人或发布到社交媒体等，可能会根据服务条款被限制使用。",
-    "saveNoticeAgree": "同意并保存"
+    "saveNoticeAgree": "同意并保存",
+    "previous": "上一个",
+    "next": "下一个"
   },
   "push": {
     "channelMessages": "新消息"
@@ -428,5 +433,14 @@
     "cancelFromActor": "该演员包含在你的 {{name}} 套餐中。取消后套餐内其他聊天室也会关闭，重新订阅也看不到之前的聊天。",
     "cancelFailed": "取消失败，请重试。",
     "viaShort": "通过套餐使用"
+  },
+  "gallery": {
+    "title": "照片和视频",
+    "open": "查看全部照片和视频",
+    "count": "照片和视频共 {{count}} 个",
+    "empty": "还没有收到照片或视频"
+  },
+  "network": {
+    "offline": "网络已断开"
   }
 }

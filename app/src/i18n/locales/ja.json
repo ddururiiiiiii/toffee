@@ -69,7 +69,10 @@
     "messageActions": "長押しで通報",
     "newMessages": "新着 {{count}}件 ↓",
     "notSubscribedTitle": "購読が終了しました",
-    "waitingTitle": "購読を開始しました"
+    "waitingTitle": "購読を開始しました",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "copyFailed": "コピーできませんでした"
   },
   "mypage": {
     "title": "マイページ",
@@ -191,7 +194,9 @@
     "open": "拡大表示",
     "saveNoticeTitle": "個人での保存・鑑賞に限ります",
     "saveNoticeBody": "俳優から届いた写真・動画・ボイスは購読者本人だけが見られるコンテンツです。他の人への共有やSNSなどへの投稿は、利用規約により利用制限の対象となる場合があります。",
-    "saveNoticeAgree": "同意して保存"
+    "saveNoticeAgree": "同意して保存",
+    "previous": "前へ",
+    "next": "次へ"
   },
   "push": {
     "channelMessages": "新着メッセージ"
@@ -428,5 +433,14 @@
     "cancelFromActor": "この俳優はセット購読（{{name}}）でご利用中です。解約するとセット内の他のトークも閉じます。再購読しても以前の会話は表示されません。",
     "cancelFailed": "解約できませんでした。もう一度お試しください。",
     "viaShort": "セット購読で利用中"
+  },
+  "gallery": {
+    "title": "写真・動画",
+    "open": "写真・動画を見る",
+    "count": "写真・動画 {{count}}件",
+    "empty": "まだ写真・動画はありません"
+  },
+  "network": {
+    "offline": "インターネットに接続されていません"
   }
 }

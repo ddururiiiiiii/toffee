@@ -37,6 +37,12 @@ export class SendBroadcastDto {
   @IsNotEmpty()
   thumbnailKey?: string;
 
+  // 흐린 미리보기(선택, ThumbHash base64) — 사진·영상일 때만 저장
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  thumbhash?: string;
+
   // 부가 정보(선택) — 길이는 음성·영상, 음파는 음성일 때만 저장, 그 외엔 무시
   @IsOptional()
   @IsInt()

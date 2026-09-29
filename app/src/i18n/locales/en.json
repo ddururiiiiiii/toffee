@@ -69,7 +69,10 @@
     "messageActions": "Long press to report",
     "newMessages": "{{count}} new ↓",
     "notSubscribedTitle": "Your subscription has ended",
-    "waitingTitle": "You're subscribed"
+    "waitingTitle": "You're subscribed",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Couldn't copy"
   },
   "mypage": {
     "title": "My page",
@@ -191,7 +194,9 @@
     "open": "Open",
     "saveNoticeTitle": "For personal use only",
     "saveNoticeBody": "Photos, videos and voice messages from the actor are for subscribers only. Sharing them with others or posting them online may lead to restrictions under our Terms of Service.",
-    "saveNoticeAgree": "Agree and save"
+    "saveNoticeAgree": "Agree and save",
+    "previous": "Previous",
+    "next": "Next"
   },
   "push": {
     "channelMessages": "New messages"
@@ -428,5 +433,14 @@
     "cancelFromActor": "This actor is part of your {{name}} bundle. Cancelling closes the other chats in the bundle too. Previous chats won't be visible if you subscribe again.",
     "cancelFailed": "Couldn't cancel. Please try again.",
     "viaShort": "Included in a bundle"
+  },
+  "gallery": {
+    "title": "Photos & videos",
+    "open": "Photos & videos",
+    "count": "{{count}} photos & videos",
+    "empty": "No photos or videos yet"
+  },
+  "network": {
+    "offline": "You're offline"
   }
 }

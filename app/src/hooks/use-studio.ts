@@ -4,6 +4,7 @@ import { apiClient } from '@/lib/api-client';
 import { useLiveInterval } from '@/lib/realtime';
 import { UploadCancelledError, uploadMedia, type UploadMediaType, type UploadOptions } from '@/lib/upload-media';
 import { createVideoThumbnail } from '@/lib/video-thumbnail';
+import { thumbhashFor } from '@/lib/thumbhash';
 import type { FanReply } from './use-console';
 import type { ChatMessage } from './use-messages';
 
@@ -66,14 +67,18 @@ export interface Attachment {
   waveform?: number[];
 }
 
-// 영상 첫 장면을 사진으로 올림 — 썸네일은 선택이라 만들기·올리기가 실패해도 영상은 그대로 보냄
-async function uploadVideoThumbnail(actorId: string, videoUri: string): Promise<string | undefined> {
+// 영상 첫 장면을 사진으로 올림(+ 그 장면의 흐린 미리보기 값) — 썸네일은 선택이라 만들기·올리기가 실패해도 영상은 그대로 보냄
+async function uploadVideoThumbnail(actorId: string, videoUri: string): Promise<{ key?: string; thumbhash?: string }> {
   const uri = await createVideoThumbnail(videoUri);
-  if (!uri) return undefined;
+  if (!uri) return {};
   try {
-    return await uploadMedia(actorId, { purpose: 'message', mediaType: 'PHOTO', uri, contentType: 'image/jpeg' });
+    const [key, thumbhash] = await Promise.all([
+      uploadMedia(actorId, { purpose: 'message', mediaType: 'PHOTO', uri, contentType: 'image/jpeg' }),
+      thumbhashFor(uri),
+    ]);
+    return { key, thumbhash };
   } catch {
-    return undefined;
+    return {};
   } finally {
     // 웹은 캡처 결과가 blob: 주소라 올린 뒤 메모리 해제
     if (uri.startsWith('blob:')) URL.revokeObjectURL(uri);
@@ -97,7 +102,7 @@ export function useStudioSend(actorId: string) {
       /** 인용 답장할 팬 메시지 */
       replyToMessageId?: string;
     } & UploadOptions) => {
-      const [mediaKey, thumbnailKey] = await Promise.all([
+      const [mediaKey, videoThumb, photoHash] = await Promise.all([
         attachment
           ? uploadMedia(
               actorId,
@@ -106,13 +111,15 @@ export function useStudioSend(actorId: string) {
             )
           : undefined,
         attachment?.mediaType === 'VIDEO' ? uploadVideoThumbnail(actorId, attachment.uri) : undefined,
+        attachment?.mediaType === 'PHOTO' ? thumbhashFor(attachment.uri) : undefined,
       ]);
       if (signal?.aborted) throw new UploadCancelledError('upload cancelled');
       return apiClient.post<ChatMessage>(`/actors/${actorId}/messages/broadcast`, {
         mediaType: attachment?.mediaType ?? 'TEXT',
         body: body || undefined,
         mediaKey,
-        thumbnailKey,
+        thumbnailKey: videoThumb?.key,
+        thumbhash: photoHash ?? videoThumb?.thumbhash,
         durationMs: attachment?.durationMs,
         waveform: attachment?.waveform,
         replyToMessageId,

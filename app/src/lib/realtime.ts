@@ -48,6 +48,7 @@ function applyEvent(queryClient: QueryClient, event: RealtimeEvent) {
   }
   // 스타 메시지 도착·삭제 — 팬 채팅방·남은 답장 수·인박스, 스타·소속사 메시지 목록
   void queryClient.invalidateQueries({ queryKey: ['messages', actorId] });
+  void queryClient.invalidateQueries({ queryKey: ['chat-media', actorId] });
   void queryClient.invalidateQueries({ queryKey: ['reply-quota', actorId] });
   void queryClient.invalidateQueries({ queryKey: ['my-subscriptions'] });
   void queryClient.invalidateQueries({ queryKey: ['actor-broadcasts', actorId] });

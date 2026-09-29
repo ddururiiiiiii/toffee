@@ -82,7 +82,11 @@ const config: ExpoConfig = {
     ],
     [
       'expo-audio',
-      { microphonePermission: 'Toffee uses the microphone to record voice messages and the sound of videos you send to your fans.' },
+      {
+        microphonePermission: 'Toffee uses the microphone to record voice messages and the sound of videos you send to your fans.',
+        // 음성 메시지를 화면을 끄거나 다른 앱으로 가도 이어서 듣게(iOS 백그라운드 오디오)
+        enableBackgroundPlayback: true,
+      },
     ],
     [
       'expo-media-library',

@@ -22,6 +22,8 @@ export interface ChatMessage {
   waveform?: number[] | null;
   // 영상 첫 장면 사진(없을 수도 있음 — 예전 메시지, 캡처 실패)
   thumbnailUrl?: string | null;
+  /** 사진·영상 흐린 미리보기(ThumbHash) — 받는 동안 보여줌. 없을 수도 있음(예전 메시지·웹에서 보낸 것) */
+  thumbhash?: string | null;
   // 스타의 인용 답장이면 인용한 팬 메시지 요약(전체 공개, 닉네임만)
   replyTo?: MessageQuote | null;
   // 스타·소속사 화면용(팬 화면엔 지워진 메시지가 아예 안 옴) — 스타가 삭제했거나 운영자가 신고 승인으로 가림
@@ -80,6 +82,36 @@ export function useReplyQuota(actorId: string, enabled: boolean) {
     queryFn: () => apiClient.get<ReplyQuota>(`/actors/${actorId}/messages/reply-quota`),
     enabled: !!actorId && enabled,
     refetchInterval: interval,
+  });
+}
+
+/** 채팅방 사진·영상 한 개(모아보기·전체 화면 넘겨보기) */
+export interface ChatMediaItem {
+  id: string;
+  mediaType: 'PHOTO' | 'VIDEO';
+  mediaUrl: string | null;
+  thumbnailUrl?: string | null;
+  thumbhash?: string | null;
+  mediaDurationMs?: number | null;
+  createdAt: string;
+}
+
+const MEDIA_PAGE_SIZE = 60;
+
+/**
+ * 팬 채팅방의 스타 사진·영상(최신 → 오래된 순, 60개씩) — "사진·영상 모아보기"와 전체 화면 좌우 넘기기가 같은 목록을 씀
+ * (2026-09-29). total은 전체 개수("3 / 12").
+ */
+export function useChatMedia(actorId: string | undefined) {
+  return useInfiniteQuery({
+    queryKey: ['chat-media', actorId],
+    queryFn: ({ pageParam }) =>
+      apiClient.get<{ items: ChatMediaItem[]; total: number }>(
+        `/actors/${actorId}/messages/media?limit=${MEDIA_PAGE_SIZE}` + (pageParam ? `&before=${encodeURIComponent(pageParam)}` : ''),
+      ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => (lastPage.items.length === MEDIA_PAGE_SIZE ? lastPage.items[lastPage.items.length - 1].id : undefined),
+    enabled: !!actorId,
   });
 }
 

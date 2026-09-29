@@ -55,6 +55,12 @@ export class MessagesController {
     return this.messagesService.listBroadcasts(user.id, actorId);
   }
 
+  // 팬 채팅방 사진·영상 모아보기(전체 화면 넘겨보기에도 씀)
+  @Get('media')
+  listMedia(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string, @Query() query: ListMessagesQueryDto) {
+    return this.messagesService.listMediaForFan(user.id, actorId, { limit: query.limit, before: query.before });
+  }
+
   // 팬 화면 "남은 답장 N개"
   @Get('reply-quota')
   replyQuota(@CurrentUser() user: AuthenticatedUser, @Param('actorId') actorId: string) {

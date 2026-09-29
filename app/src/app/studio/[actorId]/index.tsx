@@ -25,6 +25,7 @@ import { Icon } from '@/components/ui/icon';
 import { IconButton } from '@/components/ui/icon-button';
 import { useActor } from '@/hooks/use-actors';
 import { useDeleteBroadcast, useStudioMessages, useStudioSend, type Attachment, type StudioMessage } from '@/hooks/use-studio';
+import { PLAYBACK_AUDIO_MODE } from '@/lib/audio-mode';
 import { confirm } from '@/lib/confirm';
 import { UploadCancelledError } from '@/lib/upload-media';
 import { useTheme } from '@/hooks/use-theme';
@@ -73,7 +74,7 @@ function MyMessage({ message, onOpenReplies, onDelete }: { message: StudioMessag
         {isMedia ? (
           <>
             {message.replyTo && <QuoteBlock quote={message.replyTo} tone="dark" />}
-            <MediaTile id={message.id} url={message.mediaUrl} mediaType={message.mediaType as 'PHOTO' | 'VIDEO'} durationMs={message.mediaDurationMs} thumbnailUrl={message.thumbnailUrl} />
+            <MediaTile id={message.id} url={message.mediaUrl} mediaType={message.mediaType as 'PHOTO' | 'VIDEO'} durationMs={message.mediaDurationMs} thumbnailUrl={message.thumbnailUrl} thumbhash={message.thumbhash} />
           </>
         ) : null}
         {!isMedia || message.body ? (
@@ -189,7 +190,8 @@ export default function StudioChannelScreen() {
     if (recorderState.isRecording) {
       const durationMs = recorderState.durationMillis;
       await recorder.stop();
-      await setAudioModeAsync({ allowsRecording: false });
+      // 녹음이 끝나면 듣기 모드(무음 모드·백그라운드 재생)로 되돌림
+      await setAudioModeAsync(PLAYBACK_AUDIO_MODE);
       if (recorder.uri) {
         const waveform = resample(levels.current, WAVEFORM_BARS).map((level) => Math.round(level * 100) / 100);
         setAttachment({ mediaType: 'AUDIO', uri: recorder.uri, durationMs, waveform });

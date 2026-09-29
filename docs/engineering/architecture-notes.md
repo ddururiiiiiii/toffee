@@ -1021,3 +1021,21 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   `adultAgeFor(country)`(minor-age.ts). `GET /me/onboarding-status`에 `minimumAge`. 구독은 `UNDERAGE`면 403. 앱 `onboarding/underage`.
 - 운영자 작업 기록: `ACTOR_PRICE`(배우 가격·상품 ID 변경), `BUNDLE_CREATE`/`BUNDLE_UPDATE`, targetType `BUNDLE`.
 
+## 미디어 보기·모아보기·복사·음성 이어 듣기·끊김 표시 (2026-09-29)
+
+- 서버: `GET /actors/:actorId/messages/media?limit&before`(팬, 구독 시작 이후·안 지워진 스타 PHOTO/VIDEO, mediaKey 또는 예전
+  mediaUrl, `{ items, total }`). `Message.thumbhash`(마이그레이션 `20260929110000`) — 스튜디오가 올릴 때 `Image.generateThumbhashAsync`로
+  사진(영상은 첫 장면) 값을 계산해 broadcast에 실어 보냄(웹은 계산 불가라 없음). 실시간 신호 `artist-message`/`message-removed`가
+  `['chat-media', actorId]`도 무효화.
+- 앱: 루트에 `GestureHandlerRootView`. `components/zoomable-page.tsx`(RNGH Pinch/Pan/Tap(2) + Reanimated, 확대 중엔 사방 이동·
+  바깥 가로 목록 스크롤 끔, 확대 안 됨이면 세로 끌기만 `activeOffsetY/failOffsetX`로 가로 넘기기에 양보, 120px·900px/s 넘으면 닫기,
+  배경 투명도 `dismissProgress`(prop 공유값은 React Compiler 규칙 때문에 `.set()`)). `media-viewer.tsx`는 `actorId`가 있으면
+  `useChatMedia`를 가로 `inverted` FlatList로(최신이 오른쪽, 왼쪽 끝에서 이전 페이지), 누른 id가 없으면 최대 20페이지까지 더
+  불러와 찾음, 없으면 단일 모드. 영상은 현재 페이지만 플레이어 생성. 웹은 `<img>` 기본 드래그가 끌어서 닫기를 가로채서 이미지를
+  `pointerEvents="none"` View로 감쌈. `media-gallery/[actorId].tsx` 3열 격자. `MediaTile`은 expo-image + thumbhash placeholder.
+- 복사: `expo-clipboard`(SDK 57 호환 버전을 npm으로 — `expo install`은 이 환경에서 expo API 차단). 끊김: `expo-network`
+  `useNetworkState`, `components/offline-banner.tsx`(pointerEvents none).
+- 음성: `voice-message.tsx`에 id→재생 함수 레지스트리, 끝나면 `nextId`(채팅방이 계산한 다음 최신 음성) 재생. `lib/audio-mode.ts`
+  `PLAYBACK_AUDIO_MODE`(playsInSilentMode·shouldPlayInBackground·doNotMix)를 앱 시작과 스튜디오 녹음 종료 때 적용, expo-audio
+  플러그인 `enableBackgroundPlayback: true`. 실기기에서 확인 필요(웹은 해당 없음).
+
