@@ -1,0 +1,6 @@
+{
+  "NSCameraUsageDescription": "Toffee uses the camera when you take a photo or video to send to your fans.",
+  "NSMicrophoneUsageDescription": "Toffee uses the microphone to record voice messages and the sound of videos you send to your fans.",
+  "NSPhotoLibraryUsageDescription": "Toffee opens your photo library when you choose a photo or video to send to your fans.",
+  "NSPhotoLibraryAddUsageDescription": "Toffee saves photos and videos you received to your photo library when you tap Save."
+}

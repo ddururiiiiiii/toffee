@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api-client';
+import { useLiveInterval } from '@/lib/realtime';
 import { UploadCancelledError, uploadMedia, type UploadMediaType, type UploadOptions } from '@/lib/upload-media';
 import { createVideoThumbnail } from '@/lib/video-thumbnail';
 import type { FanReply } from './use-console';
@@ -23,13 +24,14 @@ export interface StudioMessage extends ChatMessage {
 }
 
 export function useStudioMessages(actorId: string) {
+  const interval = useLiveInterval(5000);
   return useQuery({
     queryKey: ['actor-broadcasts', actorId],
     // 서버는 최신순으로 줌 — 화면은 inverted 리스트라 그대로 씀
     queryFn: () => apiClient.get<StudioMessage[]>(`/actors/${actorId}/messages/broadcasts`),
     enabled: !!actorId,
-    // 팬 답장 흐름이 거의 실시간처럼 보이게(실시간 연결은 호스팅 결정 후)
-    refetchInterval: 5000,
+    // 팬 답장은 실시간 신호로 바로 반영, 연결이 끊겨 있을 때만 5초 폴링
+    refetchInterval: interval,
   });
 }
 
@@ -37,9 +39,10 @@ const REPLIES_PAGE_SIZE = 100;
 
 /**
  * 스타 메시지 하나에 달린 팬 답장 — 최신 100개부터, 위로 올리면(fetchNextPage) 이전 100개씩. 서버는 최신 → 오래된 순.
- * 열어 두면 3초마다 새로고침해서 새 답장이 채팅처럼 아래에 붙음(실시간 연결은 호스팅 결정 후).
+ * 새 답장은 실시간 신호로 바로 채팅처럼 아래에 붙음(연결이 끊겨 있을 때만 3초 폴링).
  */
 export function useMessageReplies(actorId: string, messageId: string) {
+  const interval = useLiveInterval(3000);
   return useInfiniteQuery({
     queryKey: ['actor-replies', actorId, messageId],
     queryFn: ({ pageParam }) =>
@@ -50,7 +53,7 @@ export function useMessageReplies(actorId: string, messageId: string) {
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => (lastPage.length === REPLIES_PAGE_SIZE ? lastPage[lastPage.length - 1].id : undefined),
     enabled: !!actorId && !!messageId,
-    refetchInterval: 3000,
+    refetchInterval: interval,
   });
 }
 

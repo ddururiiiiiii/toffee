@@ -6,12 +6,13 @@ import { ensureActiveSubscription } from '../common/authorization/ensure-active-
 import { appError } from '../common/i18n/app-error.js';
 
 import { AuditService } from '../audit/audit.service.js';
-
+import { RealtimeService } from '../realtime/realtime.service.js';
 @Injectable()
 export class ReportsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly realtime: RealtimeService,
   ) {}
 
   /**
@@ -104,7 +105,7 @@ export class ReportsService {
     const now = new Date();
     const message = await this.prisma.message.findUniqueOrThrow({
       where: { id: report.messageId },
-      select: { senderType: true, deletedAt: true },
+      select: { senderType: true, deletedAt: true, actorId: true },
     });
     await this.prisma.$transaction([
       this.prisma.report.updateMany({
@@ -115,6 +116,8 @@ export class ReportsService {
         ? [this.prisma.message.update({ where: { id: report.messageId }, data: { deletedAt: now, deletedByAdmin: true } })]
         : []),
     ]);
+    // 스타 메시지는 팬 화면에서 사라지고, 팬 답장은 인용 부분이 가려짐 — 열려 있는 화면에 바로 반영
+    void this.realtime.publish({ kind: 'message-removed', actorId: message.actorId });
     await this.audit.record(adminId, 'REPORT_RESOLVE', 'REPORT', id, { messageId: report.messageId, senderType: message.senderType });
     return this.prisma.report.findUniqueOrThrow({ where: { id } });
   }

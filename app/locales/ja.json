@@ -1,0 +1,6 @@
+{
+  "NSCameraUsageDescription": "ファンに送る写真や動画を撮影するときにカメラを使用します。",
+  "NSMicrophoneUsageDescription": "ボイスメッセージの録音や、ファンに送る動画の音声の録音にマイクを使用します。",
+  "NSPhotoLibraryUsageDescription": "ファンに送る写真や動画を選ぶときに写真ライブラリを開きます。",
+  "NSPhotoLibraryAddUsageDescription": "受け取った写真や動画で「保存」をタップすると、写真ライブラリに保存します。"
+}

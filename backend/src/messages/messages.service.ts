@@ -12,6 +12,7 @@ import { fanTag } from '../common/nickname/nickname.js';
 import type { SendReplyDto } from './dto/send-reply.dto.js';
 import type { SendBroadcastDto } from './dto/send-broadcast.dto.js';
 import { appError } from '../common/i18n/app-error.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 
 const NAME_PLACEHOLDER = '{{name}}';
 const QUOTE_PREVIEW_LENGTH = 120;
@@ -97,6 +98,7 @@ export class MessagesService {
     private readonly moderationService: ModerationService,
     private readonly mediaService: MediaService,
     private readonly config: ConfigService,
+    private readonly realtime: RealtimeService,
   ) {}
 
   // 스타 메시지 하나당 팬 1명이 보낼 수 있는 답장 수(버블 방식, 잠정 3 — STATUS.md 출시 전 확정 정책). 설정값으로 조정
@@ -192,6 +194,7 @@ export class MessagesService {
         data: { lastFanReplyAt: new Date() },
       }),
     ]);
+    void this.realtime.publish({ kind: 'fan-reply', actorId, messageId: latestArtistMessage.id });
     return message;
   }
 
@@ -228,6 +231,8 @@ export class MessagesService {
       include: quoteInclude(actorId),
     });
     const message = await this.mediaService.withReadUrl(withQuote(created));
+    // 채팅방을 열어 둔 팬·스타·소속사 화면에 바로 반영(푸시보다 먼저)
+    void this.realtime.publish({ kind: 'artist-message', actorId });
     // 인용된 팬 — 인용이 가려지지 않았을 때만(정지·탈퇴·차단·신고 처리된 팬 메시지면 따로 알리지 않음)
     const quotedFanId = message.replyTo && !message.replyTo.hidden ? (created.replyTo?.fanUserId ?? null) : null;
 
@@ -404,6 +409,7 @@ export class MessagesService {
       where: { id: messageId },
       data: { deletedAt: new Date(), ...(keepFile ? {} : { mediaKey: null, thumbnailKey: null }) },
     });
+    void this.realtime.publish({ kind: 'message-removed', actorId });
     if (!keepFile) {
       await this.mediaService.deleteQuietly(message.mediaKey);
       await this.mediaService.deleteQuietly(message.thumbnailKey);

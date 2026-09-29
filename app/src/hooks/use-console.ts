@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import { useLiveInterval } from '@/lib/realtime';
 import type { Actor } from './use-actors';
 import type { ChatMessage } from './use-messages';
 
@@ -57,11 +58,12 @@ export function useSendBroadcast(actorId: string) {
 
 // 소속사 모니터링 — 배우가 실제로 보낸 메시지를 읽기 전용으로 확인
 export function useActorBroadcasts(actorId: string) {
+  const interval = useLiveInterval(10000);
   return useQuery({
     queryKey: ['actor-broadcasts', actorId],
     queryFn: () => apiClient.get<ChatMessage[]>(`/actors/${actorId}/messages/broadcasts`),
     enabled: !!actorId,
-    refetchInterval: 10000,
+    refetchInterval: interval,
   });
 }
 

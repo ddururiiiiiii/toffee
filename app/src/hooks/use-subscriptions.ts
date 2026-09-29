@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import { useLiveInterval } from '@/lib/realtime';
 import { useAuth } from '@/lib/auth-context';
 
 export interface Subscription {
@@ -26,11 +27,12 @@ export interface Subscription {
 /** 내 구독 = 인박스 목록. live면 인박스를 보고 있는 동안 주기적으로 새로고침(새 메시지·안 읽음 반영) */
 export function useMySubscriptions(options: { live?: boolean } = {}) {
   const { token } = useAuth();
+  const interval = useLiveInterval(10000);
   return useQuery({
     queryKey: ['my-subscriptions'],
     queryFn: () => apiClient.get<Subscription[]>('/me/subscriptions'),
     enabled: !!token,
-    refetchInterval: options.live ? 10000 : false,
+    refetchInterval: options.live ? interval : false,
   });
 }
 

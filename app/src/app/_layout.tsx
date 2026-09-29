@@ -15,13 +15,15 @@ import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-
 import { useTranslation } from 'react-i18next';
 
 import '@/i18n';
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { SplashOverlay } from '@/components/splash-overlay';
 import { Colors, fontFor } from '@/constants/theme';
 import { LocalePreferenceProvider } from '@/i18n/locale-preference-context';
 import { useSyncLocale } from '@/hooks/use-sync-locale';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { useOnboardingStatus } from '@/hooks/use-onboarding';
+import { useMySubscriptions } from '@/hooks/use-subscriptions';
+import { useRealtimeSync } from '@/lib/realtime';
 
 // DSN이 비어 있으면(로컬 개발) SDK가 아무것도 전송하지 않고 조용히 꺼진 채로 동작함.
 // 앱 쪽은 요청 바디/헤더를 자동 수집하지 않고 사용자 정보도 붙이지 않음(PII 없음).
@@ -104,10 +106,15 @@ function AuthGate({ children }: { children: ReactNode }) {
 
 export default Sentry.wrap(RootLayout);
 
-// 로그인 상태에 따라 돌아야 하는 백그라운드 작업들(언어 동기화, 푸시 등록·알림 처리)
+// 로그인 상태에 따라 돌아야 하는 백그라운드 작업들(언어 동기화, 푸시 등록·알림 처리, 실시간 연결)
 function SessionEffects() {
   useSyncLocale();
   usePushNotifications();
+  const { token } = useAuth();
+  const { data: subscriptions } = useMySubscriptions();
+  // 구독이 바뀌면 다시 연결(서버가 연결할 때 받을 채팅방 목록을 읽음)
+  const audienceKey = (subscriptions ?? []).map((sub) => sub.actorId).sort().join(',');
+  useRealtimeSync(token, audienceKey);
   return null;
 }
 
@@ -134,7 +141,7 @@ function RootLayout() {
       <AuthProvider>
         <SessionEffects />
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <AnimatedSplashOverlay />
+          <SplashOverlay />
           <AuthGate>
             <Stack
               screenOptions={{

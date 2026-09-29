@@ -974,3 +974,26 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   `reason` 파라미터 → 번역 문구에 사유 분류.
 - `PATCH /admin/actors/:id/retire { retired }`. 활동 종료 배우: `/actors` 목록 제외, 구독·결제 검증은 `ACTOR_RETIRED`, 프로필은
   `retiredAt`을 내려줘 앱이 안내.
+
+## 실시간 신호, 요청 제한 계정 단위, 앱 설정 분리 (2026-09-29)
+
+- **실시간(`backend/src/realtime/`)**: `GET /realtime`(SSE, 전역 JWT 가드 그대로 — 앱이 `Authorization` 헤더로 연결).
+  이벤트는 내용 없이 `{kind, actorId, messageId?}`만 — `artist-message`(sendBroadcast), `message-removed`(deleteBroadcast,
+  신고 승인), `fan-reply`(sendReply). `RealtimeService.publish`가 `pg_notify('toffee_realtime', json)`, 서버마다 `pg.Client`
+  하나로 `LISTEN`(끊기면 1초→30초 백오프 재연결) → rxjs Subject. 연결별 수신 대상은 연결 때 + 60초마다 DB에서 다시 읽음
+  (`canReceive`: 운영자 전부, 스타·소속사는 볼 수 있는 배우의 모든 신호, 팬은 구독 중인 배우의 스타 메시지·삭제만 — 팬 답장
+  신호는 팬에게 안 감). 25초마다 ping, `X-Accel-Buffering: no`, `@SkipThrottle`.
+- **앱(`app/src/lib/realtime.ts`)**: `expo/fetch`로 스트림을 읽어(RN엔 EventSource가 없고 헤더도 못 붙여서) SSE를 직접 파싱,
+  신호별로 react-query `invalidateQueries`(`messages`·`reply-quota`·`my-subscriptions`·`actor-broadcasts`·`actor-replies`).
+  `SessionEffects`에서 로그인 동안 유지, 백그라운드면 끊고 복귀 시 재연결, 구독 목록이 바뀌면 재연결(서버 수신 대상 갱신).
+  `useLiveInterval(ms)` — 연결 중이면 폴링 30초(놓친 신호 대비), 끊기면 원래 간격(5초/3초/10초).
+  웹 확인: 스타 발송 → 팬 채팅 174ms, 팬 답장 → 스타 답장 화면 97ms, 이벤트 후 추가 요청 1회.
+- **요청 제한(`common/guards/user-throttler.guard.ts`)**: `ThrottlerGuard.getTracker`를 JWT 서명이 맞으면 `user:<id>`, 아니면
+  IP로. 이유: 모바일 망 CGNAT·호스팅 프록시 뒤에선 여러 팬이 한 IP. 로그인 요청은 여전히 IP 단위라 호스팅 때 프록시 뒤면
+  Express `trust proxy` 설정 필요(ops-infra-backlog).
+- **앱 설정(`app/app.config.ts`, `eas.json`)**: 젤리 방식 — `APP_VARIANT=production`(eas production 프로필만)일 때만 운영 번들 ID
+  `com.toffeechat.app`(잠정), 그 외 `.dev` + 이름 "Toffee Dev" + 스킴 `toffee-dev`. Firebase 설정 파일도 변형별
+  (`GoogleService-Info(.dev).plist`, `google-services(.dev).json`, 아직 없음). iOS 권한 문구는 `infoPlist` 기본(영어) +
+  `locales/*.json` 6개 언어. 아이콘·스플래시는 `docs/product/brand/logo/t-icon-black-mono-a.png`에서 생성(흰 배경 제거,
+  아이콘 배경 `#F3EFFD`), Expo 템플릿의 파란 스플래시 애니메이션(`animated-icon`)은 `splash-overlay`(네이티브 스플래시와
+  같은 화면 → 250ms 페이드)로 교체.

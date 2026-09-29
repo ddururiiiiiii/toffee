@@ -1,0 +1,6 @@
+{
+  "NSCameraUsageDescription": "拍攝要傳送給粉絲的照片或影片時，Toffee 會使用相機。",
+  "NSMicrophoneUsageDescription": "錄製語音訊息以及要傳送給粉絲的影片聲音時，Toffee 會使用麥克風。",
+  "NSPhotoLibraryUsageDescription": "選擇要傳送給粉絲的照片或影片時，Toffee 會開啟照片圖庫。",
+  "NSPhotoLibraryAddUsageDescription": "在收到的照片或影片上點按「儲存」時，Toffee 會將其儲存到照片圖庫。"
+}

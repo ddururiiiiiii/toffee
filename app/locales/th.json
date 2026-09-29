@@ -1,0 +1,6 @@
+{
+  "NSCameraUsageDescription": "Toffee ใช้กล้องเมื่อคุณถ่ายรูปหรือวิดีโอเพื่อส่งให้แฟนๆ",
+  "NSMicrophoneUsageDescription": "Toffee ใช้ไมโครโฟนเพื่ออัดข้อความเสียงและเสียงในวิดีโอที่คุณส่งให้แฟนๆ",
+  "NSPhotoLibraryUsageDescription": "Toffee จะเปิดคลังรูปภาพเมื่อคุณเลือกรูปหรือวิดีโอเพื่อส่งให้แฟนๆ",
+  "NSPhotoLibraryAddUsageDescription": "เมื่อคุณแตะ 'บันทึก' Toffee จะบันทึกรูปและวิดีโอที่ได้รับลงในคลังรูปภาพ"
+}

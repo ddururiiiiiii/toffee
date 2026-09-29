@@ -7,6 +7,9 @@ import type { PushService } from '../notifications/push.service.js';
 import type { ModerationService } from '../moderation/moderation.service.js';
 import type { MediaService } from '../storage/media.service.js';
 import type { ConfigService } from '@nestjs/config';
+import type { RealtimeService } from '../realtime/realtime.service.js';
+
+const realtime = { publish: vi.fn().mockResolvedValue(undefined) } as unknown as RealtimeService;
 
 const config = (values: Record<string, string> = {}) => ({ get: (key: string) => values[key] }) as unknown as ConfigService;
 
@@ -38,7 +41,7 @@ function setup() {
     verifyForAttach: vi.fn().mockResolvedValue(undefined),
     withReadUrl: vi.fn((item: object) => Promise.resolve(item)),
   } as unknown as MediaService;
-  const service = new MessagesService(prisma, push, {} as ModerationService, media, config());
+  const service = new MessagesService(prisma, push, {} as ModerationService, media, config(), realtime);
   return { service, fanPushes, staffPushes, prisma, push };
 }
 
@@ -176,7 +179,7 @@ function replySetup(alreadySent: number, settings: Record<string, string> = {}) 
     $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   } as unknown as PrismaService;
   const moderation = { assertNoBannedWords: vi.fn().mockResolvedValue(undefined) } as unknown as ModerationService;
-  const service = new MessagesService(prisma, {} as PushService, moderation, {} as MediaService, config(settings));
+  const service = new MessagesService(prisma, {} as PushService, moderation, {} as MediaService, config(settings), realtime);
   return { service, created, prisma };
 }
 
@@ -231,7 +234,7 @@ describe('MessagesService.listBroadcasts 팬 답장 흐름 미리보기', () => 
       message: { findMany },
     } as unknown as PrismaService;
     const media = { withReadUrls: vi.fn((items: object[]) => Promise.resolve(items)) } as unknown as MediaService;
-    const service = new MessagesService(prisma, {} as PushService, {} as ModerationService, media, config());
+    const service = new MessagesService(prisma, {} as PushService, {} as ModerationService, media, config(), realtime);
     return { service, findMany };
   }
 
@@ -271,7 +274,7 @@ describe('MessagesService.listReplies 나눠 받기', () => {
       user: { findUniqueOrThrow: vi.fn().mockResolvedValue({ role: Role.ADMIN }) },
       message: { findMany },
     } as unknown as PrismaService;
-    const service = new MessagesService(prisma, {} as PushService, {} as ModerationService, {} as MediaService, config());
+    const service = new MessagesService(prisma, {} as PushService, {} as ModerationService, {} as MediaService, config(), realtime);
     return { service, findMany };
   }
 
