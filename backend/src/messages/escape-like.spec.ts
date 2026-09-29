@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { escapeLike } from './messages.service.js';
+import { escapeLike } from '../common/utils/escape-like.js';
 
 describe('escapeLike', () => {
   it('LIKE 특수문자(%, _, \\)를 글자 그대로 찾게 이스케이프', () => {

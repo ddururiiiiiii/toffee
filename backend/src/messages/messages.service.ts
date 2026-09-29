@@ -13,6 +13,7 @@ import type { SendReplyDto } from './dto/send-reply.dto.js';
 import type { SendBroadcastDto } from './dto/send-broadcast.dto.js';
 import { appError } from '../common/i18n/app-error.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
+import { escapeLike } from '../common/utils/escape-like.js';
 
 const NAME_PLACEHOLDER = '{{name}}';
 const QUOTE_PREVIEW_LENGTH = 120;
@@ -86,10 +87,6 @@ const REPLY_PREVIEW_MESSAGES = 10;
 const REPLY_PREVIEW_PER_MESSAGE = 20;
 const REPLY_PREVIEW_LENGTH = 80;
 
-// Prisma의 contains는 LIKE의 %·_를 그대로 넘겨서 "%%"가 전부와 맞음 — 글자 그대로 찾도록 이스케이프(Postgres 기본 이스케이프 문자 \\)
-export function escapeLike(text: string): string {
-  return text.replace(/[\\%_]/g, (char) => `\\${char}`);
-}
 
 function personalize(body: string, fanName: string): string {
   return body.replaceAll(NAME_PLACEHOLDER, fanName);

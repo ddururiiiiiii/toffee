@@ -10,6 +10,7 @@ import type { CreateActorDto, CreateCoupleDto, UpdateActorDto, UpdateActorImages
 import { appError } from '../common/i18n/app-error.js';
 import { AuditService } from '../audit/audit.service.js';
 import { ensureStoreProductIdFree } from '../common/store/store-product.js';
+import { escapeLike } from '../common/utils/escape-like.js';
 
 const ADMIN_ACTOR_SELECT = {
   id: true,
@@ -61,9 +62,9 @@ export class AdminActorsService {
       where: query
         ? {
             OR: [
-              { legalName: { contains: query, mode: 'insensitive' } },
-              { chatDisplayName: { contains: query, mode: 'insensitive' } },
-              { agency: { name: { contains: query, mode: 'insensitive' } } },
+              { legalName: { contains: escapeLike(query), mode: 'insensitive' } },
+              { chatDisplayName: { contains: escapeLike(query), mode: 'insensitive' } },
+              { agency: { name: { contains: escapeLike(query), mode: 'insensitive' } } },
             ],
           }
         : undefined,

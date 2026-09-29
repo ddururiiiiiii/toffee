@@ -2,12 +2,16 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  // 검색 속도용 pg_trgm 확장을 스키마에 적어 두려고(2026-09-29)
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  // pg_trgm: 글자 조각(3글자) 색인 — "중간에 이 글자가 들어간 것" 검색(ILIKE '%…%')을 빠르게. Postgres 기본 포함 확장
+  extensions = [pg_trgm]
 }
 
 enum Role {
@@ -140,6 +144,11 @@ model User {
   storyViews         StoryView[]
   parentalConsent    ParentalConsent?
   adminActions       AdminAction[]       @relation("AdminActions")
+
+  // 운영자 회원 검색(이름·닉네임·이메일 중간 글자) — 회원이 가장 많이 늘어나는 테이블이라 글자 조각 색인(pg_trgm, 2026-09-29)
+  @@index([displayName(ops: raw("gin_trgm_ops"))], type: Gin, map: "User_displayName_trgm_idx")
+  @@index([nickname(ops: raw("gin_trgm_ops"))], type: Gin, map: "User_nickname_trgm_idx")
+  @@index([email(ops: raw("gin_trgm_ops"))], type: Gin, map: "User_email_trgm_idx")
 }
 
 // 푸시 받을 기기 — 한 사람이 폰·태블릿 등 여러 기기로 받을 수 있게 기기(토큰)마다 한 줄(유료 서비스라
@@ -428,6 +437,8 @@ model Message {
   @@index([replyToMessageId])
   // 팬 대화방 나눠 받기·방 안 검색·사진 모아보기가 전부 "이 방의 메시지를 시간순으로" 찾음(2026-09-29)
   @@index([actorId, createdAt])
+  // 방 안 검색(본문 중간 글자) — 팬 답장까지 한 테이블이라 인기 배우 방은 행이 많아서 글자 조각 색인(pg_trgm, 2026-09-29)
+  @@index([body(ops: raw("gin_trgm_ops"))], type: Gin, map: "Message_body_trgm_idx")
 }
 
 // 원문은 한 번만 저장, 언어별 번역본은 필요할 때 생성해서 여기 캐싱 (lazy translation)

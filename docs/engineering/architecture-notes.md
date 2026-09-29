@@ -1173,6 +1173,18 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
   로컬 확인: 8월 마감 → 8월 결제 환불 → 9월 조정 −฿99, CSV 반영.
 - 앱: `useSettlementClose`, 정산 화면 마감 상태 줄(자물쇠·마감/마감 취소 버튼 — `canClose`는 운영자 화면만), 조정 카드·열.
 
+## 검색 속도: pg_trgm GIN 색인 (2026-09-29)
+
+- `ILIKE '%…%'`(Prisma `contains` + `mode: 'insensitive'`)는 btree를 못 써서 행이 늘면 전체를 훑음. 가장 커질 두 곳에 글자 조각 색인:
+  `Message.body`(방 안 검색 — 팬 답장까지 한 테이블이라 인기 배우는 `[actorId, createdAt]` 범위도 큼), `User.displayName/nickname/email`(운영자 회원 검색).
+  배우·소속사 이름은 행이 적어서 안 넣음.
+- 스키마: generator `previewFeatures = ["postgresqlExtensions"]`, datasource `extensions = [pg_trgm]`, `@@index([body(ops: raw("gin_trgm_ops"))], type: Gin,
+  map: ...)` — 스키마에 적어야 `migrate diff` 드리프트 검사가 색인을 지우라고 안 함. 마이그레이션 `20260929190000_search_trigram_index`
+  (`CREATE EXTENSION IF NOT EXISTS pg_trgm` 포함 — 운영 DB가 확장 설치를 허용해야 함, RDS·Cloud SQL·Supabase·Neon 모두 기본 허용).
+- 확인: `EXPLAIN`(seqscan off)에서 한국어 `'%사랑해요%'`·영문 모두 `Bitmap Index Scan on Message_body_trgm_idx`. 한계: 검색어가 2글자면 3글자 조각이
+  없어서 색인 효과 없음(결과는 정확, 기존처럼 훑음). 쓰기 비용이 조금 늘어남(GIN) — 메시지 쓰기 빈도 대비 문제없는 수준.
+- 같이: `escapeLike`를 `common/utils/escape-like.ts`로 옮기고 배우·소속사·운영자 배우/회원 검색에도 적용(`%` 하나로 전부 나오던 것).
+
 ## 정산 지급 기록 SettlementPayout (2026-09-29)
 
 - 스키마 `SettlementPayout { id, month → SettlementClose(onDelete Restrict), agencyId?, actorId?, payeeKey, name, amountCents, paidAt, reference?, memo?,

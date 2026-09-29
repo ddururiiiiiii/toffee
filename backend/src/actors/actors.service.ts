@@ -8,6 +8,7 @@ import { ActorKind, MessageSenderType, Role } from '../generated/prisma/enums.js
 import type { Prisma } from '../generated/prisma/client.js';
 import { MediaService } from '../storage/media.service.js';
 import { appError } from '../common/i18n/app-error.js';
+import { escapeLike } from '../common/utils/escape-like.js';
 
 // legalName/officialProfileImageUrl는 탐색 화면(공식 프로필, 운영자가 관리)에, chatDisplayName(배우가 직접 정하는
 // 닉네임)/chatProfileImageUrl는 채팅방 안에서 씀 — 어느 쪽을 보여줄지는 클라이언트가 화면 맥락에 맞게 고름
@@ -53,8 +54,8 @@ export class ActorsService {
     if (agencyId) where.agencyId = agencyId;
     if (query) {
       where.OR = [
-        { legalName: { contains: query, mode: 'insensitive' } },
-        { agency: { name: { contains: query, mode: 'insensitive' } } },
+        { legalName: { contains: escapeLike(query), mode: 'insensitive' } },
+        { agency: { name: { contains: escapeLike(query), mode: 'insensitive' } } },
       ];
     }
     const actors = await this.prisma.actor.findMany({
