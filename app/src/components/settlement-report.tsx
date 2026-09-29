@@ -3,6 +3,7 @@ import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Switch,
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, Download, Lock, LockOpen, Monitor } from 'lucide-react-native';
 
+import { PayoutBar } from '@/components/settlement-payout';
 import { ThemedText } from '@/components/themed-text';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Icon } from '@/components/ui/icon';
@@ -16,6 +17,7 @@ import {
   type SettlementActor,
   type SettlementAgency,
   type SettlementAmounts,
+  type SettlementPayout,
 } from '@/hooks/use-settlements';
 import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
@@ -162,7 +164,14 @@ export function SettlementReportView({ agencyFilter, canClose }: { agencyFilter?
               {t('settlement.empty')}
             </ThemedText>
           ) : (
-            report.agencies.map((agency) => <AgencyTable key={agency.agencyId ?? 'none'} agency={agency} />)
+            report.agencies.map((agency) => (
+              <AgencyTable
+                key={agency.agencyId ?? 'none'}
+                agency={agency}
+                // 지급 기록은 마감한 달에만(마감한 표 기준으로 보냄)
+                payouts={report.closed ? { month, list: report.payouts ?? [], canRecord: !!canClose } : undefined}
+              />
+            ))
           )}
           <ThemedText type="caption" themeColor="textTertiary" style={styles.note}>
             {t('settlement.note', { fee: report.storeFeePercent, share: report.defaultSharePercent })}
@@ -228,7 +237,7 @@ const COLUMNS: { key: keyof SettlementAmounts | 'chargeCount'; label: string }[]
   { key: 'refundedCents', label: 'settlement.refunded' },
 ];
 
-function AgencyTable({ agency }: { agency: SettlementAgency }) {
+function AgencyTable({ agency, payouts }: { agency: SettlementAgency; payouts?: { month: string; list: SettlementPayout[]; canRecord: boolean } }) {
   const theme = useTheme();
   const { t } = useTranslation();
   const money = useMoney();
@@ -270,6 +279,32 @@ function AgencyTable({ agency }: { agency: SettlementAgency }) {
           </View>
         </View>
       </ScrollView>
+      {/* 지급 상태 — 소속사는 소속사 한 번에, 무소속은 배우마다 따로 보냄 */}
+      {payouts ? (
+        agency.agencyId ? (
+          <PayoutBar
+            month={payouts.month}
+            payee={{ agencyId: agency.agencyId }}
+            dueCents={agency.payoutCents}
+            payout={payouts.list.find((payout) => payout.agencyId === agency.agencyId)}
+            canRecord={payouts.canRecord}
+            money={money}
+          />
+        ) : (
+          agency.actors.map((actor) => (
+            <PayoutBar
+              key={actor.actorId}
+              month={payouts.month}
+              payee={{ actorId: actor.actorId }}
+              label={actor.name}
+              dueCents={actor.payoutCents}
+              payout={payouts.list.find((payout) => payout.actorId === actor.actorId)}
+              canRecord={payouts.canRecord}
+              money={money}
+            />
+          ))
+        )
+      ) : null}
     </View>
   );
 }

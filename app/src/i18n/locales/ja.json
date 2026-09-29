@@ -524,7 +524,22 @@
     "closedAt": "締め済み — {{date}}、{{name}}。この表は締め時点のままです（その後の返金・決済は翌月の調整へ）。",
     "openCurrent": "進行中の月です。数字は変わり続けます。月が終わったら締められます。",
     "openPast": "まだ締めていない月です。返金があると数字が変わる可能性があります。支払い前に締めてください。",
-    "closeFailed": "処理できませんでした"
+    "closeFailed": "処理できませんでした",
+    "paid": "支払い済み — {{date}}、{{amount}}",
+    "unpaid": "支払い記録なし — 支払額 {{amount}}",
+    "payoutNegative": "支払額なし（{{amount}}）— 次回の支払いから差し引かれます",
+    "payoutDiffers": "精算表の支払額 {{amount}} と異なります",
+    "payoutRecord": "支払いを記録",
+    "payoutSave": "記録する",
+    "payoutDelete": "記録を削除",
+    "payoutDeleteTitle": "支払い記録の削除",
+    "payoutDeleteConfirm": "誤って入力した記録のみ削除してください。記録が消えるだけで、実際の送金は取り消されません（運営者の操作記録には残ります）。",
+    "payoutAmount": "送金額（฿）",
+    "payoutDate": "送金日",
+    "payoutReference": "振込番号",
+    "payoutMemo": "メモ（任意）",
+    "payoutAmountInvalid": "送金額を数字で入力してください",
+    "payoutDateInvalid": "日付を YYYY-MM-DD の形式で入力してください"
   },
   "translate": {
     "show": "翻訳を見る",

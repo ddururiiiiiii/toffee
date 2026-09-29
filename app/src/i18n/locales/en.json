@@ -524,7 +524,22 @@
     "closedAt": "Closed — {{date}}, {{name}}. This table is frozen as of closing (later refunds or payments go to next month's adjustments).",
     "openCurrent": "Current month — figures keep changing. You can close it after the month ends.",
     "openPast": "Not closed yet — figures may change if refunds arrive. Close it before paying out.",
-    "closeFailed": "Couldn't complete that"
+    "closeFailed": "Couldn't complete that",
+    "paid": "Paid — {{date}}, {{amount}}",
+    "unpaid": "No payout recorded yet — amount due {{amount}}",
+    "payoutNegative": "Nothing to pay ({{amount}}) — deducted from the next payout",
+    "payoutDiffers": "differs from the statement amount {{amount}}",
+    "payoutRecord": "Record payout",
+    "payoutSave": "Save",
+    "payoutDelete": "Delete record",
+    "payoutDeleteTitle": "Delete payout record",
+    "payoutDeleteConfirm": "Only delete a record that was entered by mistake. This removes the record only — it doesn't cancel the actual transfer (it stays in the admin activity log).",
+    "payoutAmount": "Amount sent (฿)",
+    "payoutDate": "Date sent",
+    "payoutReference": "Transfer ref.",
+    "payoutMemo": "Memo (optional)",
+    "payoutAmountInvalid": "Enter the amount sent as a number",
+    "payoutDateInvalid": "Enter the date as YYYY-MM-DD"
   },
   "translate": {
     "show": "See translation",

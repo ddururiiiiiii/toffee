@@ -524,7 +524,22 @@
     "closedAt": "已結帳 — {{date}}，{{name}}。此表維持結帳時的資料（之後的退款或付款計入下月調整）。",
     "openCurrent": "本月進行中——數字仍會變化。月底後可結帳。",
     "openPast": "尚未結帳——如有退款數字可能變化。請在支付前結帳。",
-    "closeFailed": "操作失敗"
+    "closeFailed": "操作失敗",
+    "paid": "已付款 — {{date}}，{{amount}}",
+    "unpaid": "尚無付款紀錄 — 應付金額 {{amount}}",
+    "payoutNegative": "無需付款（{{amount}}）— 將從下次付款中扣除",
+    "payoutDiffers": "與結算表中的應付金額 {{amount}} 不同",
+    "payoutRecord": "記錄付款",
+    "payoutSave": "記錄",
+    "payoutDelete": "刪除紀錄",
+    "payoutDeleteTitle": "刪除付款紀錄",
+    "payoutDeleteConfirm": "請只刪除填錯的紀錄。這只會刪除紀錄，不會撤銷實際轉帳（營運操作紀錄中仍會保留）。",
+    "payoutAmount": "轉帳金額（฿）",
+    "payoutDate": "轉帳日期",
+    "payoutReference": "轉帳編號",
+    "payoutMemo": "備註（選填）",
+    "payoutAmountInvalid": "請用數字填寫轉帳金額",
+    "payoutDateInvalid": "請依 YYYY-MM-DD 格式填寫日期"
   },
   "translate": {
     "show": "查看翻譯",

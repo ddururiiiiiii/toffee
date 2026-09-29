@@ -524,7 +524,22 @@
     "closedAt": "마감됨 — {{date}}, {{name}}. 이 표는 마감 때 그대로예요(이후 환불·늦은 결제는 다음 달 조정).",
     "openCurrent": "진행 중인 달 — 숫자가 계속 바뀌어요. 달이 끝난 뒤 마감할 수 있어요.",
     "openPast": "아직 마감하지 않은 달 — 환불이 들어오면 숫자가 바뀔 수 있어요. 지급 전에 마감해 주세요.",
-    "closeFailed": "처리하지 못했어요"
+    "closeFailed": "처리하지 못했어요",
+    "paid": "지급 완료 — {{date}}, {{amount}}",
+    "unpaid": "아직 지급 기록 없음 — 보낼 금액 {{amount}}",
+    "payoutNegative": "보낼 금액 없음({{amount}}) — 다음 지급에서 차감돼요",
+    "payoutDiffers": "표의 지급액 {{amount}}와 달라요",
+    "payoutRecord": "지급 기록",
+    "payoutSave": "기록하기",
+    "payoutDelete": "기록 지우기",
+    "payoutDeleteTitle": "지급 기록 지우기",
+    "payoutDeleteConfirm": "잘못 적은 기록만 지워 주세요. 기록만 지워지고 실제 송금은 취소되지 않아요(운영자 작업 기록엔 남아요).",
+    "payoutAmount": "보낸 금액(฿)",
+    "payoutDate": "보낸 날",
+    "payoutReference": "이체 번호",
+    "payoutMemo": "메모(선택)",
+    "payoutAmountInvalid": "보낸 금액을 숫자로 적어 주세요",
+    "payoutDateInvalid": "날짜를 YYYY-MM-DD 형식으로 적어 주세요"
   },
   "translate": {
     "show": "번역 보기",

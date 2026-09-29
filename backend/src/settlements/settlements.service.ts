@@ -1,10 +1,11 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ChargeSource, Role } from '../generated/prisma/enums.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { appError } from '../common/i18n/app-error.js';
 import { AuditService } from '../audit/audit.service.js';
+import type { SettlementPayoutDto } from './dto.js';
 
 // 정산의 "한 달"은 태국 시간 기준(통계와 같음, 서머타임 없는 UTC+7)
 const ZONE_OFFSET_MS = 7 * 60 * 60 * 1000;
@@ -60,7 +61,23 @@ interface Amounts {
 }
 
 type LiveReport = Awaited<ReturnType<SettlementsService['compute']>>;
-export type SettlementReport = LiveReport & { closed: { at: string; byId: string | null; byName: string | null } | null };
+export interface PayoutRecord {
+  id: string;
+  agencyId: string | null;
+  actorId: string | null;
+  name: string;
+  amountCents: number;
+  paidAt: string;
+  reference: string | null;
+  memo: string | null;
+}
+export type SettlementReport = LiveReport & {
+  closed: { at: string; byId: string | null; byName: string | null } | null;
+  // 지급 기록(마감한 달에만) — 소속사 직원에겐 자기 소속사 것만
+  payouts: PayoutRecord[];
+};
+
+const PAYOUT_SELECT = { id: true, agencyId: true, actorId: true, name: true, amountCents: true, paidAt: true, reference: true, memo: true } as const;
 
 const ALLOCATION_SELECT = {
   chargeId: true,
@@ -116,18 +133,24 @@ export class SettlementsService {
     if (close) {
       const snapshot = close.snapshot as unknown as LiveReport;
       const agencies = options.agencyId ? snapshot.agencies.filter((agency) => agency.agencyId === options.agencyId) : snapshot.agencies;
-      const closer = close.closedById
-        ? await this.prisma.user.findUnique({ where: { id: close.closedById }, select: { displayName: true } })
-        : null;
+      const [closer, payouts] = await Promise.all([
+        close.closedById ? this.prisma.user.findUnique({ where: { id: close.closedById }, select: { displayName: true } }) : null,
+        this.prisma.settlementPayout.findMany({
+          where: { month, ...(options.agencyId ? { agencyId: options.agencyId } : {}) },
+          select: PAYOUT_SELECT,
+          orderBy: { paidAt: 'asc' },
+        }),
+      ]);
       return {
         ...snapshot,
         sandboxEnabled: this.sandboxEnabled,
         agencies,
         totals: sum(agencies),
         closed: { at: close.closedAt.toISOString(), byId: close.closedById, byName: closer?.displayName ?? null },
+        payouts: payouts.map((payout) => ({ ...payout, paidAt: payout.paidAt.toISOString() })),
       };
     }
-    return { ...(await this.compute(month, options)), closed: null };
+    return { ...(await this.compute(month, options)), closed: null, payouts: [] };
   }
 
   /** 지금 기준으로 계산(마감 안 한 달) — 이 달 결제 + 마감된 지난달에서 넘어온 조정 */
@@ -252,9 +275,54 @@ export class SettlementsService {
     if (!close) throw new ConflictException(appError('SETTLEMENT_NOT_CLOSED'));
     const later = await this.prisma.settlementClose.findFirst({ where: { month: { gt: month } }, orderBy: { month: 'asc' } });
     if (later) throw new ConflictException(appError('SETTLEMENT_REOPEN_ORDER', { month: later.month }));
+    // 이미 돈을 보낸 달을 다시 열면 표가 바뀌어 지급액과 어긋남 — 차이는 다음 달 조정으로
+    if ((await this.prisma.settlementPayout.count({ where: { month } })) > 0) throw new ConflictException(appError('SETTLEMENT_REOPEN_PAID'));
     await this.prisma.settlementClose.delete({ where: { month } });
     await this.audit.record(adminId, 'SETTLEMENT_REOPEN', 'SETTLEMENT', month, { month });
     return this.report(month);
+  }
+
+  /**
+   * 지급 기록(운영자) — 마감한 달만. 받는 쪽은 마감한 표에 지급액(양수)이 있는 소속사, 또는 무소속 배우 본인(무소속은 배우마다 따로 보냄).
+   * 금액은 안 적으면 표의 지급액 그대로. 실제 송금은 은행에서 하고 여기엔 기록만.
+   */
+  async recordPayout(adminId: string, month: string, dto: SettlementPayoutDto, now = new Date()) {
+    monthRange(month);
+    const close = await this.prisma.settlementClose.findUnique({ where: { month } });
+    if (!close) throw new ConflictException(appError('SETTLEMENT_NOT_CLOSED'));
+    const snapshot = close.snapshot as unknown as LiveReport;
+    const payee = payeeIn(snapshot, dto);
+    if (!payee || payee.payoutCents <= 0) throw new BadRequestException(appError('SETTLEMENT_PAYOUT_INVALID'));
+    const payeeKey = dto.agencyId ? `agency:${dto.agencyId}` : `actor:${dto.actorId}`;
+    if (await this.prisma.settlementPayout.findUnique({ where: { month_payeeKey: { month, payeeKey } } })) {
+      throw new ConflictException(appError('SETTLEMENT_PAYOUT_EXISTS'));
+    }
+    const amountCents = dto.amountCents ?? payee.payoutCents;
+    const payout = await this.prisma.settlementPayout.create({
+      data: {
+        month,
+        agencyId: dto.agencyId ?? null,
+        actorId: dto.agencyId ? null : (dto.actorId ?? null),
+        payeeKey,
+        name: payee.name,
+        amountCents,
+        paidAt: dto.paidAt ? new Date(dto.paidAt) : now,
+        reference: dto.reference?.trim() || null,
+        memo: dto.memo?.trim() || null,
+        recordedById: adminId,
+      },
+      select: PAYOUT_SELECT,
+    });
+    await this.audit.record(adminId, 'SETTLEMENT_PAYOUT', 'SETTLEMENT', month, { month, payee: payee.name, amountCents, expectedCents: payee.payoutCents });
+    return { ...payout, paidAt: payout.paidAt.toISOString() };
+  }
+
+  /** 잘못 적은 지급 기록 지우기(운영자) — 기록만 지우는 것(송금 취소 아님), 운영자 작업 기록엔 남음 */
+  async deletePayout(adminId: string, month: string, payoutId: string) {
+    const payout = await this.prisma.settlementPayout.findFirst({ where: { id: payoutId, month } });
+    if (!payout) throw new NotFoundException(appError('NOT_FOUND'));
+    await this.prisma.settlementPayout.delete({ where: { id: payoutId } });
+    await this.audit.record(adminId, 'SETTLEMENT_PAYOUT_DELETE', 'SETTLEMENT', month, { month, payee: payout.name, amountCents: payout.amountCents });
   }
 
   /** 이 달보다 앞선 달 중 결제가 있는데 아직 마감 안 한 달(오래된 순) */
@@ -275,7 +343,10 @@ export class SettlementsService {
     const status = report.closed ? `closed ${report.closed.at}` : 'open';
     const header = detail
       ? ['month', 'status', 'agency', 'share_percent', 'actor', 'room', 'room_kind', 'gross']
-      : ['month', 'status', 'agency', 'share_percent', 'actor', 'charges', 'gross', 'adjustment', 'store_fee', 'net', 'payout', 'platform', 'refunded'];
+      : ['month', 'status', 'agency', 'share_percent', 'actor', 'charges', 'gross', 'adjustment', 'store_fee', 'net', 'payout', 'platform', 'refunded', 'paid_at'];
+    // 지급 기록 — 소속사는 소속사 단위, 무소속은 배우 단위로 보냄
+    const paidAt = (agencyId: string | null, actorId: string) =>
+      report.payouts.find((payout) => (agencyId ? payout.agencyId === agencyId : payout.actorId === actorId))?.paidAt ?? '';
     const rows = report.agencies.flatMap((agency) =>
       agency.actors.flatMap((actor) =>
         detail
@@ -295,6 +366,7 @@ export class SettlementsService {
                 money(actor.payoutCents),
                 money(actor.platformCents),
                 money(actor.refundedCents),
+                paidAt(agency.agencyId, actor.actorId),
               ],
             ],
       ),
@@ -307,6 +379,17 @@ export class SettlementsService {
     };
     return '﻿' + [header, ...rows].map((row) => row.map(escape).join(',')).join('\n') + '\n';
   }
+}
+
+/** 마감한 표에서 받는 쪽 찾기 — 소속사 합계, 또는 무소속 그룹 안의 배우 한 명 */
+function payeeIn(snapshot: LiveReport, dto: { agencyId?: string; actorId?: string }): { name: string; payoutCents: number } | null {
+  if (!!dto.agencyId === !!dto.actorId) return null;
+  if (dto.agencyId) {
+    const agency = snapshot.agencies.find((row) => row.agencyId === dto.agencyId);
+    return agency ? { name: agency.name ?? '-', payoutCents: agency.payoutCents } : null;
+  }
+  const actor = snapshot.agencies.find((row) => row.agencyId === null)?.actors.find((row) => row.actorId === dto.actorId);
+  return actor ? { name: actor.name, payoutCents: actor.payoutCents } : null;
 }
 
 export function nextMonth(month: string): string {

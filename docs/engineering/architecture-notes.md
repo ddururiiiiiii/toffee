@@ -1173,6 +1173,20 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
   로컬 확인: 8월 마감 → 8월 결제 환불 → 9월 조정 −฿99, CSV 반영.
 - 앱: `useSettlementClose`, 정산 화면 마감 상태 줄(자물쇠·마감/마감 취소 버튼 — `canClose`는 운영자 화면만), 조정 카드·열.
 
+## 정산 지급 기록 SettlementPayout (2026-09-29)
+
+- 스키마 `SettlementPayout { id, month → SettlementClose(onDelete Restrict), agencyId?, actorId?, payeeKey, name, amountCents, paidAt, reference?, memo?,
+  recordedById?, createdAt }`, `@@unique([month, payeeKey])`(마이그레이션 `20260929180000_settlement_payout`). `payeeKey`는 `agency:<id>` | `actor:<id>` —
+  nullable 두 열에 unique를 걸면 null끼리 안 막혀서 따로 둠. agency/actor는 관계 없이 id + 그때 이름(`name`)만(지워져도 기록 보존).
+- `SettlementsService.recordPayout(adminId, month, dto)`: 마감한 달만(`SETTLEMENT_NOT_CLOSED`), 받는 쪽은 snapshot에서 찾음 — `agencyId`면 소속사 그룹
+  합계, `actorId`면 무소속 그룹(agencyId null) 안의 배우. 둘 다/둘 다 없음/없는 받는 쪽/지급액 ≤ 0이면 `SETTLEMENT_PAYOUT_INVALID`, 중복은
+  `SETTLEMENT_PAYOUT_EXISTS`. `amountCents` 생략 시 표의 지급액. 감사 `SETTLEMENT_PAYOUT`(detail payee·amountCents·expectedCents).
+  `deletePayout`: 감사 `SETTLEMENT_PAYOUT_DELETE`. `reopen`: 지급 기록이 있으면 `SETTLEMENT_REOPEN_PAID`.
+- API(ADMIN): `POST /settlements/:month/payouts`(`SettlementPayoutDto`), `DELETE /settlements/:month/payouts/:payoutId`(204).
+  `report()` 응답에 `payouts[]`(마감한 달만, 소속사 범위면 그 소속사 것만 — 소속사 직원은 자기 것만 봄), CSV 요약에 `paid_at` 열.
+- 앱: `components/settlement-payout.tsx` `PayoutBar`(표 아래 한 줄 — 지급 완료/보낼 금액/음수 안내, 운영자면 기록 폼·지우기), `useSettlementPayouts`.
+  날짜만 입력받아 `YYYY-MM-DDT12:00:00+07:00`으로 보냄(어느 시간대에서도 같은 날). 테스트: `settlements.service.spec.ts` "정산 지급 기록".
+
 ## PC 웹 소셜 로그인(authorization code) (2026-09-29)
 
 - 서버: `POST /auth/{kakao|naver|line}/web`(`WebCodeLoginDto` code·redirectUri·state) → `AuthService.verify{Kakao|Naver|Line}WebCode`: redirectUri의

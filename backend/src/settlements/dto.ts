@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
+import { IsBoolean, IsDateString, IsInt, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, Min } from 'class-validator';
 
 const toBoolean = ({ value }: { value: unknown }) => (value === 'true' || value === true ? true : value === 'false' || value === false ? false : value);
 
@@ -25,4 +25,38 @@ export class SettlementQueryDto {
   @Transform(toBoolean)
   @IsBoolean()
   detail?: boolean;
+}
+
+/** 지급 기록(운영자) — 받는 쪽은 소속사(agencyId) 또는 무소속 배우(actorId) 중 하나 */
+export class SettlementPayoutDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  agencyId?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  actorId?: string;
+
+  // 실제 보낸 금액(없으면 마감한 표의 지급액)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  amountCents?: number;
+
+  // 보낸 날(없으면 지금)
+  @IsOptional()
+  @IsDateString()
+  paidAt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  reference?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  memo?: string;
 }

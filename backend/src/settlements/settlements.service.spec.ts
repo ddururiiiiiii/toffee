@@ -38,7 +38,22 @@ const inRange = (date: Date | null, range?: Range) => !range || (!!date && (!ran
 function setup(charges: Charge[]) {
   const closes: { month: string; closedAt: Date; closedById: string | null; snapshot: unknown }[] = [];
   const audits: string[] = [];
+  const payouts: { id: string; month: string; payeeKey: string; agencyId: string | null; actorId: string | null; name: string; amountCents: number; paidAt: Date; reference: string | null; memo: string | null }[] = [];
   const db = {
+    settlementPayout: {
+      findMany: async ({ where }: { where: { month: string; agencyId?: string } }) =>
+        payouts.filter((p) => p.month === where.month && (!where.agencyId || p.agencyId === where.agencyId)),
+      findUnique: async ({ where }: { where: { month_payeeKey: { month: string; payeeKey: string } } }) =>
+        payouts.find((p) => p.month === where.month_payeeKey.month && p.payeeKey === where.month_payeeKey.payeeKey) ?? null,
+      findFirst: async ({ where }: { where: { id: string; month: string } }) => payouts.find((p) => p.id === where.id && p.month === where.month) ?? null,
+      count: async ({ where }: { where: { month: string } }) => payouts.filter((p) => p.month === where.month).length,
+      create: async ({ data }: { data: Omit<(typeof payouts)[number], 'id'> }) => {
+        const row = { ...data, id: `p${payouts.length + 1}` };
+        payouts.push(row);
+        return row;
+      },
+      delete: async ({ where }: { where: { id: string } }) => payouts.splice(payouts.findIndex((p) => p.id === where.id), 1),
+    },
     chargeAllocation: {
       findMany: async ({ where }: { where: { charge: { chargedAt: Range; OR?: { createdAt?: Range; refundedAt?: Range }[] } } }) =>
         charges
@@ -78,7 +93,7 @@ function setup(charges: Charge[]) {
     { get: (key: string) => (key === 'ENABLE_SANDBOX_SUBSCRIBE' ? 'true' : undefined) } as unknown as ConfigService,
     { record: async (_admin: string, action: string) => audits.push(action) } as unknown as AuditService,
   );
-  return { service, clock, closes, audits, charges };
+  return { service, clock, closes, audits, charges, payouts };
 }
 
 const at = (iso: string) => new Date(iso);
@@ -137,6 +152,30 @@ describe('정산 마감', () => {
   });
 });
 
+describe('정산 지급 기록', () => {
+  it('마감한 달에만, 표에 있는 받는 쪽에만, 한 번만 — 기록이 있으면 마감 취소 불가, 지우면 가능', async () => {
+    const t = setup([
+      { id: 'c1', chargedAt: at('2026-09-10T00:00:00Z'), createdAt: at('2026-09-10T00:00:00Z'), refundedAt: null, amountCents: 10000 },
+    ]);
+    await expect(t.service.recordPayout('admin', '2026-09', { agencyId: 'ag' })).rejects.toThrow('마감하지 않은');
+    await t.service.close('admin', '2026-09', undefined, t.clock.now);
+    await expect(t.service.recordPayout('admin', '2026-09', { agencyId: 'other' })).rejects.toThrow('지급할 금액');
+    await expect(t.service.recordPayout('admin', '2026-09', { agencyId: 'ag', actorId: 'a1' })).rejects.toThrow('지급할 금액');
+    // 금액을 안 적으면 표의 지급액(10,000 - 수수료 15% → 8,500의 70% = 5,950)
+    const payout = await t.service.recordPayout('admin', '2026-09', { agencyId: 'ag', reference: ' TX-1 ' }, t.clock.now);
+    expect(payout).toMatchObject({ amountCents: 5950, name: 'A', reference: 'TX-1' });
+    await expect(t.service.recordPayout('admin', '2026-09', { agencyId: 'ag' })).rejects.toThrow('이미 지급 기록');
+    const report = await t.service.report('2026-09');
+    expect(report.payouts).toHaveLength(1);
+    expect((await t.service.report('2026-09', { agencyId: 'someone-else' })).payouts).toHaveLength(0);
+    expect(t.service.toCsv(report).trim().split('\n')[1]).toMatch(/,2026-10-05T00:00:00.000Z$/);
+    await expect(t.service.reopen('admin', '2026-09')).rejects.toThrow('지급 기록');
+    await t.service.deletePayout('admin', '2026-09', payout.id);
+    await t.service.reopen('admin', '2026-09');
+    expect(t.audits).toEqual(['SETTLEMENT_CLOSE', 'SETTLEMENT_PAYOUT', 'SETTLEMENT_PAYOUT_DELETE', 'SETTLEMENT_REOPEN']);
+  });
+});
+
 describe('정산 CSV', () => {
   it('=·+·-·@로 시작하는 이름은 엑셀 수식으로 실행되지 않게 글자로(음수 금액은 그대로)', () => {
     const { service } = setup([]);
@@ -148,6 +187,7 @@ describe('정산 CSV', () => {
       includesSandbox: false,
       sandboxEnabled: false,
       closed: null,
+      payouts: [],
       totals: { grossCents: 0, adjustmentCents: 0, storeFeeCents: 0, netCents: 0, payoutCents: 0, platformCents: 0, refundedCents: 0 },
       agencies: [
         {

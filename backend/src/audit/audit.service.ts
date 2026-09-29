@@ -20,7 +20,10 @@ export type AdminActionType =
   | 'AGENCY_SHARE'
   // 정산 마감·마감 취소(2026-09-29)
   | 'SETTLEMENT_CLOSE'
-  | 'SETTLEMENT_REOPEN';
+  | 'SETTLEMENT_REOPEN'
+  // 정산 지급 기록·기록 삭제(2026-09-29)
+  | 'SETTLEMENT_PAYOUT'
+  | 'SETTLEMENT_PAYOUT_DELETE';
 
 /**
  * 운영자 작업 기록(AdminAction) — 제재·역할 변경·신고 처리·배우 활동 종료를 누가 언제 했는지. 유료 서비스 분쟁·문의 대응용.

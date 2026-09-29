@@ -38,6 +38,28 @@ export interface SettlementReport {
   agencies: SettlementAgency[];
   /** 마감한 달이면 언제·누가(이 표는 마감 때 저장한 그대로) */
   closed: { at: string; byId: string | null; byName: string | null } | null;
+  /** 지급 기록(마감한 달만) — 소속사는 소속사 단위(agencyId), 무소속은 배우 단위(actorId) */
+  payouts: SettlementPayout[];
+}
+
+export interface SettlementPayout {
+  id: string;
+  agencyId: string | null;
+  actorId: string | null;
+  name: string;
+  amountCents: number;
+  paidAt: string;
+  reference: string | null;
+  memo: string | null;
+}
+
+export interface SettlementPayoutInput {
+  agencyId?: string;
+  actorId?: string;
+  amountCents?: number;
+  paidAt?: string;
+  reference?: string;
+  memo?: string;
 }
 
 export interface SettlementOptions {
@@ -75,6 +97,19 @@ export function useSettlementClose(month: string) {
       onSuccess: refresh,
     }),
     reopen: useMutation({ mutationFn: () => apiClient.delete<SettlementReport>(`/settlements/${month}/close`), onSuccess: refresh }),
+  };
+}
+
+/** 지급 기록 남기기 / 잘못 적은 기록 지우기(운영자) */
+export function useSettlementPayouts(month: string) {
+  const queryClient = useQueryClient();
+  const refresh = () => void queryClient.invalidateQueries({ queryKey: ['settlement'] });
+  return {
+    record: useMutation({
+      mutationFn: (input: SettlementPayoutInput) => apiClient.post<SettlementPayout>(`/settlements/${month}/payouts`, input),
+      onSuccess: refresh,
+    }),
+    remove: useMutation({ mutationFn: (payoutId: string) => apiClient.delete(`/settlements/${month}/payouts/${payoutId}`), onSuccess: refresh }),
   };
 }
 

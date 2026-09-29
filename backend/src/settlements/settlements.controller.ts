@@ -1,7 +1,7 @@
-import { Controller, Delete, Get, Param, Post, Query, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { SettlementsService } from './settlements.service.js';
-import { SettlementQueryDto } from './dto.js';
+import { SettlementPayoutDto, SettlementQueryDto } from './dto.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { Role } from '../generated/prisma/enums.js';
@@ -30,6 +30,20 @@ export class SettlementsController {
   @Delete(':month/close')
   reopen(@CurrentUser() user: AuthenticatedUser, @Param('month') month: string) {
     return this.settlements.reopen(user.id, month);
+  }
+
+  // 지급 기록(운영자) — 마감한 달의 지급액을 언제·얼마·어떤 이체로 보냈는지. 소속사 직원은 정산표에서 자기 것만 봄
+  @Roles(Role.ADMIN)
+  @Post(':month/payouts')
+  recordPayout(@CurrentUser() user: AuthenticatedUser, @Param('month') month: string, @Body() dto: SettlementPayoutDto) {
+    return this.settlements.recordPayout(user.id, month, dto);
+  }
+
+  @Roles(Role.ADMIN)
+  @Delete(':month/payouts/:payoutId')
+  @HttpCode(204)
+  deletePayout(@CurrentUser() user: AuthenticatedUser, @Param('month') month: string, @Param('payoutId') payoutId: string) {
+    return this.settlements.deletePayout(user.id, month, payoutId);
   }
 
   @Get('export')

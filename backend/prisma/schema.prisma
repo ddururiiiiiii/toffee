@@ -620,4 +620,30 @@ model SettlementClose {
   closedById String?
   // 마감 순간의 정산표(SettlementsService.report 결과 전체)
   snapshot   Json
+
+  payouts SettlementPayout[]
+}
+
+// 정산 지급 기록(2026-09-29) — 마감한 달의 지급액을 받는 쪽(소속사, 또는 무소속 배우 본인)에게 언제·얼마·어떤 이체로 보냈는지.
+// 실제 송금은 은행에서 하고 여기엔 기록만. 받는 쪽 하나당 한 달에 한 번(잘못 적었으면 지우고 다시). 지급 기록이 있는 달은 마감 취소 불가
+model SettlementPayout {
+  id           String          @id @default(uuid())
+  month        String
+  close        SettlementClose @relation(fields: [month], references: [month], onDelete: Restrict)
+  // 받는 쪽 — 둘 중 하나만(소속사/배우가 지워져도 기록은 남게 관계 없이 id만, 이름은 name에 그때 이름으로)
+  agencyId     String?
+  actorId      String?
+  // "agency:<id>" | "actor:<id>" — 한 달에 받는 쪽 하나당 한 번(null끼리는 unique가 안 걸려서 따로 둠)
+  payeeKey     String
+  name         String
+  // 실제 보낸 금액(은행 수수료 등으로 표의 지급액과 다를 수 있어서 따로 적음)
+  amountCents  Int
+  paidAt       DateTime
+  // 이체 번호·은행 참조 등
+  reference    String?
+  memo         String?
+  recordedById String?
+  createdAt    DateTime        @default(now())
+
+  @@unique([month, payeeKey])
 }
