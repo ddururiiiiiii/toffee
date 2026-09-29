@@ -126,7 +126,8 @@
     "consentSendFailed": "Couldn't send the email.",
     "nicknameTitle": "Choose a nickname",
     "nicknameHint": "The actor's messages will call you by this nickname. If the actor quotes your reply, other subscribers can see it too, so please avoid using your real name.",
-    "birthDateInvalid": "Please check your date of birth."
+    "birthDateInvalid": "Please check your date of birth.",
+    "birthDateHintAdult": "Toffee is for people aged {{age}} and over. You can't change this later, so please enter it correctly."
   },
   "legal": {
     "draftTitle": "This document is a draft",
@@ -395,5 +396,15 @@
     "devHint": "Social sign-in buttons appear here once connected.",
     "email": "Email",
     "continue": "Continue"
+  },
+  "underage": {
+    "title": "You must be {{age}} or older",
+    "body": "Only adults can join Toffee. We'll see you when you turn {{age}}.",
+    "wrongDate": "Entered the wrong date of birth? Let our support team know and we'll fix it after checking.",
+    "contact": "Contact support",
+    "deleteTitle": "Delete account",
+    "deleteBody": "All your information, including the date of birth you entered, will be deleted. This can't be undone.",
+    "deleteConfirm": "Delete",
+    "logout": "Log out"
   }
 }

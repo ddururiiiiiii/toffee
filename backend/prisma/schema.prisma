@@ -70,6 +70,9 @@ enum ParentalConsentStatus {
   PENDING
   // 법정대리인이 이메일 링크로 동의 완료
   APPROVED
+  // 성인만 가입(ADULTS_ONLY, 2026-09-29 기본값)일 때 성년 나이 미만 — 온보딩에서 막히고 구독 불가.
+  // 생년월일은 한 번만 입력 가능해서 나이를 고쳐 다시 시도할 수 없음(잘못 입력했으면 고객센터 → 운영자 정정)
+  UNDERAGE
 }
 
 model User {

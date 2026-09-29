@@ -177,6 +177,9 @@ export class SubscriptionsService {
     if (user.parentalConsentStatus === ParentalConsentStatus.PENDING) {
       throw new ForbiddenException(appError('CONSENT_REQUIRED_TO_SUBSCRIBE'));
     }
+    if (user.parentalConsentStatus === ParentalConsentStatus.UNDERAGE) {
+      throw new ForbiddenException(appError('UNDERAGE'));
+    }
   }
 
   // 이 배우와 짝지어진(GlCp) 다른 배우를 이미 구독 중이면 번들 할인가를 안내만 함(결제는 아직 없음)

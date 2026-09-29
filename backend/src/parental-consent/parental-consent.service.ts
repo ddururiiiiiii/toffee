@@ -2,7 +2,7 @@ import { ConflictException, BadRequestException, Injectable } from '@nestjs/comm
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'node:crypto';
 import { calculateAge, parseBirthDate } from './birth-date.js';
-import { consentAgeFor, normalizeCountryCode } from './minor-age.js';
+import { adultAgeFor, consentAgeFor, normalizeCountryCode } from './minor-age.js';
 import { CURRENT_TERMS_VERSION } from '../common/legal/terms.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailService } from '../notifications/email.service.js';
@@ -23,22 +23,33 @@ export class ParentalConsentService {
     private readonly configService: ConfigService,
   ) {}
 
-  // 앱이 로그인 직후 온보딩(약관 동의 → 생년월일 → 부모 동의 대기 → 닉네임)을 보여줘야 하는지 판단하는 데 씀
+  /**
+   * 성인만 가입(기본, 2026-09-29 사용자 결정) — 부모가 진짜 부모인지 확인할 방법이 마땅치 않고 나라마다 요건이 달라서,
+   * 출시는 성년 이상만 받음. ADULTS_ONLY=false로 두면 예전 부모 이메일 동의 방식으로 돌아감(코드 유지).
+   */
+  private get adultsOnly(): boolean {
+    return this.configService.get<string>('ADULTS_ONLY') !== 'false';
+  }
+
+  // 앱이 로그인 직후 온보딩(약관 동의 → 생년월일 → (성년 미만이면 가입 불가 | 부모 동의 대기) → 닉네임)을 보여줘야 하는지 판단
   async getOnboardingStatus(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { birthDate: true, parentalConsentStatus: true, role: true, nickname: true, termsVersion: true },
+      select: { birthDate: true, parentalConsentStatus: true, role: true, nickname: true, termsVersion: true, countryCode: true },
     });
+    // 생년월일 화면 안내 문구·가입 불가 화면에 쓸 기준 나이
+    const minimumAge = this.adultsOnly ? adultAgeFor(user.countryCode) : null;
     // 약관 동의는 모든 계정, 연령 확인·닉네임은 구독하는 팬(USER)에게만 — 배우 본인/소속사/운영자 계정은 그 뒤 온보딩 없이 진입
     const needsTerms = user.termsVersion !== CURRENT_TERMS_VERSION;
     if (user.role !== Role.USER) {
-      return { needsTerms, needsBirthDate: false, needsNickname: false, parentalConsentStatus: user.parentalConsentStatus };
+      return { needsTerms, needsBirthDate: false, needsNickname: false, parentalConsentStatus: user.parentalConsentStatus, minimumAge };
     }
     return {
       needsTerms,
       needsBirthDate: !user.birthDate,
       needsNickname: !user.nickname,
       parentalConsentStatus: user.parentalConsentStatus,
+      minimumAge,
     };
   }
 
@@ -77,15 +88,17 @@ export class ParentalConsentService {
     if (existing.birthDate) {
       throw new ConflictException(appError('BIRTH_DATE_ONCE'));
     }
-    const requiresConsent = calculateAge(birthDate, new Date()) < consentAgeFor(existing.countryCode);
+    const age = calculateAge(birthDate, new Date());
+    const status = this.adultsOnly
+      ? age < adultAgeFor(existing.countryCode)
+        ? ParentalConsentStatus.UNDERAGE
+        : ParentalConsentStatus.NOT_REQUIRED
+      : age < consentAgeFor(existing.countryCode)
+        ? ParentalConsentStatus.PENDING
+        : ParentalConsentStatus.NOT_REQUIRED;
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: {
-        birthDate,
-        parentalConsentStatus: requiresConsent
-          ? ParentalConsentStatus.PENDING
-          : ParentalConsentStatus.NOT_REQUIRED,
-      },
+      data: { birthDate, parentalConsentStatus: status },
       select: { parentalConsentStatus: true },
     });
     return user;

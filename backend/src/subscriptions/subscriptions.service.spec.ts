@@ -28,6 +28,10 @@ describe('구독 전 가입 절차 강제(서버)', () => {
     await expect(setup({ ...done, parentalConsentStatus: 'PENDING' }).subscribe('u', 'a1')).rejects.toThrow('법정대리인');
     await expect(setup(done).subscribe('u', 'a1')).resolves.toMatchObject({ subscription: { id: 's1' } });
   });
+
+  it('성년 미만(성인만 가입)이면 구독 불가', async () => {
+    await expect(setup({ ...done, parentalConsentStatus: 'UNDERAGE' }).subscribe('u', 'a1')).rejects.toThrow('성인');
+  });
 });
 
 describe('활동 종료한 배우', () => {

@@ -4,13 +4,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
 
-export type ParentalConsentStatus = 'NOT_REQUIRED' | 'PENDING' | 'APPROVED';
+export type ParentalConsentStatus = 'NOT_REQUIRED' | 'PENDING' | 'APPROVED' | 'UNDERAGE';
 
 export interface OnboardingStatus {
   needsTerms: boolean;
   needsBirthDate: boolean;
   needsNickname: boolean;
   parentalConsentStatus: ParentalConsentStatus;
+  /** 성인만 가입일 때 가입 가능한 나이(그 나라 성년 나이). 부모 동의 방식이면 null */
+  minimumAge: number | null;
 }
 
 export function useOnboardingStatus() {

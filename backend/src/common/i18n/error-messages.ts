@@ -297,6 +297,14 @@ export const ERROR_MESSAGES = {
     'zh-Hans': '请先完成注册流程（同意条款并填写出生日期）。',
     'zh-Hant': '請先完成註冊流程（同意條款並填寫出生日期）。',
   },
+  UNDERAGE: {
+    ko: '토피는 성인만 이용할 수 있어요.',
+    en: 'Toffee is only available to adults.',
+    th: 'Toffee เปิดให้ใช้งานเฉพาะผู้ที่บรรลุนิติภาวะแล้วเท่านั้น',
+    ja: 'Toffeeは成人の方のみご利用いただけます。',
+    'zh-Hans': 'Toffee 仅限成年人使用。',
+    'zh-Hant': 'Toffee 僅限成年人使用。',
+  },
   CONSENT_REQUIRED_TO_SUBSCRIBE: {
     ko: '법정대리인 동의가 완료된 후 구독할 수 있어요.',
     en: 'You can subscribe once your parent or guardian has given consent.',

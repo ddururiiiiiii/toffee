@@ -71,11 +71,13 @@ function AuthGate({ children }: { children: ReactNode }) {
       ? 'terms'
       : onboarding?.needsBirthDate
         ? 'birth-date'
-        : onboarding?.parentalConsentStatus === 'PENDING'
-          ? 'parental-consent'
-          : onboarding?.needsNickname
-            ? 'nickname'
-            : null;
+        : onboarding?.parentalConsentStatus === 'UNDERAGE'
+          ? 'underage'
+          : onboarding?.parentalConsentStatus === 'PENDING'
+            ? 'parental-consent'
+            : onboarding?.needsNickname
+              ? 'nickname'
+              : null;
     if (onboardingStep) {
       if (onLegalScreen) return;
       if (!onOnboardingScreen || (segments as string[])[1] !== onboardingStep) router.replace(`/onboarding/${onboardingStep}`);
@@ -191,6 +193,7 @@ function RootLayout() {
               <Stack.Screen name="onboarding/birth-date" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/nickname" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/parental-consent" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding/underage" options={{ headerShown: false }} />
               <Stack.Screen name="terms" options={{ headerShown: true, title: t('screens.terms') }} />
               <Stack.Screen name="privacy" options={{ headerShown: true, title: t('screens.privacy') }} />
             </Stack>

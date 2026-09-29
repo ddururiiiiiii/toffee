@@ -6,11 +6,11 @@ import { OnboardingLayout } from '@/components/onboarding-layout';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
-import { useSetBirthDate } from '@/hooks/use-onboarding';
+import { useOnboardingStatus, useSetBirthDate } from '@/hooks/use-onboarding';
 import { ApiError } from '@/lib/api-client';
 import { Spacing } from '@/constants/theme';
 
-// 미성년자(국가별 기준, 서버 minor-age.ts)면 법정대리인 동의가 필요해서 물어보는 것 — 그 외 용도로는 안 씀
+// 가입 연령 확인용 — 성인만 가입(기본)이면 그 나라 성년 나이, 부모 동의 방식이면 동의 필요 여부(서버 minor-age.ts). 그 외 용도로는 안 씀
 export default function BirthDateOnboardingScreen() {
   const { t } = useTranslation();
   const [year, setYear] = useState('');
@@ -18,6 +18,7 @@ export default function BirthDateOnboardingScreen() {
   const [day, setDay] = useState('');
   const [invalid, setInvalid] = useState(false);
   const setBirthDate = useSetBirthDate();
+  const { data: status } = useOnboardingStatus();
   const monthRef = useRef<TextInput>(null);
   const dayRef = useRef<TextInput>(null);
   const isValid = year.length === 4 && month.length >= 1 && day.length >= 1;
@@ -42,7 +43,7 @@ export default function BirthDateOnboardingScreen() {
     <OnboardingLayout
       step={2}
       title={t('onboarding.birthDateTitle')}
-      subtitle={t('onboarding.birthDateHint')}
+      subtitle={status?.minimumAge ? t('onboarding.birthDateHintAdult', { age: status.minimumAge }) : t('onboarding.birthDateHint')}
       footer={<Button title={t('onboarding.next')} loading={setBirthDate.isPending} disabled={!isValid} onPress={handleSubmit} />}>
       <View style={styles.row}>
         <TextField
