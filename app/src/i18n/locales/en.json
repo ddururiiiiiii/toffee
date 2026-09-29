@@ -509,6 +509,17 @@
     "soloRoom": "Solo room",
     "coupleRoom": "Couple room ({{name}})",
     "empty": "No payments this month",
-    "note": "Estimates from payment records (month in Thailand time). The {{fee}}% store fee and default {{share}}% share are provisional and vary by agency contract. Bundles are split by list-price ratio; couple rooms 50/50 between the two actors. Reconcile with store payout reports for actual amounts (local prices, FX, taxes)."
+    "note": "Estimates from payment records (month in Thailand time). The {{fee}}% store fee and default {{share}}% share are provisional and vary by agency contract. Bundles are split by list-price ratio; couple rooms 50/50 between the two actors. Reconcile with store payout reports for actual amounts (local prices, FX, taxes).",
+    "adjustment": "Adjustments",
+    "close": "Close month",
+    "reopen": "Reopen",
+    "closeTitle": "Close settlement",
+    "closeConfirm": "Lock the {{month}} settlement with the current figures? Refunds or late payments after closing go to next month's adjustments, not this month. Pay out based on the closed table.",
+    "reopenTitle": "Reopen settlement",
+    "reopenConfirm": "Reopen {{month}}? If you've already paid out, it's safer to leave it closed and handle changes as next month's adjustments. Reopening recalculates with current data.",
+    "closedAt": "Closed — {{date}}, {{name}}. This table is frozen as of closing (later refunds or payments go to next month's adjustments).",
+    "openCurrent": "Current month — figures keep changing. You can close it after the month ends.",
+    "openPast": "Not closed yet — figures may change if refunds arrive. Close it before paying out.",
+    "closeFailed": "Couldn't complete that"
   }
 }

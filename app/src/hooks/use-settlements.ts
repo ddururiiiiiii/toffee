@@ -1,9 +1,11 @@
 import { Platform } from 'react-native';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 
 export interface SettlementAmounts {
   grossCents: number;
+  // 마감된 지난달에서 넘어온 조정(마감 뒤 늦게 기록된 결제 +, 마감 뒤 환불 −) — 예전 마감 기록엔 없을 수 있음
+  adjustmentCents?: number;
   storeFeeCents: number;
   netCents: number;
   payoutCents: number;
@@ -34,6 +36,8 @@ export interface SettlementReport {
   sandboxEnabled: boolean;
   totals: SettlementAmounts;
   agencies: SettlementAgency[];
+  /** 마감한 달이면 언제·누가(이 표는 마감 때 저장한 그대로) */
+  closed: { at: string; byId: string | null; byName: string | null } | null;
 }
 
 export interface SettlementOptions {
@@ -58,6 +62,20 @@ export function useSettlement(month: string, options: SettlementOptions = {}) {
     // 정산은 PC 웹에서만 보여 줌
     enabled: Platform.OS === 'web',
   });
+}
+
+/** 한 달 마감 / 마감 취소(운영자) */
+export function useSettlementClose(month: string) {
+  const queryClient = useQueryClient();
+  const refresh = () => void queryClient.invalidateQueries({ queryKey: ['settlement'] });
+  return {
+    close: useMutation({
+      mutationFn: (includeSandbox?: boolean) =>
+        apiClient.post<SettlementReport>(`/settlements/${month}/close${includeSandbox === undefined ? '' : `?includeSandbox=${includeSandbox}`}`),
+      onSuccess: refresh,
+    }),
+    reopen: useMutation({ mutationFn: () => apiClient.delete<SettlementReport>(`/settlements/${month}/close`), onSuccess: refresh }),
+  };
 }
 
 /** CSV 내려받기(웹 전용 — 정산은 PC 웹에서만 보여 줌) */

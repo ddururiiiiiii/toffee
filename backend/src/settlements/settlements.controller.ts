@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { SettlementsService } from './settlements.service.js';
 import { SettlementQueryDto } from './dto.js';
@@ -17,6 +17,19 @@ export class SettlementsController {
   async report(@CurrentUser() user: AuthenticatedUser, @Query() query: SettlementQueryDto) {
     const scope = await this.settlements.scopeFor(user.id);
     return this.settlements.report(query.month, { agencyId: scope.agencyId ?? query.agencyId, includeSandbox: query.includeSandbox });
+  }
+
+  // 마감·마감 취소는 운영자만(지급 근거를 고정하는 일)
+  @Roles(Role.ADMIN)
+  @Post(':month/close')
+  close(@CurrentUser() user: AuthenticatedUser, @Param('month') month: string, @Query('includeSandbox') includeSandbox?: string) {
+    return this.settlements.close(user.id, month, includeSandbox === undefined ? undefined : includeSandbox === 'true');
+  }
+
+  @Roles(Role.ADMIN)
+  @Delete(':month/close')
+  reopen(@CurrentUser() user: AuthenticatedUser, @Param('month') month: string) {
+    return this.settlements.reopen(user.id, month);
   }
 
   @Get('export')

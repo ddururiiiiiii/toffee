@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, Download, Monitor } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Download, Lock, LockOpen, Monitor } from 'lucide-react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -12,12 +12,14 @@ import {
   downloadSettlementCsv,
   shiftMonth,
   useSettlement,
+  useSettlementClose,
   type SettlementActor,
   type SettlementAgency,
   type SettlementAmounts,
 } from '@/hooks/use-settlements';
 import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
+import { confirm } from '@/lib/confirm';
 import { Radius, Spacing } from '@/constants/theme';
 
 function useMoney() {
@@ -28,9 +30,9 @@ function useMoney() {
 
 /**
  * 월 정산 표(2026-09-29) — 운영자(전체, 소속사 골라 보기)와 소속사 콘솔(자기 소속사만, 서버가 좁힘)이 같이 씀. 정산은 표가 크고
- * 민감해서 PC 웹에서만 보여 줌(2026-09-28 결정) — 폰 앱에선 안내만.
+ * 민감해서 PC 웹에서만 보여 줌(2026-09-28 결정) — 폰 앱에선 안내만. canClose(운영자)면 끝난 달 마감·마감 취소.
  */
-export function SettlementReportView({ agencyFilter }: { agencyFilter?: { id: string; name: string }[] }) {
+export function SettlementReportView({ agencyFilter, canClose }: { agencyFilter?: { id: string; name: string }[]; canClose?: boolean }) {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
   const [month, setMonth] = useState(currentMonth);
@@ -38,6 +40,7 @@ export function SettlementReportView({ agencyFilter }: { agencyFilter?: { id: st
   const [includeSandbox, setIncludeSandbox] = useState<boolean | undefined>(undefined);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const { data: report, isLoading, isFetching, error } = useSettlement(month, { agencyId, includeSandbox });
+  const { close, reopen } = useSettlementClose(month);
 
   if (Platform.OS !== 'web') {
     return <EmptyState icon={Monitor} title={t('settlement.webOnly')} body={t('settlement.webOnlyBody')} />;
@@ -46,6 +49,17 @@ export function SettlementReportView({ agencyFilter }: { agencyFilter?: { id: st
   const [year, mon] = month.split('-').map(Number);
   const monthLabel = new Date(Date.UTC(year, mon - 1, 15)).toLocaleDateString(i18n.language, { year: 'numeric', month: 'long', timeZone: 'UTC' });
   const isCurrent = month === currentMonth();
+  const closeError = close.error ?? reopen.error;
+  const startClose = async () => {
+    if (await confirm(t('settlement.closeTitle'), t('settlement.closeConfirm', { month: monthLabel }), t('settlement.close'), t('common.cancel'))) {
+      close.mutate(includeSandbox);
+    }
+  };
+  const startReopen = async () => {
+    if (await confirm(t('settlement.reopenTitle'), t('settlement.reopenConfirm', { month: monthLabel }), t('settlement.reopen'), t('common.cancel'))) {
+      reopen.mutate();
+    }
+  };
   const download = (detail: boolean) => {
     setDownloadError(null);
     downloadSettlementCsv(month, { agencyId, includeSandbox }, detail).catch((e: unknown) =>
@@ -113,6 +127,30 @@ export function SettlementReportView({ agencyFilter }: { agencyFilter?: { id: st
         </ThemedText>
       ) : (
         <>
+          {/* 마감 상태 — 마감한 달은 저장한 표 그대로(환불이 와도 안 바뀜), 열린 달은 지금 계산 */}
+          <View style={[styles.closeBar, { backgroundColor: report.closed ? theme.tintSoft : theme.backgroundElement }]}>
+            {report.closed ? <Icon as={Lock} size={16} color={theme.tint} /> : null}
+            <ThemedText type="small" style={styles.flex} themeColor={report.closed ? 'text' : 'textSecondary'}>
+              {report.closed
+                ? t('settlement.closedAt', {
+                    date: new Date(report.closed.at).toLocaleString(i18n.language),
+                    name: report.closed.byName ?? '-',
+                  })
+                : isCurrent
+                  ? t('settlement.openCurrent')
+                  : t('settlement.openPast')}
+            </ThemedText>
+            {canClose && report.closed ? (
+              <ToolbarButton label={t('settlement.reopen')} onPress={() => void startReopen()} busy={reopen.isPending} icon={LockOpen} />
+            ) : canClose && !isCurrent ? (
+              <ToolbarButton label={t('settlement.close')} onPress={() => void startClose()} busy={close.isPending} icon={Lock} />
+            ) : null}
+          </View>
+          {closeError ? (
+            <ThemedText type="small" themeColor="danger">
+              {closeError instanceof ApiError ? closeError.message : t('settlement.closeFailed')}
+            </ThemedText>
+          ) : null}
           <SummaryCards totals={report.totals} storeFeePercent={report.storeFeePercent} />
           {report.includesSandbox ? (
             <ThemedText type="small" themeColor="textSecondary">
@@ -135,14 +173,15 @@ export function SettlementReportView({ agencyFilter }: { agencyFilter?: { id: st
   );
 }
 
-function ToolbarButton({ label, onPress }: { label: string; onPress: () => void }) {
+function ToolbarButton({ label, onPress, busy, icon = Download }: { label: string; onPress: () => void; busy?: boolean; icon?: typeof Download }) {
   const theme = useTheme();
   return (
     <Pressable
       onPress={onPress}
+      disabled={busy}
       accessibilityRole="button"
-      style={({ pressed }) => [styles.toolbarButton, { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 }]}>
-      <Icon as={Download} size={16} color={theme.text} />
+      style={({ pressed }) => [styles.toolbarButton, { backgroundColor: theme.backgroundElement, opacity: pressed || busy ? 0.7 : 1 }]}>
+      {busy ? <ActivityIndicator size="small" color={theme.text} /> : <Icon as={icon} size={16} color={theme.text} />}
       <ThemedText type="smallMedium">{label}</ThemedText>
     </Pressable>
   );
@@ -154,6 +193,8 @@ function SummaryCards({ totals, storeFeePercent }: { totals: SettlementAmounts; 
   const money = useMoney();
   const cards = [
     { label: t('settlement.gross'), value: totals.grossCents },
+    // 마감된 지난달에서 넘어온 조정 — 있을 때만
+    ...(totals.adjustmentCents ? [{ label: t('settlement.adjustment'), value: totals.adjustmentCents }] : []),
     { label: t('settlement.storeFee', { percent: storeFeePercent }), value: totals.storeFeeCents },
     { label: t('settlement.net'), value: totals.netCents },
     { label: t('settlement.payout'), value: totals.payoutCents, strong: true },
@@ -179,6 +220,7 @@ function SummaryCards({ totals, storeFeePercent }: { totals: SettlementAmounts; 
 const COLUMNS: { key: keyof SettlementAmounts | 'chargeCount'; label: string }[] = [
   { key: 'chargeCount', label: 'settlement.charges' },
   { key: 'grossCents', label: 'settlement.gross' },
+  { key: 'adjustmentCents', label: 'settlement.adjustment' },
   { key: 'storeFeeCents', label: 'settlement.storeFeeShort' },
   { key: 'netCents', label: 'settlement.net' },
   { key: 'payoutCents', label: 'settlement.payout' },
@@ -191,7 +233,7 @@ function AgencyTable({ agency }: { agency: SettlementAgency }) {
   const { t } = useTranslation();
   const money = useMoney();
   const cell = (row: SettlementAmounts & { chargeCount?: number }, key: (typeof COLUMNS)[number]['key']) =>
-    key === 'chargeCount' ? String(row.chargeCount ?? '') : money(row[key]);
+    key === 'chargeCount' ? String(row.chargeCount ?? '') : money(row[key] ?? 0);
   return (
     <View style={[styles.table, { borderColor: theme.border }]}>
       <View style={[styles.tableTitle, { backgroundColor: theme.backgroundElement }]}>
@@ -257,6 +299,8 @@ function ActorRow({ actor, cell }: { actor: SettlementActor; cell: (row: Settlem
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  closeBar: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, borderRadius: Radius.lg, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, minHeight: 48 },
   page: { padding: Spacing.four, gap: Spacing.three, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   toolbar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   monthNav: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
@@ -267,7 +311,7 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   chip: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one + 2, borderRadius: Radius.pill },
   cards: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  card: { flexGrow: 1, flexBasis: 140, borderRadius: Radius.lg, padding: Spacing.three, gap: Spacing.one },
+  card: { flexGrow: 1, flexBasis: 120, borderRadius: Radius.lg, padding: Spacing.three, gap: Spacing.one },
   table: { borderWidth: StyleSheet.hairlineWidth, borderRadius: Radius.lg, overflow: 'hidden' },
   tableTitle: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', padding: Spacing.three, gap: Spacing.two },
   tableScroll: { flexGrow: 1 },

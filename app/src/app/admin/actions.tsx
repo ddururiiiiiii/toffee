@@ -20,6 +20,8 @@ const ACTION_LABELS: Record<string, string> = {
   BUNDLE_UPDATE: '묶음 변경',
   COUPLE_CREATE: '커플방 만들기',
   AGENCY_SHARE: '소속사 정산 배분율 변경',
+  SETTLEMENT_CLOSE: '정산 마감',
+  SETTLEMENT_REOPEN: '정산 마감 취소',
 };
 
 function detailText(entry: AdminActionEntry): string {
@@ -30,6 +32,7 @@ function detailText(entry: AdminActionEntry): string {
   if (typeof d.until === 'string') parts.push(`해제 ${new Date(d.until).toLocaleString('ko-KR')}`);
   if (typeof d.from === 'string' && typeof d.to === 'string') parts.push(`${d.from} → ${d.to}`);
   // 정산 배분율(숫자, null = 기본값)
+  if (typeof d.month === 'string') parts.push(`${d.month}${typeof d.payoutCents === 'number' ? ` · 지급 합계 ฿${(d.payoutCents / 100).toLocaleString('ko-KR')}` : ''}`);
   if (entry.action === 'AGENCY_SHARE') parts.push(`${d.from ?? '기본값'} → ${d.to ?? '기본값'}${typeof d.to === 'number' ? '%' : ''}`);
   return parts.join(' · ');
 }

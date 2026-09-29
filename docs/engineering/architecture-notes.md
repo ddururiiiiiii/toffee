@@ -1157,3 +1157,18 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
   = 사용자 id, 성공 → verify-purchase → `finishTransaction`(서버 확인 실패면 끝내지 않아 다음 실행에 재시도), 대기 없는 거래(재실행 시 재전달)는
   restore로. 복원은 `getAvailablePurchases()` → restore. 구독·묶음 구독 화면은 `available`이면 스토어, 아니면 샌드박스. `lib/store-subscriptions.ts`:
   스토어 구독 관리 URL. 예전 `use-purchase.ts`(쓰이지 않던 배우 전용 훅) 삭제.
+
+## 정산 마감 SettlementClose (2026-09-29)
+
+- 스키마 `SettlementClose { month(PK, YYYY-MM), closedAt, closedById, snapshot Json }`(마이그레이션 `20260929160000_settlement_close`).
+- `SettlementsService.report`: 마감한 달이면 snapshot(소속사 범위만 필터·합계 재계산) + `closed {at, byId, byName}`, 아니면 `compute()`.
+  `compute`: 이 달 결제(기존) + **조정** — `chargedAt < from`이고 `createdAt` 또는 `refundedAt`이 이 달인 allocation 중, 결제 달(`monthOf`)이
+  마감됐고 그 사건 시각이 `closedAt` 이후인 것만(늦은 기록 +, 환불 −). 마감 안 한 달의 결제는 조정 없이 그 달 안에서 환불 처리.
+  `splitRevenue(gross + adjustment)` — 음수 가능. 응답·CSV에 `adjustmentCents`, CSV에 status 열.
+- `close(adminId, month)`: 끝난 달만(`SETTLEMENT_NOT_ENDED`), 중복 불가, 첫 결제 달부터 앞 달이 모두 마감돼야 함(`SETTLEMENT_CLOSE_ORDER`), 감사
+  `SETTLEMENT_CLOSE`(targetType SETTLEMENT). `reopen`: 뒤 달이 마감돼 있으면 거절(`SETTLEMENT_REOPEN_ORDER`), 감사 `SETTLEMENT_REOPEN`.
+  API `POST|DELETE /settlements/:month/close`(ADMIN). 사건 시각은 "기록된 시각"(환불 알림 도착 시각)이라 마감은 달이 끝난 뒤에만 허용 → 마감 뒤
+  사건은 항상 뒤 달에 떨어짐.
+- 테스트: `settlements.service.spec.ts`(메모리 DB — 마감 후 환불 −조정, 늦은 기록 +조정, 마감 전 환불은 조정 없음, 순서·중복·미종료 거절).
+  로컬 확인: 8월 마감 → 8월 결제 환불 → 9월 조정 −฿99, CSV 반영.
+- 앱: `useSettlementClose`, 정산 화면 마감 상태 줄(자물쇠·마감/마감 취소 버튼 — `canClose`는 운영자 화면만), 조정 카드·열.

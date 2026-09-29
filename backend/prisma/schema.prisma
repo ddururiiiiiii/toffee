@@ -603,3 +603,17 @@ model ChargeAllocation {
   @@index([agencyId])
   @@index([actorId])
 }
+
+/**
+ * 정산 마감(2026-09-29) — 운영자가 한 달을 마감하면 그 순간의 정산표를 통째로 저장해 고정(소속사에 지급한 근거). 마감 뒤에 생긴
+ * 환불·늦게 기록된 결제는 이 달 숫자를 바꾸지 않고, 그 일이 생긴(열려 있는) 달의 "조정" 칸으로 들어감. 마감은 앞 달부터 순서대로.
+ */
+model SettlementClose {
+  // YYYY-MM(태국 시간 기준 한 달)
+  month      String   @id
+  closedAt   DateTime @default(now())
+  // 마감한 운영자(계정이 지워져도 기록은 남게 관계 없이 id만)
+  closedById String?
+  // 마감 순간의 정산표(SettlementsService.report 결과 전체)
+  snapshot   Json
+}

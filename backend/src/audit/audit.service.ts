@@ -17,7 +17,10 @@ export type AdminActionType =
   | 'BUNDLE_UPDATE'
   | 'COUPLE_CREATE'
   // 소속사 정산 배분율 변경(2026-09-29)
-  | 'AGENCY_SHARE';
+  | 'AGENCY_SHARE'
+  // 정산 마감·마감 취소(2026-09-29)
+  | 'SETTLEMENT_CLOSE'
+  | 'SETTLEMENT_REOPEN';
 
 /**
  * 운영자 작업 기록(AdminAction) — 제재·역할 변경·신고 처리·배우 활동 종료를 누가 언제 했는지. 유료 서비스 분쟁·문의 대응용.
@@ -27,7 +30,7 @@ export type AdminActionType =
 export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async record(adminId: string, action: AdminActionType, targetType: 'USER' | 'REPORT' | 'ACTOR' | 'BUNDLE' | 'AGENCY', targetId: string, detail?: Prisma.InputJsonValue) {
+  async record(adminId: string, action: AdminActionType, targetType: 'USER' | 'REPORT' | 'ACTOR' | 'BUNDLE' | 'AGENCY' | 'SETTLEMENT', targetId: string, detail?: Prisma.InputJsonValue) {
     await this.prisma.adminAction.create({ data: { adminId, action, targetType, targetId, detail } });
   }
 

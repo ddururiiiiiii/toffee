@@ -9,7 +9,7 @@ export default function AdminSettlementsScreen() {
   const { data: agencies } = useAdminAgencies();
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <SettlementReportView agencyFilter={agencies?.map((agency) => ({ id: agency.id, name: agency.name }))} />
+      <SettlementReportView agencyFilter={agencies?.map((agency) => ({ id: agency.id, name: agency.name }))} canClose />
     </SafeAreaView>
   );
 }
