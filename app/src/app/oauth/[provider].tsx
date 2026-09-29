@@ -12,7 +12,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
 /**
- * PC 웹 소셜 로그인 돌아오는 곳(/oauth/kakao|naver|line, 2026-09-29) — 회사 로그인 페이지가 ?code=&state=를 붙여 돌려보냄. state가 떠날 때
+ * PC 웹 소셜 로그인 돌아오는 곳(/oauth/kakao|naver|line|apple, 2026-09-29) — 회사 로그인 페이지가 ?code=&state=를 붙여 돌려보냄. state가 떠날 때
  * 저장한 것과 같을 때만 서버(/auth/<회사>/web)에 code를 보내 로그인. 로그인되면 AuthGate가 역할에 맞는 첫 화면으로 보냄.
  */
 export default function OAuthCallbackScreen() {

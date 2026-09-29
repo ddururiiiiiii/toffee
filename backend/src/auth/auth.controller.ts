@@ -98,6 +98,14 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle(LOGIN_THROTTLE)
+  @Post('apple/web')
+  async loginWithAppleWeb(@Body() dto: WebCodeLoginDto) {
+    const identity = await this.authService.verifyAppleWebCode(dto.code, dto.redirectUri);
+    return this.authService.issueAccessToken(await this.authService.findOrCreateUser(AuthProvider.APPLE, identity));
+  }
+
+  @Public()
   @UseGuards(DevOnlyGuard)
   @Post('dev-login')
   async devLogin(@Body() dto: DevLoginDto) {

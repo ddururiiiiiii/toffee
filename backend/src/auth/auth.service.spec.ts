@@ -1,8 +1,10 @@
+import { generateKeyPairSync } from 'node:crypto';
+import appleSignin from 'apple-signin-auth';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthService } from './auth.service.js';
 import { AuthProvider } from '../generated/prisma/enums.js';
 import type { ConfigService } from '@nestjs/config';
-import type { JwtService } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { ModerationService } from '../moderation/moderation.service.js';
 
@@ -106,5 +108,44 @@ describe('PC 웹 소셜 로그인(code 교환)', () => {
     const service = withConfig({ LINE_WEB_CHANNEL_ID: '3003', LINE_WEB_CHANNEL_SECRET: 's', LINE_CHANNEL_ID: '2001,3003', WEB_LOGIN_ORIGINS: 'https://admin.toffee.app' });
     await expect(service.verifyLineWebCode('c', 'https://admin.toffee.app/oauth/line')).resolves.toMatchObject({ providerId: 'line-web-user' });
     fetchMock.mockRestore();
+  });
+
+  it('애플: .p8 키로 만든 client secret으로 code 교환 → id_token(audience = Services ID) 확인', async () => {
+    const signing = generateKeyPairSync('ec', { namedCurve: 'P-256' });
+    const apple = generateKeyPairSync('rsa', { modulusLength: 2048 });
+    const jwk = apple.publicKey.export({ format: 'jwk' });
+    const idTokenFor = (aud: string) =>
+      new JwtService().sign(
+        { sub: 'apple-web-user', aud, email: 'a@privaterelay.appleid.com', email_verified: 'true' },
+        { privateKey: apple.privateKey.export({ format: 'pem', type: 'pkcs8' }), algorithm: 'RS256', issuer: 'https://appleid.apple.com', keyid: 'test-kid' },
+      );
+    let audience = 'app.toffee.web';
+    let sentSecret = '';
+    appleSignin._setFetch((async (url: string, init?: { body?: URLSearchParams }) => {
+      if (url.endsWith('/auth/keys')) return new Response(JSON.stringify({ keys: [{ ...jwk, kid: 'test-kid' }] }));
+      sentSecret = init?.body?.get('client_secret') ?? '';
+      return new Response(JSON.stringify({ id_token: idTokenFor(audience) }));
+    }) as unknown as typeof fetch);
+    try {
+      const service = withConfig({
+        APPLE_WEB_SERVICES_ID: 'app.toffee.web',
+        APPLE_TEAM_ID: 'TEAM123',
+        APPLE_SIGNIN_KEY_ID: 'KEY123',
+        // .env 한 줄 형식(\n)
+        APPLE_SIGNIN_PRIVATE_KEY: (signing.privateKey.export({ format: 'pem', type: 'pkcs8' }) as string).replace(/\n/g, '\\n'),
+        WEB_LOGIN_ORIGINS: 'https://admin.toffee.app',
+      });
+      await expect(service.verifyAppleWebCode('c', 'https://admin.toffee.app/oauth/apple')).resolves.toMatchObject({
+        providerId: 'apple-web-user',
+        emailVerified: true,
+      });
+      // client secret = 우리 키로 서명한 JWT(팀 ID·Services ID)
+      expect(new JwtService().verify(sentSecret, { publicKey: signing.publicKey.export({ format: 'pem', type: 'spki' }), algorithms: ['ES256'] })).toMatchObject({ iss: 'TEAM123', sub: 'app.toffee.web', aud: 'https://appleid.apple.com' });
+      // 다른 Services ID용 토큰은 거절
+      audience = 'someone.else';
+      await expect(service.verifyAppleWebCode('c', 'https://admin.toffee.app/oauth/apple')).rejects.toThrow();
+    } finally {
+      appleSignin._setFetch(globalThis.fetch);
+    }
   });
 });

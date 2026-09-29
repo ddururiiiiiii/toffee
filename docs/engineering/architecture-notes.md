@@ -1199,7 +1199,14 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
   `oauth`를 로그인 화면처럼 취급. 버튼 색·순서는 `components/social-button-style.ts`로 앱·웹 공유. 키: `EXPO_PUBLIC_WEB_KAKAO_REST_API_KEY`·
   `EXPO_PUBLIC_WEB_NAVER_CLIENT_ID`·`EXPO_PUBLIC_WEB_LINE_CHANNEL_ID`. 브라우저 확인: 버튼 → 카카오 authorize URL(client_id·redirect_uri·state),
   위조 state 거절(서버 호출 없음), 맞는 state면 code 1회 전송.
-- 애플 웹은 Services ID + client secret(JWT, .p8 서명)가 필요해서 보류.
+- 애플 웹은 Services ID + client secret(JWT, .p8 서명)가 필요해서 보류. → 2026-09-29 추가: `POST /auth/apple/web` →
+  `AuthService.verifyAppleWebCode` — `ensureWebRedirect` → `apple-signin-auth` `getClientSecret`(ES256, iss 팀 ID, sub Services ID, 5분) →
+  `getAuthorizationToken` → `verifyIdToken(audience = APPLE_WEB_SERVICES_ID)`. env `APPLE_WEB_SERVICES_ID`·`APPLE_TEAM_ID`·`APPLE_SIGNIN_KEY_ID`·
+  `APPLE_SIGNIN_PRIVATE_KEY`(\n 한 줄). 앱: `WEB_KEYS.apple`(`EXPO_PUBLIC_WEB_APPLE_SERVICES_ID`), authorize에 **scope 없이 `response_mode=query`** —
+  name/email scope를 넣으면 애플이 form_post만 허용해서 정적 웹(/oauth/apple)으로 못 받음. 그래서 웹 신규 가입은 이메일 없이 생김(웹은 기존 계정
+  로그인 용도). 회원 식별값(sub)이 앱과 같으려면 Services ID를 iOS App ID와 같은 그룹(Primary App ID)으로. 애플은 https Return URL만 → localhost
+  확인 불가, 브라우저 확인은 authorize URL·state·서버 호출까지. 테스트: `auth.service.spec.ts`(가짜 애플 서버 `_setFetch` — client secret 서명·
+  audience 불일치 거절).
 
 ## 보안 점검 (2026-09-29)
 

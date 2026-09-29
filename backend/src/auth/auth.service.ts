@@ -259,6 +259,35 @@ export class AuthService {
     return this.verifyLineToken(body.id_token);
   }
 
+  /**
+   * 애플 웹: Services ID(APPLE_WEB_SERVICES_ID)로 받은 code → client secret(팀 ID·키 ID·.p8 서명 키로 매번 5분짜리 JWT를 만듦) → id_token →
+   * 앱과 같은 확인(audience는 Services ID). Services ID를 iOS 앱 ID와 같은 그룹(Primary App ID)으로 묶어야 애플 회원 식별값(sub)이 앱과 같음.
+   * 이름·이메일 범위를 요청하면 애플이 form_post(POST)로만 돌려줘서 정적 웹으로 못 받음 — 범위 없이 query로 받음(웹은 주로 기존 계정 로그인).
+   */
+  async verifyAppleWebCode(code: string, redirectUri: string): Promise<ExternalIdentity> {
+    this.ensureWebRedirect(redirectUri, 'Apple');
+    const clientID = this.required('APPLE_WEB_SERVICES_ID', 'Apple');
+    let idToken: string | undefined;
+    try {
+      const clientSecret = appleSignin.getClientSecret({
+        clientID,
+        teamID: this.required('APPLE_TEAM_ID', 'Apple'),
+        keyIdentifier: this.required('APPLE_SIGNIN_KEY_ID', 'Apple'),
+        // .env에 한 줄로 넣을 수 있게 \n을 줄바꿈으로
+        privateKey: this.required('APPLE_SIGNIN_PRIVATE_KEY', 'Apple').replace(/\\n/g, '\n'),
+      });
+      const tokens = await appleSignin.getAuthorizationToken(code, { clientID, redirectUri, clientSecret });
+      idToken = tokens?.id_token;
+    } catch {
+      idToken = undefined;
+    }
+    if (!idToken) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'Apple' }));
+    const payload = await appleSignin.verifyIdToken(idToken, { audience: clientID }).catch(() => null);
+    if (!payload?.sub) throw new UnauthorizedException(appError('SOCIAL_TOKEN_INVALID', { provider: 'Apple' }));
+    const verified = (payload as { email_verified?: boolean | string }).email_verified;
+    return { providerId: payload.sub, email: payload.email ?? null, emailVerified: verified === true || verified === 'true' };
+  }
+
   private async fetchJson<T>(url: string, accessToken: string, provider: string): Promise<T> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);

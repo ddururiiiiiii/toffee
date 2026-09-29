@@ -39,7 +39,7 @@ function loadGoogleIdentity(): Promise<GoogleIdentity> {
 
 /**
  * 웹 로그인 버튼(2026-09-29) — 구글은 공식 버튼(Google Identity Services, 팝업 → idToken → 앱과 같은 POST /auth/google, 구글 콘솔
- * "승인된 JavaScript 원본"에 이 사이트 주소). 카카오·네이버·LINE은 누르면 그 회사 로그인 페이지로 이동했다가 /oauth/<회사>로 돌아옴
+ * "승인된 JavaScript 원본"에 이 사이트 주소). 카카오·네이버·LINE·애플은 누르면 그 회사 로그인 페이지로 이동했다가 /oauth/<회사>로 돌아옴
  * (app/oauth/[provider].tsx). 키가 없는 로그인은 안 보임.
  */
 export function SocialLoginButtons({
@@ -88,7 +88,11 @@ export function SocialLoginButtons({
             key={provider}
             onPress={() => startRedirectLogin(provider)}
             accessibilityRole="button"
-            style={({ pressed }) => [styles.button, { backgroundColor: look.background, opacity: pressed ? 0.85 : 1 }]}>
+            style={({ pressed }) => [
+              styles.button,
+              // 애플(검정)은 어두운 배경에서 안 보여서 얇은 테두리(앱 버튼과 같음)
+              { backgroundColor: look.background, opacity: pressed ? 0.85 : 1, borderWidth: look.border ? 1 : 0, borderColor: look.border },
+            ]}>
             <ThemedText type="smallBold" style={{ color: look.text }}>
               {t(`login.continueWith.${provider}`)}
             </ThemedText>
