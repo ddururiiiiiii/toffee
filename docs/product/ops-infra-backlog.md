@@ -18,6 +18,7 @@
 | 무엇 | 언제 | 비고 |
 |---|---|---|
 | 예비창업패키지 공고 확인·신청 | 2027년 1~3월(통상) | **신청 전엔 사업자 등록 금지**(등록하면 자격 상실). 자세한 건 [`business-compliance-checklist.md`](./business-compliance-checklist.md) 5번 |
+| D-U-N-S 번호 신청 | 법인 설립 직후 바로 | 발급에 몇 주 — 애플·구글 법인 계정의 선행 조건. 전체 순서는 [`launch-roadmap.md`](./launch-roadmap.md) |
 | 도메인 선점 | 가능하면 일찍 | 원하는 이름이 먼저 팔릴 수 있음. 연 1~2만 원 수준 |
 
 ---

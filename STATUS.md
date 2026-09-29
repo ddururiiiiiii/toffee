@@ -2,14 +2,15 @@
 
 **이 파일 하나만 보면 "어디까지 됐고 뭐가 남았는지" 알 수 있게** 유지한다. 세부 기록은
 [`docs/deployment-readiness-plan.md`](./docs/deployment-readiness-plan.md)(날짜별 작업 로그),
-운영·계정·사업 쪽 할 일은 [`docs/product/ops-infra-backlog.md`](./docs/product/ops-infra-backlog.md).
+운영·계정·사업 쪽 할 일은 [`docs/product/ops-infra-backlog.md`](./docs/product/ops-infra-backlog.md),
+**지금부터 첫 매출까지의 사업화 일정은 [`docs/product/launch-roadmap.md`](./docs/product/launch-roadmap.md)**.
 
 - 표시: ✅ 완료 · 🔶 일부/진행 중 · ⬜ 시작 전 · 👤 사용자가 직접 할 일(코드 아님)
 - 새 아이디어는 바로 개발하지 말고 먼저 아래 **"아이디어 보관함"**에 적은 뒤, 1차/2차 중 어디에
   넣을지 정하고 진행한다.
 - GitHub에서 이 파일을 열면 그대로 보이고, 연필 버튼으로 직접 고칠 수도 있다(체크 표시 수정 등).
 
-마지막 갱신: 2026-09-29 (커플방)
+마지막 갱신: 2026-09-29 (사업화 일정 문서 추가)
 
 ---
 
