@@ -149,3 +149,29 @@ describe('PC 웹 소셜 로그인(code 교환)', () => {
     }
   });
 });
+
+describe('데모 입장 코드(2026-10-01)', () => {
+  const withCode = (code?: string) => {
+    const prisma = { user: { upsert: vi.fn().mockResolvedValue({ id: 'u1', role: 'ADMIN' }) } };
+    const service = new AuthService(
+      { get: (key: string) => (key === 'DEV_LOGIN_CODE' ? code : undefined) } as unknown as ConfigService,
+      {} as JwtService,
+      prisma as unknown as PrismaService,
+      {} as ModerationService,
+    );
+    return { service, prisma };
+  };
+
+  it('코드가 설정돼 있으면 맞혀야 로그인되고, 틀리거나 없으면 계정을 만들지도 않음', async () => {
+    const { service, prisma } = withCode('candy-demo-42');
+    await expect(service.devLogin('admin@toffee.demo', undefined, undefined, 'wrong')).rejects.toThrow();
+    await expect(service.devLogin('admin@toffee.demo')).rejects.toThrow();
+    expect(prisma.user.upsert).not.toHaveBeenCalled();
+    await expect(service.devLogin('admin@toffee.demo', undefined, undefined, ' candy-demo-42 ')).resolves.toEqual({ id: 'u1', role: 'ADMIN' });
+  });
+
+  it('코드가 없으면 예전처럼 코드 없이(로컬 개발)', async () => {
+    await expect(withCode(undefined).service.devLogin('fan1@toffee.demo')).resolves.toMatchObject({ id: 'u1' });
+    await expect(withCode('  ').service.devLogin('fan1@toffee.demo')).resolves.toMatchObject({ id: 'u1' });
+  });
+});

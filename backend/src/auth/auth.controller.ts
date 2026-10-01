@@ -109,7 +109,7 @@ export class AuthController {
   @UseGuards(DevOnlyGuard)
   @Post('dev-login')
   async devLogin(@Body() dto: DevLoginDto) {
-    const user = await this.authService.devLogin(dto.email, dto.name, dto.role as Role | undefined);
+    const user = await this.authService.devLogin(dto.email, dto.name, dto.role as Role | undefined, dto.code);
     return this.authService.issueAccessToken(user);
   }
 

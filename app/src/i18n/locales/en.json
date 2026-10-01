@@ -421,6 +421,7 @@
     "devTitle": "Developer email sign-in",
     "devHint": "Sign-in for development and demos. The released app hides this and shows only social sign-in buttons.",
     "email": "Email",
+    "code": "Access code (only if you were given one)",
     "continue": "Continue"
   },
   "underage": {

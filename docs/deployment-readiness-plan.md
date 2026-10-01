@@ -63,10 +63,16 @@
   `NODE_ENV=development`(소셜 키 전이라 테스트 로그인·결제 없는 구독이 필요한데 production이면 env-check가 막음 — 운영 서버는 따로
   production으로), `JWT_SECRET`(무작위 48바이트), `TRUST_PROXY=1`, `SUPPORT_EMAIL`, `ADULTS_ONLY=true`. 대시보드 "Suggested Variables"는
   `.env.example` 예시값(localhost DB 등)이라 추가하지 않음.
-- **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 데모: 서비스 설정에서 Config-as-code 경로를
-  `/backend/railway.json`으로 지정(Root Directory를 따라가지 않음) → 가짜 배우 데이터 넣기(실행 이미지엔 시드용 개발 도구가 없음) →
-  **테스트 로그인 보호**(주소만 알면 아무 이메일로 로그인 가능 — 운영자 계정 포함, 소속사에 보여 주기 전에) → 웹 데모(Cloudflare Pages) →
-  `api-demo.toffeechat.app` 연결 + `API_PUBLIC_URL`.
+- **main 반영**: 사용자 허락으로 PR toffeechat/toffee#15 머지(CI 통과), Railway Config-as-code 경로 `/backend/railway.json` 지정.
+- **데모 입장 코드**(사용자 선택): 공개 주소에서 테스트 로그인이 열려 있으면 누구나 아무 계정(운영자 포함, `role`도 요청으로 지정 가능)으로
+  들어올 수 있어서, `DEV_LOGIN_CODE`가 있으면 같은 코드를 내야 로그인되게 함(틀리면 계정도 안 만듦). 소속사엔 주소 + 코드를 함께 보내고,
+  새면 변수만 바꾸면 됨. 비어 있으면 예전처럼(로컬 개발). 켤 때 점검에 "코드 없이 열려 있음" 경고 추가. 앱 로그인 카드에 입장 코드 칸.
+- **데모 데이터 넣기**(사용자 선택: Railway에서 버튼으로): 실행 이미지엔 `tsx`가 없어 시드를 못 돌리던 것을 `src/demo/`로 옮겨 빌드에
+  포함, 컨테이너 시작 때 `DEMO_SEED`로 — `true`는 빈 DB일 때만(켜 둬도 재시작마다 안 지워짐), `reset`은 매번 지우고 다시(초기화 후
+  `true`로 되돌림), production에선 무시. 초기화가 사람들이 만든 기록(환불 요청·정산 마감·운영자 조치·차단·구독 기록·푸시 기기)에 막히지
+  않게 정리 대상도 넓힘. 로컬 Postgres로 세 모드·초기화·web e2e(입장 코드 포함 8단계) 확인.
+- **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 데모: Railway 변수 `DEV_LOGIN_CODE`·`DEMO_SEED=true` →
+  웹 데모(Cloudflare Pages, `EXPO_PUBLIC_ENABLE_DEV_LOGIN=true`) → `api-demo.toffeechat.app` 연결 + `API_PUBLIC_URL`.
 
 ## 2026-09-29 (이어서) — 젤리도 토피 법인으로(계정 결정 개정)
 

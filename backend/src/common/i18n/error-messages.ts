@@ -125,6 +125,14 @@ export const ERROR_MESSAGES = {
   },
 
   // ── 계정·로그인 ──
+  DEV_LOGIN_CODE_INVALID: {
+    ko: '입장 코드가 맞지 않아요. 받은 코드를 다시 확인해 주세요.',
+    en: "That access code isn't right. Please check the code you were given.",
+    th: 'รหัสเข้าใช้งานไม่ถูกต้อง กรุณาตรวจสอบรหัสที่ได้รับอีกครั้ง',
+    ja: 'アクセスコードが正しくありません。受け取ったコードをもう一度ご確認ください。',
+    'zh-Hans': '访问码不正确，请再次确认收到的访问码。',
+    'zh-Hant': '存取碼不正確，請再次確認收到的存取碼。',
+  },
   SOCIAL_TOKEN_INVALID: {
     ko: (p) => `${p.provider} 로그인을 확인하지 못했어요. 다시 시도해 주세요.`,
     en: (p) => `We couldn't verify your ${p.provider} sign-in. Please try again.`,

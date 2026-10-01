@@ -29,9 +29,11 @@ export default function LoginScreen() {
   const { t } = useTranslation();
   const { login, signedOutReason } = useAuth();
   const [email, setEmail] = useState('fan1@toffee.demo');
+  // 데모 서버 입장 코드(2026-10-01) — 서버에 DEV_LOGIN_CODE가 있을 때만 필요, 로컬 개발은 비워 둠
+  const [code, setCode] = useState('');
 
   const devLogin = useMutation({
-    mutationFn: () => apiClient.post<{ accessToken: string }>('/auth/dev-login', { email }),
+    mutationFn: () => apiClient.post<{ accessToken: string }>('/auth/dev-login', { email, ...(code.trim() ? { code: code.trim() } : {}) }),
     onSuccess: (data) => login(data.accessToken),
   });
   // 소셜 로그인 — SDK에서 받은 토큰을 서버가 그 회사 API로 다시 확인하고 우리 로그인 토큰을 줌
@@ -119,6 +121,17 @@ export default function LoginScreen() {
                 accessibilityLabel={t('welcome.email')}
                 style={styles.cardInput}
                 placeholderTextColor="rgba(255,255,255,0.4)"
+              />
+              <TextField
+                value={code}
+                onChangeText={setCode}
+                placeholder={t('welcome.code')}
+                autoCapitalize="none"
+                autoCorrect={false}
+                accessibilityLabel={t('welcome.code')}
+                style={styles.cardInput}
+                placeholderTextColor="rgba(255,255,255,0.4)"
+                onSubmitEditing={() => email.includes('@') && devLogin.mutate()}
               />
               <Button
                 title={t('welcome.continue')}
