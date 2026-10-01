@@ -1,11 +1,13 @@
-import { Platform, Pressable, StyleSheet } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/lib/auth-context';
-import { useAdminStatsSummary } from '@/hooks/use-admin';
+import { useAdminStatsSummary, useDemoStatus, useResetDemo } from '@/hooks/use-admin';
+import { confirm } from '@/lib/confirm';
+import { ApiError } from '@/lib/api-client';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 import { ADMIN_MENU } from '@/constants/admin-menu';
@@ -17,6 +19,18 @@ export default function AdminHomeScreen() {
   const router = useRouter();
   const { logout } = useAuth();
   const { data: summary } = useAdminStatsSummary();
+  // 데모 서버에서만 보이는 "데모 초기화"(2026-10-01) — 데모 계정은 고정 ID라 초기화해도 로그인이 유지됨
+  const { data: demo } = useDemoStatus();
+  const resetDemo = useResetDemo();
+  const onResetDemo = async () => {
+    const ok = await confirm(
+      '데모 초기화',
+      '데모 데이터(배우·팬·메시지·구독·신고 등)를 모두 지우고 처음 상태로 되돌려요. 직접 만든 계정은 지워지고, 데모 계정(fan1@toffee.demo 등)은 그대로 로그인돼 있어요. 소속사에 데모를 보여 주는 중에는 누르지 마세요.',
+      '초기화',
+      '취소',
+    );
+    if (ok) resetDemo.mutate();
+  };
   // PC 넓은 화면에선 왼쪽 메뉴가 같은 목록이라 여기선 숨김
   const wide = useWideLayout();
   const menu = wide ? [] : ADMIN_MENU.filter((item) => !item.webOnly || Platform.OS === 'web');
@@ -32,6 +46,8 @@ export default function AdminHomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
+      {/* 메뉴 + 데모 초기화까지 길어져서 스크롤(2026-10-01) */}
+      <ScrollView>
       <ThemedView style={styles.cards}>
         {cards.map((card) => (
           <Pressable
@@ -61,6 +77,29 @@ export default function AdminHomeScreen() {
         ))}
       </ThemedView>
 
+      {demo?.enabled ? (
+        <ThemedView style={styles.list}>
+          <Pressable
+            onPress={onResetDemo}
+            disabled={resetDemo.isPending}
+            accessibilityRole="button"
+            style={[styles.row, { backgroundColor: theme.backgroundElement, opacity: resetDemo.isPending ? 0.6 : 1 }]}>
+            <ThemedText type="smallBold" themeColor="danger">
+              {resetDemo.isPending ? '초기화하는 중…' : '데모 초기화'}
+            </ThemedText>
+            <ThemedText type="small" themeColor={resetDemo.isError ? 'danger' : 'textSecondary'}>
+              {resetDemo.isError
+                ? resetDemo.error instanceof ApiError
+                  ? resetDemo.error.message
+                  : '초기화하지 못했어요. 잠시 뒤 다시 시도해 주세요.'
+                : resetDemo.isSuccess
+                  ? '처음 상태로 되돌렸어요.'
+                  : '데모 서버에서만 보여요. 데이터를 처음 상태로 되돌려요.'}
+            </ThemedText>
+          </Pressable>
+        </ThemedView>
+      ) : null}
+
       {/* PC 넓은 화면은 왼쪽 메뉴 아래에 로그아웃이 있음 */}
       {wide ? null : (
         <Pressable onPress={logout} style={[styles.logoutButton, { borderColor: theme.backgroundSelected }]}>
@@ -69,6 +108,7 @@ export default function AdminHomeScreen() {
           </ThemedText>
         </Pressable>
       )}
+      </ScrollView>
     </SafeAreaView>
   );
 }

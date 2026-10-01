@@ -1323,4 +1323,8 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
   `docker-entrypoint.sh`가 마이그레이션 뒤 `node dist/demo/seed-cli.js` — `true`=회원 0명일 때만, `reset`=항상, production=무시
   (`decideSeed`). 실패해도 서버는 켬(로그). 시드가 지우는 테이블에 RefundRequest·Settlement*·AdminAction·ActorFanBlock·
   SubscriptionEvent·PushDevice·ParentalConsent 추가(Restrict FK로 초기화가 막히던 것).
+- **운영자 화면 데모 초기화**(같은 날 추가): `DemoModule` — `GET /admin/demo`(`{enabled}`), `POST /admin/demo/reset`(ADMIN, 분당 3회,
+  `isDemoServer`가 아니면 404). `prisma.$transaction(tx => seedDemo(tx), { timeout: 60s })` — `seedDemo`는 `Prisma.TransactionClient`를
+  받음. 시드의 소속사·배우·묶음·데모 회원은 `DEMO_IDS` 고정 UUID(`00000000-0000-4000-8000-…`) — JWT `sub`가 그대로 유효해서
+  초기화 뒤에도 데모 계정 로그인이 유지됨(JwtStrategy가 매 요청 회원을 다시 읽음). `DEMO_SEED` 해석은 `src/demo/demo-mode.ts`로 공유.
 

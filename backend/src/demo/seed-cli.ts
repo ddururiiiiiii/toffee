@@ -8,15 +8,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client.js';
 import { seedDemo } from './demo-seed.js';
-
-export type SeedDecision = 'skip-production' | 'skip-unknown' | 'seed-if-empty' | 'reset';
-
-export function decideSeed(mode: string | undefined, nodeEnv: string | undefined): SeedDecision {
-  if (nodeEnv === 'production') return 'skip-production';
-  if (mode === 'true') return 'seed-if-empty';
-  if (mode === 'reset') return 'reset';
-  return 'skip-unknown';
-}
+import { decideSeed } from './demo-mode.js';
 
 async function run() {
   const mode = process.env.DEMO_SEED?.trim();
