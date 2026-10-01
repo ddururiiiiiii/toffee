@@ -44,6 +44,8 @@
   앱 DSN은 `eas.json` preview·production 프로필 env에(앱에 박히는 공개 값), 서버 DSN은 호스팅 정할 때 환경변수로. 문의 메일 `support@toffeechat.app`을 앱 `.env.example`에 반영.
 - **Firebase**: 토피 Gmail로 프로젝트 `Toffee`(ID `toffee-c6cba` — 원하던 `toffeechat`으로 못 바꿨지만 내부 식별값이라 유지,
   지우면 30일간 ID 재사용 불가) 생성, 애널리틱스 끔(푸시에 불필요 + 개인정보 처리 범위 축소).
+  개발용 앱만 등록(안드로이드·iOS 모두 `com.toffeechat.app.dev`) → 설정 파일을 `app/*.dev.*`로 커밋. 운영용 앱은 법인 후.
+  APNs 인증 키 업로드는 애플 개발자 계정에서 키를 받는 실기기 빌드 때.
 - **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 답장을 `support@`로
   보내는 설정(Resend 등)은 고객 응대 시작 전에.
 

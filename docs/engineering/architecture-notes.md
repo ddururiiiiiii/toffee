@@ -267,8 +267,10 @@ Supabase Storage 같은 실제 파일 저장소 자체가 코드에 연동돼 �
   `logout()`이 로그인 토큰을 지우기 전에 `unregisterThisDevice()`.
 - **네이티브 설정**: `@react-native-firebase/app`·`messaging`, `expo-notifications`(아이콘 색 브랜드
   Lavender), `expo-build-properties`(iOS `useFrameworks: static` — RNFirebase 요구). `googleServicesFile`
-  경로는 잡아뒀지만 **파일 자체는 없음**(Firebase 프로젝트 생성 전) — 없으면 prebuild가 실패하므로 스토어
-  빌드 전에 운영 보류 목록대로 넣을 것.
+  경로는 잡아뒀고, **개발 변형 파일은 2026-10-01 추가**(Firebase 프로젝트 `toffee-c6cba`, 앱 `com.toffeechat.app.dev`
+  안드로이드·iOS → `app/google-services.dev.json`·`app/GoogleService-Info.dev.plist`, 커밋함 — 앱에 박히는 클라이언트
+  설정이라 비밀 아님. API 키는 콘솔에서 패키지·번들 ID로 제한 권장). **운영 변형 파일은 아직 없음** — 운영 번들 ID는
+  법인 전환 후 등록하기로 했으므로 production 프로필 prebuild는 그때까지 실패하는 게 정상.
 - **검증**: 단위 테스트(1,200기기 → 500/500/200 묶음, 죽은 토큰만 삭제, 발송 실패해도 예외 없음, 기기별
   언어·이름), 실서버에서 여러 기기 등록·계정 전환·기기 해제·잘못된 platform 400, 웹 앱 렌더링·로그아웃
   정상. **실제 기기 수신은 Firebase 설정 + 스토어용 빌드 후 확인 필요.**
