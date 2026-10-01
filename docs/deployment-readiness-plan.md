@@ -39,6 +39,8 @@
 - **Cloudflare 2단계 인증 완료**(인증 앱 + 복구 코드 별도 보관).
 - **Expo 가입**: 개인 계정 `toffeechat`(`dev@` 주소) + 조직 `toffeechat-team`, 프로젝트 `toffee`를 조직 아래 생성 →
   `app/app.config.ts`에 `owner`·`extra.eas.projectId` 연결(`eas init`을 대신해 손으로 — 동적 설정이라).
+- **Sentry 가입**: 조직 slug `toffee-19`(자동 생성) → `toffeechat`으로 변경(연동 전이라 깨질 것 없음), 데이터 위치 미국.
+  앱 플러그인 `organization`을 `ddururiiiiiii` → `toffeechat`으로. 문의 메일 `support@toffeechat.app`을 앱 `.env.example`에 반영.
 - **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 답장을 `support@`로
   보내는 설정(Resend 등)은 고객 응대 시작 전에.
 

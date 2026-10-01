@@ -84,7 +84,7 @@ const config: ExpoConfig = {
         dark: { backgroundColor: '#0F1115', image: './assets/images/splash-icon-dark.png' },
       },
     ],
-    ['@sentry/react-native/expo', { organization: 'ddururiiiiiii', project: 'toffee-app' }],
+    ['@sentry/react-native/expo', { organization: 'toffeechat', project: 'toffee-app' }],
     // 아래 플러그인들의 권한 문구는 infoPlist(위)·locales가 최종값 — 플러그인 기본 문구가 덮어쓰지 않게 같은 문장을 넘김
     [
       'expo-image-picker',

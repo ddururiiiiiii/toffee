@@ -423,9 +423,9 @@ GitHub Actions 무료 시간(개인 계정의 private 저장소 전체 합산 �
 **Sentry 앱** (`@sentry/react-native` ~7.11 — Expo SDK 57 번들 버전, `expo install`이 이
 세션 프록시에 막혀서 `bundledNativeModules.json` 기준으로 직접 설치):
 - `_layout.tsx`에서 `Sentry.init({ dsn: EXPO_PUBLIC_SENTRY_DSN })` + `Sentry.wrap(RootLayout)`.
-- `app.json` 플러그인 `@sentry/react-native/expo`(`organization: ddururiiiiiii`,
-  `project: toffee-app` — 젤리와 같은 조직 가정, Sentry에서 이 이름으로 프로젝트를 만들어야
-  함). 소스맵 업로드는 EAS 빌드 시 `SENTRY_AUTH_TOKEN`이 있어야 동작.
+- `app.json` 플러그인 `@sentry/react-native/expo`(`organization: toffeechat`,
+  `project: toffee-app` — 2026-10-01 토피 전용 Sentry 조직 생성(처음엔 젤리와 같은 개인 조직 `ddururiiiiiii`를 가정했음),
+  서버는 같은 조직의 `toffee-backend` 프로젝트). 소스맵 업로드는 EAS 빌드 시 `SENTRY_AUTH_TOKEN`이 있어야 동작.
 - 웹 번들(`expo export --platform web`) 정상 생성 확인. 네이티브 빌드는 이 환경에서 확인 불가.
 
 ## 소속사(`Agency`) + 소속 이력(`ActorAgencyHistory`) — 구현 완료 (2026-09-28)
