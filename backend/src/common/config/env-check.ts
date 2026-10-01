@@ -27,6 +27,10 @@ export function checkEnv(env: Env): EnvCheckResult {
     if (!has(env, 'API_PUBLIC_URL')) errors.push('API_PUBLIC_URL 필요(메일 링크·공개 페이지 주소)');
   }
 
+  if (env.ENABLE_DEV_LOGIN === 'true' && !has(env, 'DEV_LOGIN_CODE')) {
+    warnings.push('테스트 로그인이 입장 코드 없이 열려 있음 — 공개된 서버면 DEV_LOGIN_CODE를 넣을 것(주소만 알면 운영자 계정으로도 로그인 가능)');
+  }
+
   const groups: [string, string[]][] = [
     ['파일 저장소(사진·음성·영상 업로드)', ['STORAGE_ENDPOINT', 'STORAGE_BUCKET', 'STORAGE_ACCESS_KEY_ID', 'STORAGE_SECRET_ACCESS_KEY']],
     ['푸시 알림', ['FIREBASE_SERVICE_ACCOUNT_JSON']],

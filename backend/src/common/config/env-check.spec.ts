@@ -24,4 +24,10 @@ describe('서버 시작 설정 점검', () => {
     expect(warnings.some((w) => w.startsWith('파일 저장소'))).toBe(true);
     expect(warnings.some((w) => w.startsWith('부모 동의 메일'))).toBe(false);
   });
+
+  it('테스트 로그인이 입장 코드 없이 열려 있으면 경고', () => {
+    const open = (extra: Record<string, string>) => checkEnv({ ...base, ENABLE_DEV_LOGIN: 'true', ...extra }).warnings.some((w) => w.startsWith('테스트 로그인'));
+    expect(open({})).toBe(true);
+    expect(open({ DEV_LOGIN_CODE: 'candy' })).toBe(false);
+  });
 });

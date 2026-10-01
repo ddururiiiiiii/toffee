@@ -26,7 +26,9 @@ async function api(path, { token, method = 'GET', body } = {}) {
   return text ? JSON.parse(text) : undefined;
 }
 
-const devLogin = async (email) => (await api('/auth/dev-login', { method: 'POST', body: { email } })).accessToken;
+// 데모 서버처럼 입장 코드가 걸린 서버를 돌릴 땐 DEV_LOGIN_CODE를 같이 넘김(2026-10-01)
+const devLogin = async (email) =>
+  (await api('/auth/dev-login', { method: 'POST', body: { email, ...(process.env.DEV_LOGIN_CODE ? { code: process.env.DEV_LOGIN_CODE } : {}) } })).accessToken;
 
 const steps = [];
 async function step(name, fn) {
@@ -62,6 +64,11 @@ try {
     await email.press('Backspace');
     await email.pressSequentially(fanEmail);
     if ((await email.inputValue()) !== fanEmail) throw new Error('이메일 입력이 반영되지 않음');
+    if (process.env.DEV_LOGIN_CODE) {
+      const code = page.getByPlaceholder(/입장 코드/);
+      await code.click();
+      await code.pressSequentially(process.env.DEV_LOGIN_CODE);
+    }
     await page.getByText('계속하기', { exact: true }).click();
   });
 

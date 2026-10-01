@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -41,13 +42,26 @@ export class AuthService {
 
   // Google/Apple/Naver/Kakao/LINE 자격증명 없이 앱을 끝까지 테스트하기 위한 개발용 로그인.
   // DevOnlyGuard가 프로덕션에서 라우트 자체를 404로 숨김.
-  async devLogin(email: string, name?: string, role?: Role): Promise<AuthenticatedUser> {
+  // 공개된 데모 서버(2026-10-01)에선 DEV_LOGIN_CODE(입장 코드)를 맞혀야 함 — 주소만 알면 아무 계정(운영자 포함)으로 들어오는 걸 막으려고.
+  // 비어 있으면 예전처럼 코드 없이(로컬 개발).
+  async devLogin(email: string, name?: string, role?: Role, code?: string): Promise<AuthenticatedUser> {
+    this.assertDevLoginCode(code);
     const user = await this.prisma.user.upsert({
       where: { email },
       update: role ? { role } : {},
       create: { email, displayName: name ?? this.generateFallbackName(), role: role ?? Role.USER },
     });
     return { id: user.id, role: user.role };
+  }
+
+  private assertDevLoginCode(code: string | undefined) {
+    const expected = this.configService.get<string>('DEV_LOGIN_CODE')?.trim();
+    if (!expected) return;
+    // 길이가 달라도 비교 시간이 같게 해시끼리 비교
+    const digest = (value: string) => createHash('sha256').update(value).digest();
+    if (!timingSafeEqual(digest(code?.trim() ?? ''), digest(expected))) {
+      throw new UnauthorizedException(appError('DEV_LOGIN_CODE_INVALID'));
+    }
   }
 
   // ── 소셜 토큰 검증 ──────────────────────────────────────────────

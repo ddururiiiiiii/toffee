@@ -1310,3 +1310,17 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
 - 설치 주의: npm 10(Node 22 기본)의 의존성 계산 버그(`Cannot read properties of null (reading 'edgesOut')`)로 `npm install -D vitest`가 실패 —
   `npx npm@11 install -D <패키지> --package-lock-only`로 잠금 파일을 만든 뒤 `npm ci`. `--legacy-peer-deps`로 설치하면 잠금 파일에서 peer 패키지가 빠져
   CI의 `npm ci`가 실패하니 쓰지 말 것.
+
+## 데모 서버: 입장 코드·데이터 넣기 (2026-10-01)
+
+- 호스팅: Railway 프로젝트 `toffee-demo`(서버 + Postgres, 싱가포르). 서비스 Root Directory `/backend`, 설정은 `backend/railway.json`
+  (Root Directory를 따라가지 않아 서비스 설정에 `/backend/railway.json`을 절대 경로로 지정). 포트는 Railway가 주는 `PORT`(8080).
+- 데모는 `NODE_ENV=development` — 소셜 키 전이라 `/auth/dev-login`·샌드박스 구독이 필요한데 production이면 `env-check`·`DevOnlyGuard`가 막음.
+- **`DEV_LOGIN_CODE`**: 있으면 `AuthService.devLogin`이 `dto.code`를 sha256 다이제스트끼리 `timingSafeEqual`로 비교, 틀리면
+  401 `DEV_LOGIN_CODE_INVALID`(upsert 전이라 계정도 안 생김). 앱 `login.tsx` 개발 로그인 카드에 코드 칸, `e2e/run.mjs`는 `DEV_LOGIN_CODE`
+  환경변수가 있으면 같이 입력. 무차별 대입은 전역 스로틀(분당 60)뿐이라 코드는 길게(단어 3개 이상).
+- **`DEMO_SEED`**: 시드 본문을 `src/demo/demo-seed.ts`(`seedDemo(prisma)`)로 옮겨 `nest build`에 포함, `prisma/seed.ts`는 로컬용 래퍼.
+  `docker-entrypoint.sh`가 마이그레이션 뒤 `node dist/demo/seed-cli.js` — `true`=회원 0명일 때만, `reset`=항상, production=무시
+  (`decideSeed`). 실패해도 서버는 켬(로그). 시드가 지우는 테이블에 RefundRequest·Settlement*·AdminAction·ActorFanBlock·
+  SubscriptionEvent·PushDevice·ParentalConsent 추가(Restrict FK로 초기화가 막히던 것).
+

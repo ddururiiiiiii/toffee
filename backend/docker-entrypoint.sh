@@ -6,4 +6,8 @@ set -e
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
   npx prisma migrate deploy
 fi
+# 데모 서버면 가짜 데이터(DEMO_SEED=true|reset, src/demo/seed-cli.ts) — 실패해도 서버는 켬(로그에 이유)
+if [ -n "${DEMO_SEED:-}" ]; then
+  node dist/demo/seed-cli.js || echo "[demo-seed] 데모 데이터 넣기 실패 — 위 로그 확인"
+fi
 exec node --import ./dist/instrument.js dist/main
