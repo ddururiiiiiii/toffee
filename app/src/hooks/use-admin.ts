@@ -465,3 +465,20 @@ export function useAdminRefunds(reason?: AdminRefundEntry['reason']) {
     queryFn: () => apiClient.get<AdminRefundEntry[]>(`/admin/refunds${reason ? `?reason=${reason}` : ''}`),
   });
 }
+
+// 데모 초기화(2026-10-01) — 데모 서버에서만 enabled. 초기화 뒤엔 모든 화면 데이터가 바뀌므로 캐시 전체를 다시 불러옴
+export function useDemoStatus() {
+  return useQuery({
+    queryKey: ['admin', 'demo'],
+    queryFn: () => apiClient.get<{ enabled: boolean }>('/admin/demo'),
+    staleTime: Infinity,
+  });
+}
+
+export function useResetDemo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.post('/admin/demo/reset'),
+    onSuccess: () => queryClient.invalidateQueries(),
+  });
+}

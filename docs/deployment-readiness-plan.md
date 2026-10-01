@@ -71,8 +71,14 @@
   포함, 컨테이너 시작 때 `DEMO_SEED`로 — `true`는 빈 DB일 때만(켜 둬도 재시작마다 안 지워짐), `reset`은 매번 지우고 다시(초기화 후
   `true`로 되돌림), production에선 무시. 초기화가 사람들이 만든 기록(환불 요청·정산 마감·운영자 조치·차단·구독 기록·푸시 기기)에 막히지
   않게 정리 대상도 넓힘. 로컬 Postgres로 세 모드·초기화·web e2e(입장 코드 포함 8단계) 확인.
-- **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 데모: Railway 변수 `DEV_LOGIN_CODE`·`DEMO_SEED=true` →
-  웹 데모(Cloudflare Pages, `EXPO_PUBLIC_ENABLE_DEV_LOGIN=true`) → `api-demo.toffeechat.app` 연결 + `API_PUBLIC_URL`.
+- **입장 코드·데이터 넣기 main 반영**: PR toffeechat/toffee#16 머지, Railway 변수 `DEV_LOGIN_CODE`·`DEMO_SEED=true` 입력.
+- **운영자 화면 "데모 초기화" 버튼**(사용자 요청, 1차 데모 준비로 분류): 직접 데모를 돌려 보며 자주 초기화할 텐데 Railway 변수로는
+  reset → true 배포를 두 번(약 10분) 해야 해서. `POST /admin/demo/reset`(운영자만, 데모 서버가 아니면 404) — 한 트랜잭션으로 시드.
+  초기화하면 모두 로그아웃되던 문제(토큰 sub = 회원 ID인데 다시 만들면 ID가 바뀜)는 **데모 계정·배우·소속사를 고정 ID로** 만들어
+  해결 — 데모 계정은 로그인 유지, 직접 만든 계정만 지워짐. 운영자 홈이 길어져 스크롤되게. 로컬 서버·웹 화면으로 확인.
+  주의: 이미 떠 있는 데모 DB는 예전 무작위 ID라 이번 배포 후 한 번은 초기화해야 고정 ID가 됨(그때만 한 번 로그아웃).
+- **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 데모:
+웹 데모(Cloudflare Pages, `EXPO_PUBLIC_ENABLE_DEV_LOGIN=true`) → `api-demo.toffeechat.app` 연결 + `API_PUBLIC_URL`.
 
 ## 2026-09-29 (이어서) — 젤리도 토피 법인으로(계정 결정 개정)
 

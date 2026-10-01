@@ -1,16 +1,35 @@
 // 데모/개발용 시드 데이터 — 전부 가상의 배우/팬이며 실제 배우 정보는 계약 전까지 절대 넣지 않음.
 // 기존 데이터를 전부 지우고 다시 넣음. 로컬: npx prisma db seed / 데모 서버: DEMO_SEED 환경변수(seed-cli.ts, 2026-10-01)
 // 서버 실행 이미지에서도 돌 수 있게 src 아래로 옮김(이미지엔 tsx 같은 개발 도구가 없어서 빌드된 JS로 실행).
-import type { PrismaClient } from '../generated/prisma/client.js';
+import type { Prisma } from '../generated/prisma/client.js';
 import { MessageSenderType, MessageMediaType, Role } from '../generated/prisma/enums.js';
 import { CURRENT_TERMS_VERSION } from '../common/legal/terms.js';
 
 // 데모 계정은 약관 동의를 마친 상태로(새로 가입하는 계정은 앱 온보딩에서 동의)
 const AGREED = { termsVersion: CURRENT_TERMS_VERSION, termsAcceptedAt: new Date() };
 
+// 데모 계정·배우·소속사는 고정 ID(2026-10-01) — 초기화해도 ID가 같아서 로그인 토큰(sub = 회원 ID)이 계속 유효하고,
+// 즐겨찾기한 배우 화면 주소도 그대로. 소속사가 직접 만든 계정은 초기화 때 지워지니 그 사람만 다시 로그인
+const demoId = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+export const DEMO_IDS = {
+  demoAgency: demoId(1),
+  formerAgency: demoId(2),
+  caramel: demoId(11),
+  nougat: demoId(12),
+  couple: demoId(13),
+  pairBundle: demoId(21),
+  staff: demoId(101),
+  formerStaff: demoId(102),
+  admin: demoId(103),
+  caramelSelf: demoId(104),
+  fan1: demoId(105),
+  fan2: demoId(106),
+} as const;
+
 const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 
-export async function seedDemo(prisma: PrismaClient): Promise<void> {
+// PrismaClient나 트랜잭션(tx) 둘 다 받음 — 운영자 화면 초기화는 트랜잭션으로 한 번에(중간에 실패하면 원래대로)
+export async function seedDemo(prisma: Prisma.TransactionClient): Promise<void> {
   // 기존 데이터 정리 (FK 순서대로) — 데모 서버에서 사람들이 만든 기록(환불 요청·정산 마감·운영자 조치·차단·구독 기록·푸시 기기)까지
   // 지워야 초기화(DEMO_SEED=reset)가 막히지 않음(2026-10-01)
   await prisma.refundRequest.deleteMany();
@@ -41,15 +60,16 @@ export async function seedDemo(prisma: PrismaClient): Promise<void> {
 
   // 가상의 소속사 2곳 — 현 소속사 + 이적 이력 데모용 이전 소속사
   const demoAgency = await prisma.agency.create({
-    data: { name: '(가상) 데모 엔터테인먼트', logoUrl: 'https://placehold.co/200x200?text=Demo+Ent' },
+    data: { id: DEMO_IDS.demoAgency, name: '(가상) 데모 엔터테인먼트', logoUrl: 'https://placehold.co/200x200?text=Demo+Ent' },
   });
   const formerAgency = await prisma.agency.create({
-    data: { name: '(가상) 이전 소속사', logoUrl: 'https://placehold.co/200x200?text=Former' },
+    data: { id: DEMO_IDS.formerAgency, name: '(가상) 이전 소속사', logoUrl: 'https://placehold.co/200x200?text=Former' },
   });
 
   // 가상의 배우 2명 — 이름/사진 전부 가상, Toffee 캔디 테마로 지음
   const caramel = await prisma.actor.create({
     data: {
+      id: DEMO_IDS.caramel,
       legalName: '(가상) 데모 배우 A',
       officialProfileImageUrl: 'https://placehold.co/600x800?text=Caramel',
       chatDisplayName: '캐러멜',
@@ -61,6 +81,7 @@ export async function seedDemo(prisma: PrismaClient): Promise<void> {
 
   const nougat = await prisma.actor.create({
     data: {
+      id: DEMO_IDS.nougat,
       legalName: '(가상) 데모 배우 B',
       officialProfileImageUrl: 'https://placehold.co/600x800?text=Nougat',
       chatDisplayName: '누가',
@@ -83,6 +104,7 @@ export async function seedDemo(prisma: PrismaClient): Promise<void> {
   // 커플(CP)방 — 캐러멜 + 누가(2026-09-29). 방 이름·대화방 사진은 두 배우가 각자 바꿀 수 있음
   await prisma.actor.create({
     data: {
+      id: DEMO_IDS.couple,
       kind: 'COUPLE',
       legalName: '(가상) 데모 배우 A & B',
       chatDisplayName: '캐러멜 & 누가',
@@ -95,6 +117,7 @@ export async function seedDemo(prisma: PrismaClient): Promise<void> {
   const staff = await prisma.user.create({
     data: {
       ...AGREED,
+      id: DEMO_IDS.staff,
       role: Role.AGENCY_STAFF,
       displayName: '데모 소속사 스태프',
       email: 'staff@toffee.demo',
@@ -105,6 +128,7 @@ export async function seedDemo(prisma: PrismaClient): Promise<void> {
   await prisma.user.create({
     data: {
       ...AGREED,
+      id: DEMO_IDS.formerStaff,
       role: Role.AGENCY_STAFF,
       displayName: '이전 소속사 스태프',
       email: 'former-staff@toffee.demo',
@@ -114,13 +138,13 @@ export async function seedDemo(prisma: PrismaClient): Promise<void> {
 
   const admin = await prisma.user.create({
     data: {
-      ...AGREED, role: Role.ADMIN, displayName: '데모 운영자', email: 'admin@toffee.demo' },
+      ...AGREED, id: DEMO_IDS.admin, role: Role.ADMIN, displayName: '데모 운영자', email: 'admin@toffee.demo' },
   });
 
   // 배우 본인 계정 — 메시지·스토리 발송은 이제 이 계정만 할 수 있음(소속사는 열람 전용)
   await prisma.user.create({
     data: {
-      ...AGREED, role: Role.ACTOR, displayName: '캐러멜(본인)', email: 'caramel-self@toffee.demo' },
+      ...AGREED, id: DEMO_IDS.caramelSelf, role: Role.ACTOR, displayName: '캐러멜(본인)', email: 'caramel-self@toffee.demo' },
   });
   await prisma.actor.update({
     where: { id: caramel.id },
@@ -132,16 +156,17 @@ export async function seedDemo(prisma: PrismaClient): Promise<void> {
   const ADULT = { birthDate: new Date('2000-03-03') };
   const fan1 = await prisma.user.create({
     data: {
-      ...AGREED, ...ADULT, role: Role.USER, displayName: '민지', nickname: '캐러멜바라기', email: 'fan1@toffee.demo' },
+      ...AGREED, ...ADULT, id: DEMO_IDS.fan1, role: Role.USER, displayName: '민지', nickname: '캐러멜바라기', email: 'fan1@toffee.demo' },
   });
   const fan2 = await prisma.user.create({
     data: {
-      ...AGREED, ...ADULT, role: Role.USER, displayName: '수아', nickname: '누가누가', email: 'fan2@toffee.demo' },
+      ...AGREED, ...ADULT, id: DEMO_IDS.fan2, role: Role.USER, displayName: '수아', nickname: '누가누가', email: 'fan2@toffee.demo' },
   });
 
   // 묶음 상품(2026-09-29) — 캐러멜 + 누가를 개인 구독 합계(฿198)보다 싸게
   const pairBundle = await prisma.bundle.create({
     data: {
+      id: DEMO_IDS.pairBundle,
       name: '캐러멜 + 누가',
       priceCents: 15900,
       actors: { create: [{ actorId: caramel.id }, { actorId: nougat.id }] },
