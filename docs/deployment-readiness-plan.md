@@ -37,6 +37,8 @@
 - **메일 전달 완료**: Cloudflare Email Routing으로 `support@`·`dev@`·`privacy@toffeechat.app` → 전용 Gmail, catch-all 끔.
   테스트 메일 전달 확인(처음엔 Gmail이 스팸으로 분류 → "스팸 아님" 처리 + 도메인 주소 필터 권장).
 - **Cloudflare 2단계 인증 완료**(인증 앱 + 복구 코드 별도 보관).
+- **Expo 가입**: 개인 계정 `toffeechat`(`dev@` 주소) + 조직 `toffeechat-team`, 프로젝트 `toffee`를 조직 아래 생성 →
+  `app/app.config.ts`에 `owner`·`extra.eas.projectId` 연결(`eas init`을 대신해 손으로 — 동적 설정이라).
 - **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 답장을 `support@`로
   보내는 설정(Resend 등)은 고객 응대 시작 전에.
 

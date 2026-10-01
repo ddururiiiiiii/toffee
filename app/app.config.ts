@@ -25,6 +25,9 @@ const BRAND_BACKGROUND = '#F3EFFD'; // 앱 아이콘 배경(브랜드 앱 아이
 const config: ExpoConfig = {
   name: IS_PRODUCTION ? 'Toffee' : 'Toffee Dev',
   slug: 'toffee',
+  // EAS 프로젝트(2026-10-01 생성) — 개인 계정이 아니라 조직 소유로 둬서 팀원 초대·법인 이전이 쉽게.
+  // 운영·개발 변형이 같은 EAS 프로젝트를 씀(빌드 프로필로만 구분).
+  owner: 'toffeechat-team',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
@@ -130,6 +133,7 @@ const config: ExpoConfig = {
   extra: {
     // 런타임에 운영/개발 빌드를 구분(소셜 로그인 키 선택) — src/lib/social-sign-in.ts
     isProductionVariant: IS_PRODUCTION,
+    eas: { projectId: '994e5a33-559f-4a23-ac9d-c47e386ffd33' },
   },
 };
 

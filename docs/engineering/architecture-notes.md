@@ -997,6 +997,9 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   `locales/*.json` 6개 언어. 아이콘·스플래시는 `docs/product/brand/logo/t-icon-black-mono-a.png`에서 생성(흰 배경 제거,
   아이콘 배경 `#F3EFFD`), Expo 템플릿의 파란 스플래시 애니메이션(`animated-icon`)은 `splash-overlay`(네이티브 스플래시와
   같은 화면 → 250ms 페이드)로 교체.
+  **EAS 연결(2026-10-01)**: `owner: 'toffeechat-team'`(Expo 조직 — 개인 계정 `toffeechat`이 아니라 조직 소유), `extra.eas.projectId`
+  `994e5a33-…`. 운영·개발 변형이 같은 EAS 프로젝트(slug `toffee`)를 쓰고 빌드 프로필로만 나뉨. `expo-updates`는 아직 없음
+  (OTA 쓸 때 `updates.url = https://u.expo.dev/<projectId>` 추가).
 
 ## 구매(Purchase)·묶음(Bundle)·방 이용권(Subscription), 성인만 가입 (2026-09-29)
 
