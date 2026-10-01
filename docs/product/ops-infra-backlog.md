@@ -84,7 +84,7 @@
 | 항목 | 결정 | 미뤄둔 작업 |
 |---|---|---|
 | 파일(사진·음성·영상) 저장소 | **Cloudflare R2 (추천안, 2026-09-28)** — 팬에게 보내는 전송 비용이 무료라 영상 방송형 서비스에 가장 유리. S3와 같은 방식이라 나중에 바꾸기도 쉬움. **서버 코드는 완료** — 계정 정보만 넣으면 동작 | Cloudflare 계정 + R2 활성화(결제수단 등록, 월 10GB 무료), **비공개** 버킷 생성(예: `toffee-media`), API 토큰 발급 → 백엔드 `STORAGE_*` 환경변수 입력. 웹 버전에서도 올리려면 버킷 CORS 허용 설정 |
-| 푸시 알림(Firebase) | 코드 완료(2026-09-28) | Firebase 프로젝트 생성 → 서비스 계정 키를 백엔드 `FIREBASE_SERVICE_ACCOUNT_JSON`에, 앱용 `google-services.json`(안드로이드)·`GoogleService-Info.plist`(iOS)를 `app/`에 넣기, 애플 푸시 인증 키(APNs)를 Firebase에 등록. 앱 식별자(번들 ID·패키지명)도 아직 미정 — 스토어 빌드 전에 정할 것 |
+| 푸시 알림(Firebase) | 코드 완료(2026-09-28), **프로젝트 `toffee-c6cba` 생성(2026-10-01, 애널리틱스 끔)** | ~~Firebase 프로젝트 생성~~ → 서비스 계정 키를 백엔드 `FIREBASE_SERVICE_ACCOUNT_JSON`에, 앱용 `google-services.json`(안드로이드)·`GoogleService-Info.plist`(iOS)를 `app/`에 넣기, 애플 푸시 인증 키(APNs)를 Firebase에 등록. 앱 식별자(번들 ID·패키지명)도 아직 미정 — 스토어 빌드 전에 정할 것 |
 | 에러 모니터링 | Sentry (코드 연동 완료, **2026-10-01 조직 `toffeechat` 가입, 프로젝트 `toffee-app`·`toffee-backend` 생성**) | 앱 DSN은 `app/eas.json`(preview·production)에 넣음 — 남은 것: **서버 호스팅 환경변수 `SENTRY_DSN`**에 `toffee-backend` DSN 넣기(Sentry → toffee-backend → Settings → Client Keys에서 복사), 앱 소스맵용 `SENTRY_AUTH_TOKEN`(EAS 비밀 환경변수, 실기기 빌드 전에) |
 | GitHub Actions 사용 시간 | CI는 main에 올릴 때만 실행(2026-09-28) — 무료 시간이 젤리와 합산돼 한도가 찼음 | Organization으로 옮기면 무료 시간이 따로 잡힘(위 1번과 같이 처리). 필요하면 지출 한도 설정 확인 |
 | 의존성 취약점 알림 | Dependabot (설정 파일 추가 완료) | GitHub 저장소 설정에서 알림 켜져 있는지 확인 |

@@ -53,8 +53,8 @@
   — 2026-10-01: `support@`·`dev@`·`privacy@toffeechat.app` → 전용 Gmail 전달 설정 완료
 - [ ] 비밀번호 관리자 + 모든 계정 2단계 인증 — 진행 중: 지금까지 만든 계정은 모두 2단계 인증 켬
 - [ ] **GitHub Organization**(무료)으로 저장소 옮기기 → Claude GitHub App 새로 설치
-- [ ] 토피 전용 메일로 가입: Cloudflare(R2 파일 저장소), Firebase(푸시), Sentry(오류), Expo(앱 빌드)
-  — 2026-10-01: Cloudflare·Expo·Sentry 완료(앱 설정에 Expo 프로젝트·Sentry 연결), Firebase 남음
+- [x] 토피 전용 메일로 가입: Cloudflare(R2 파일 저장소), Firebase(푸시), Sentry(오류), Expo(앱 빌드)
+  — 2026-10-01: 넷 다 완료(앱 설정에 Expo 프로젝트·Sentry 연결, Firebase 프로젝트 `toffee-c6cba`). Firebase 앱 등록·설정 파일은 다음
 - [ ] **서버·DB 호스팅 고르고 데모 서버 띄우기** — 운영과 분리된 "데모" 환경에 가상 배우 데이터만(실제 배우 정보 금지)
 - [ ] 소셜 로그인 개발자 등록: 구글·카카오·네이버·라인(무료, 개인 가능), 애플은 **기존 개인 개발자 계정에서 개발용 번들
   ID(`…app.dev`)로만** — 운영 번들 ID는 법인 전환 전에 등록하지 않는다(이유: `ops-infra-backlog.md` 1번)

@@ -42,6 +42,8 @@
 - **Sentry 가입**: 조직 slug `toffee-19`(자동 생성) → `toffeechat`으로 변경(연동 전이라 깨질 것 없음), 데이터 위치 미국.
   앱 플러그인 `organization`을 `ddururiiiiiii` → `toffeechat`으로. 프로젝트 `toffee-app`(React Native)·`toffee-backend`(NestJS) 생성,
   앱 DSN은 `eas.json` preview·production 프로필 env에(앱에 박히는 공개 값), 서버 DSN은 호스팅 정할 때 환경변수로. 문의 메일 `support@toffeechat.app`을 앱 `.env.example`에 반영.
+- **Firebase**: 토피 Gmail로 프로젝트 `Toffee`(ID `toffee-c6cba` — 원하던 `toffeechat`으로 못 바꿨지만 내부 식별값이라 유지,
+  지우면 30일간 ID 재사용 불가) 생성, 애널리틱스 끔(푸시에 불필요 + 개인정보 처리 범위 축소).
 - **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 답장을 `support@`로
   보내는 설정(Resend 등)은 고객 응대 시작 전에.
 
