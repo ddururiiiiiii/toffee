@@ -57,6 +57,7 @@
 - [x] 토피 전용 메일로 가입: Cloudflare(R2 파일 저장소), Firebase(푸시), Sentry(오류), Expo(앱 빌드)
   — 2026-10-01: 넷 다 완료(앱 설정에 Expo 프로젝트·Sentry 연결, Firebase 프로젝트 `toffee-c6cba`). Firebase 앱 등록·설정 파일은 다음
 - [ ] **서버·DB 호스팅 고르고 데모 서버 띄우기** — 운영과 분리된 "데모" 환경에 가상 배우 데이터만(실제 배우 정보 금지)
+  — 2026-10-01: 호스팅 Railway로 결정, Railway 가입 + 2단계 인증 완료(체험 요금제). 다음: 요금제 결정 → 프로젝트·DB 만들고 배포
 - [ ] 소셜 로그인 개발자 등록: 구글·카카오·네이버·라인(무료, 개인 가능), 애플은 **기존 개인 개발자 계정에서 개발용 번들
   ID(`…app.dev`)로만** — 운영 번들 ID는 법인 전환 전에 등록하지 않는다(이유: `ops-infra-backlog.md` 1번)
 - [ ] Anthropic API 키 발급(메시지 번역용) → `scripts/translation-sample.mjs`로 태국어 등 예문 번역 품질 확인
