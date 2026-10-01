@@ -40,7 +40,25 @@
    실제 작업은 미룬다** — [`docs/product/ops-infra-backlog.md`](./docs/product/ops-infra-backlog.md)에
    추가할 것(2026-09-28 사용자 방침: 기능 개발 먼저). 기능 개발이 외부 계정 때문에 막히면
    로컬 대체품(가짜 S3, 키 없는 Sentry 등)으로 우회하고 계정 정보만 나중에 넣게 만든다.
-5. 이 저장소는 git에 커밋되므로, 이 규칙은 계정/세션이 달라도(다른 사람이 이 레포를
+5. **외부 서비스 계정을 만들었거나 돈을 썼다는 말을 들으면**(가입, 2단계 인증 설정, 로그인 이메일 변경, 결제,
+   정기 결제 갱신 등) 묻지 않고 **사업화 장부** 아티팩트 https://claude.ai/artifact/H7cjLDgBhgGkA8xpPR4oST 를
+   `ArtifactData`로 갱신한다(2026-10-01 사용자 요청).
+   - `accounts`(문서 하나 = 서비스 하나): `service`, `category`, `stage`(사업화 단계 1~8, `launch-roadmap.md`),
+     `status`(`done`/`todo`), `when`, `login`, `method`, `purpose`, `recovery`, `twofa`(`on`/`off`/`unknown`),
+     `created`, `updated`, `url`, `note`, `order`.
+   - `expenses`(문서 하나 = 결제 한 건 또는 예정 비용 하나): `item`, `category`, `stage`, `status`(`paid`/`planned`),
+     `amount`(숫자) + `currency`(`USD`/`KRW`) 또는 예정이면 `estimate`(글), `krw`(카드 청구 원화, 알면), `cycle`,
+     `date`, `renews` + `renewAmount`(정기 결제면), `payer`, `receipt`, `note`, `order`. 정기 결제가 갱신되면 새
+     문서를 추가(연도별 기록 유지).
+   - `meta/roadmap`: `current`(지금 단계) + `stages`. 단계가 넘어가면 `current`를 바꾼다.
+   - **사업화 일정** 아티팩트 https://claude.ai/artifact/KfGKHugZEmWsavMYkbwYV7 (`docs/product/launch-roadmap.md`를 옮긴
+     체크리스트)도 같이 갱신한다: 할 일이 끝나거나 진행되면 `tasks/<할 일 id>`(예: `s1-domain`, `s1-mail`, `s1-accounts` —
+     id는 아티팩트 HTML의 `STAGES` 배열)에 `{done, doneAt(ISO), note}`를 쓰고(일부만 했으면 `done: false` + 진행 메모),
+     `launch-roadmap.md`의 체크박스도 같은 커밋에서 맞춘다. 사용자가 페이지에서 직접 체크·메모한 것도 있으니 쓰기 전에 읽고
+     `if_version`으로 덮어쓰지 않게(2026-10-01 사용자 요청).
+   - **비밀번호·인증 코드·API 키·주소 같은 개인정보는 절대 적지 않는다.** 계정 주소는 저장소 문서엔 적지 말고
+     장부에만 둔다.
+6. 이 저장소는 git에 커밋되므로, 이 규칙은 계정/세션이 달라도(다른 사람이 이 레포를
    Claude Code로 열어도) 자동으로 적용된다 — 세션 로컬 설정에는 이런 규칙을 넣지 말 것.
 
 ## 세션 환경

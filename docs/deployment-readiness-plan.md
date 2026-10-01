@@ -22,6 +22,40 @@
 
 ---
 
+## 2026-10-01 — 도메인·전용 Gmail·계정 장부
+
+- **원인**: 1단계(계정·기반) 시작. Cloudflare에서 도메인을 사려면 가입 이메일이 먼저 필요한데, 도메인 메일은
+  도메인이 있어야 만들 수 있어서 순서가 꼬임.
+- **결정**: 토피 전용 Gmail을 먼저 만들고(생성·2단계 인증 완료) 그 Gmail로 Cloudflare에 가입한다. 도메인은
+  `toffeechat.com`이 이미 팔려서 `toffeechat.app`(첫해 8.20달러, 이후 연 14.20달러)으로 결정 — 이름이 그대로라
+  번들 ID `com.toffeechat.app`도 유지. 메일은 `support@`/`dev@`/`privacy@`를 Cloudflare 전달로 Gmail 하나에 모은다.
+  Cloudflare 로그인 이메일은 Gmail로 유지(도메인 장애 때 복구 메일을 못 받는 상황 방지).
+- **계정 장부**: 어떤 서비스에 어떤 계정으로 가입했는지 정리하는 비공개 아티팩트를 만듦
+  (https://claude.ai/artifact/H7cjLDgBhgGkA8xpPR4oST, 데이터는 아티팩트 DB `accounts` 컬렉션). 사용자가 따로
+  말하지 않아도 계정 소식을 들으면 Claude가 갱신하도록 `CLAUDE.md` 규칙에 추가. 비밀번호·키는 기록하지 않음.
+- **진행**: Cloudflare 가입, `toffeechat.app` 구매 완료(자동 갱신 켬, 등록자는 개인 명의·Organization 비움).
+- **메일 전달 완료**: Cloudflare Email Routing으로 `support@`·`dev@`·`privacy@toffeechat.app` → 전용 Gmail, catch-all 끔.
+  테스트 메일 전달 확인(처음엔 Gmail이 스팸으로 분류 → "스팸 아님" 처리 + 도메인 주소 필터 권장).
+- **Cloudflare 2단계 인증 완료**(인증 앱 + 복구 코드 별도 보관).
+- **Expo 가입**: 개인 계정 `toffeechat`(`dev@` 주소) + 조직 `toffeechat-team`, 프로젝트 `toffee`를 조직 아래 생성 →
+  `app/app.config.ts`에 `owner`·`extra.eas.projectId` 연결(`eas init`을 대신해 손으로 — 동적 설정이라).
+- **Sentry 가입**: 조직 slug `toffee-19`(자동 생성) → `toffeechat`으로 변경(연동 전이라 깨질 것 없음), 데이터 위치 미국.
+  앱 플러그인 `organization`을 `ddururiiiiiii` → `toffeechat`으로. 프로젝트 `toffee-app`(React Native)·`toffee-backend`(NestJS) 생성,
+  앱 DSN은 `eas.json` preview·production 프로필 env에(앱에 박히는 공개 값), 서버 DSN은 호스팅 정할 때 환경변수로. 문의 메일 `support@toffeechat.app`을 앱 `.env.example`에 반영.
+- **Firebase**: 토피 Gmail로 프로젝트 `Toffee`(ID `toffee-c6cba` — 원하던 `toffeechat`으로 못 바꿨지만 내부 식별값이라 유지,
+  지우면 30일간 ID 재사용 불가) 생성, 애널리틱스 끔(푸시에 불필요 + 개인정보 처리 범위 축소).
+  개발용 앱만 등록(안드로이드·iOS 모두 `com.toffeechat.app.dev`) → 설정 파일을 `app/*.dev.*`로 커밋. 운영용 앱은 법인 후.
+  APNs 인증 키 업로드는 애플 개발자 계정에서 키를 받는 실기기 빌드 때.
+- **호스팅 결정 — Railway**: 조건은 항상 켜짐(서버 내 cron), 긴 실시간 연결(SSE), 관리형 Postgres+백업, 싱가포르(태국 팬).
+  Railway(쉬움, DB 버튼 하나, 데모 월 $5~10) vs Render(메모리 1GB면 비쌈) vs Fly.io(관리형 DB 비쌈, 설정 어려움) vs
+  GCP Cloud Run+Cloud SQL(이전 필요 없지만 설정 많고 월 $15~30). 사용자 질문 "큰 기업은 안 쓰지 않나" → 맞지만 1인 팀엔
+  PaaS가 맞고, Docker·표준 Postgres·R2·환경변수·Cloudflare DNS로 이미 이전 비용을 낮춰 둠. 옮길 시점: 월 호스팅비가
+  수십만 원을 넘거나, 보안 인증·데이터 위치 요구가 생기거나, 인프라 담당이 생길 때. 순서: GitHub Organization → Railway 가입.
+- **GitHub 조직 이전**: 조직 `toffeechat` 생성 → Claude GitHub App을 조직에 먼저 설치(All repositories) → 저장소
+  `ddururiiiiiii/toffee` → `toffeechat/toffee` 이전. 다음 세션부터는 새 저장소로 열 것. 다음: Railway 가입(`dev@`) → GitHub 연결은 조직에만.
+- **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 답장을 `support@`로
+  보내는 설정(Resend 등)은 고객 응대 시작 전에.
+
 ## 2026-09-29 (이어서) — 젤리도 토피 법인으로(계정 결정 개정)
 
 - 사용자 확정: 젤리에 중고거래를 붙이려면 어차피 사업자가 필요하니, 젤리용 개인사업자를 따로 내지 않고 **토피 법인 하나로 합침**.

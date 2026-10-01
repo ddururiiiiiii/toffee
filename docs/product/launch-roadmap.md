@@ -1,5 +1,7 @@
 # 사업화 일정 — 지금부터 첫 매출까지
 
+> 체크리스트 페이지: [토피 사업화 일정](https://claude.ai/artifact/KfGKHugZEmWsavMYkbwYV7) · 계정·비용: [사업화 장부](https://claude.ai/artifact/H7cjLDgBhgGkA8xpPR4oST) — Claude가 진행될 때마다 같이 갱신
+
 2026-09-29 작성. **"이제 뭘 해야 하지?"를 이 문서 하나로 답하는 것**이 목적이다. 기능이 어디까지 됐는지는
 [`STATUS.md`](../../STATUS.md), 계정·인프라 결정의 자세한 이유는 [`ops-infra-backlog.md`](./ops-infra-backlog.md),
 비용은 [`cost-overview.md`](./cost-overview.md), 사업 질문 답은 [`business-faq.md`](./business-faq.md).
@@ -44,11 +46,16 @@
 순서가 중요하다: **도메인 → 회사 메일 → 서버(약관 주소) → 소셜 로그인 등록**. 소셜 로그인은 가입할 때 개인정보처리방침
 주소를 요구하는데, 그 주소는 서버에 이미 있는 `/legal/privacy` 페이지라 서버가 먼저 떠 있어야 한다.
 
-- [ ] **도메인 구매**(연 1~2만 원) — 앱 번들 ID(`com.toffeechat.app`, 잠정)도 도메인에 맞춰 이때 확정
-- [ ] **회사 메일**(`hello@`, `support@` 등) — Cloudflare 메일 전달(무료)로 시작, 보내기까지 필요하면 Google Workspace
-- [ ] 비밀번호 관리자 + 모든 계정 2단계 인증
-- [ ] **GitHub Organization**(무료)으로 저장소 옮기기 → Claude GitHub App 새로 설치
-- [ ] 토피 전용 메일로 가입: Cloudflare(R2 파일 저장소), Firebase(푸시), Sentry(오류), Expo(앱 빌드)
+- [x] **도메인 구매**(연 1~2만 원) — 앱 번들 ID(`com.toffeechat.app`, 잠정)도 도메인에 맞춰 이때 확정
+  — 2026-10-01: `toffeechat.app` 구매 완료(Cloudflare, 첫해 8.20달러·이후 연 14.20달러 자동 갱신, 만료 2027-10-01). 번들 ID `com.toffeechat.app`은 그대로 유지
+- [x] 토피 전용 Gmail 생성 + 2단계 인증(2026-10-01) — 가입 현황·비용은 [사업화 장부](https://claude.ai/artifact/H7cjLDgBhgGkA8xpPR4oST)
+- [x] **회사 메일**(`hello@`, `support@` 등) — Cloudflare 메일 전달(무료)로 시작, 보내기까지 필요하면 Google Workspace
+  — 2026-10-01: `support@`·`dev@`·`privacy@toffeechat.app` → 전용 Gmail 전달 설정 완료
+- [x] 비밀번호 관리자 + 모든 계정 2단계 인증 — 2026-10-01: 비밀번호는 아이폰 암호 앱, 만든 계정 전부 2단계 인증
+- [x] **GitHub Organization**(무료)으로 저장소 옮기기 → Claude GitHub App 새로 설치
+  — 2026-10-01: 조직 `toffeechat` 생성, 저장소 `toffeechat/toffee`로 이전(예전 주소는 자동 연결), Claude 앱 조직에 설치
+- [x] 토피 전용 메일로 가입: Cloudflare(R2 파일 저장소), Firebase(푸시), Sentry(오류), Expo(앱 빌드)
+  — 2026-10-01: 넷 다 완료(앱 설정에 Expo 프로젝트·Sentry 연결, Firebase 프로젝트 `toffee-c6cba`). Firebase 앱 등록·설정 파일은 다음
 - [ ] **서버·DB 호스팅 고르고 데모 서버 띄우기** — 운영과 분리된 "데모" 환경에 가상 배우 데이터만(실제 배우 정보 금지)
 - [ ] 소셜 로그인 개발자 등록: 구글·카카오·네이버·라인(무료, 개인 가능), 애플은 **기존 개인 개발자 계정에서 개발용 번들
   ID(`…app.dev`)로만** — 운영 번들 ID는 법인 전환 전에 등록하지 않는다(이유: `ops-infra-backlog.md` 1번)
