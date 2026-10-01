@@ -69,7 +69,10 @@ const config: ExpoConfig = {
     predictiveBackGestureEnabled: false,
   },
   web: {
-    output: 'static',
+    // 한 페이지(SPA)로 내보냄(2026-10-01) — 'static'(미리 그린 HTML)은 빌드 때 영어로 그려 두어 한국어·태국어 브라우저에서 첫 화면이
+    // 영어로 깜빡이고 React 하이드레이션 오류(#418)가 났음. 앱 화면이라 검색 노출용 미리 그리기가 필요 없고, Cloudflare Pages는
+    // 없는 주소를 index.html로 돌려줘서 /actor/:id 같은 주소를 바로 열어도 됨
+    output: 'single',
     favicon: './assets/images/favicon.png',
   },
   plugins: [

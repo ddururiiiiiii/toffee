@@ -71,6 +71,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "build:web": "expo export -p web",
     "lint": "expo lint",
     "test": "vitest run",
     "e2e": "node e2e/run.mjs"

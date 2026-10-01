@@ -77,6 +77,13 @@
   초기화하면 모두 로그아웃되던 문제(토큰 sub = 회원 ID인데 다시 만들면 ID가 바뀜)는 **데모 계정·배우·소속사를 고정 ID로** 만들어
   해결 — 데모 계정은 로그인 유지, 직접 만든 계정만 지워짐. 운영자 홈이 길어져 스크롤되게. 로컬 서버·웹 화면으로 확인.
   주의: 이미 떠 있는 데모 DB는 예전 무작위 ID라 이번 배포 후 한 번은 초기화해야 고정 ID가 됨(그때만 한 번 로그아웃).
+- **데모 초기화 main 반영**: PR toffeechat/toffee#17 머지. Railway 로그에 `[demo-seed] 완료(빈 DB에 넣음)` 확인.
+- **웹 데모 준비(Cloudflare Pages, 사용자 선택: Pages가 GitHub에서 직접 빌드 — Actions 무료 시간 안 씀)**: 처음엔 `web.output: 'static'`
+  그대로 내보내고 `[id].html`용 `_redirects`를 만들었는데, Pages 흉내(`wrangler pages dev`)로 띄워 e2e를 돌리니 한국어 브라우저에서
+  React 하이드레이션 오류 #418 — 미리 그린 HTML이 빌드 때 영어라 첫 화면이 영어로 깜빡임(예전부터 있던 문제, 운영 웹 빌드에서만).
+  앱 화면이라 미리 그리기가 필요 없어서 **`output: 'single'`(SPA)로 바꿈** → 오류 없음, `_redirects`도 불필요(Pages가 없는 주소를
+  index.html로). `npm run build:web`. 로컬 API로 빌드해 e2e 8단계 + `/actor/:id`·`/admin/actors/new` 직접 열기 확인.
+  주의: `expo export`는 Metro 캐시에 `EXPO_PUBLIC_*` 값이 남아서 로컬에서 주소를 바꿔 다시 빌드하면 `--clear` 필요(Pages는 매번 새로 빌드).
 - **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 데모:
 웹 데모(Cloudflare Pages, `EXPO_PUBLIC_ENABLE_DEV_LOGIN=true`) → `api-demo.toffeechat.app` 연결 + `API_PUBLIC_URL`.
 

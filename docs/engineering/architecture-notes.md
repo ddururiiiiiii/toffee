@@ -1327,4 +1327,9 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
   `isDemoServer`가 아니면 404). `prisma.$transaction(tx => seedDemo(tx), { timeout: 60s })` — `seedDemo`는 `Prisma.TransactionClient`를
   받음. 시드의 소속사·배우·묶음·데모 회원은 `DEMO_IDS` 고정 UUID(`00000000-0000-4000-8000-…`) — JWT `sub`가 그대로 유효해서
   초기화 뒤에도 데모 계정 로그인이 유지됨(JwtStrategy가 매 요청 회원을 다시 읽음). `DEMO_SEED` 해석은 `src/demo/demo-mode.ts`로 공유.
+- **웹 데모 빌드**(같은 날): `app.config.ts` `web.output`을 `'static'` → `'single'`. static은 빌드 때 기본 언어(영어)로 HTML을 그려서
+  ko/th 브라우저에서 하이드레이션 불일치(React #418)와 첫 화면 깜빡임이 남. SPA라 Cloudflare Pages가 없는 경로를 `index.html`로 돌려줘
+  동적 경로(`/actor/[id]`)도 별도 `_redirects` 없이 직접 열림. Pages 설정: 루트 `app`, 빌드 `npm run build:web`(`expo export -p web`),
+  출력 `dist`, 변수 `EXPO_PUBLIC_API_URL`·`EXPO_PUBLIC_ENABLE_DEV_LOGIN=true`·`EXPO_PUBLIC_SUPPORT_EMAIL`·`NODE_VERSION=22`.
+  서버 CORS는 `app.enableCors()`(전체 허용)라 추가 설정 없음.
 
