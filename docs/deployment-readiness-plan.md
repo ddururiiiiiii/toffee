@@ -33,7 +33,8 @@
 - **계정 장부**: 어떤 서비스에 어떤 계정으로 가입했는지 정리하는 비공개 아티팩트를 만듦
   (https://claude.ai/artifact/H7cjLDgBhgGkA8xpPR4oST, 데이터는 아티팩트 DB `accounts` 컬렉션). 사용자가 따로
   말하지 않아도 계정 소식을 들으면 Claude가 갱신하도록 `CLAUDE.md` 규칙에 추가. 비밀번호·키는 기록하지 않음.
-- **남은 일**: Cloudflare 가입 → `toffeechat.app` 구매(자동 갱신 켬) → 이메일 전달 설정. 답장을 `support@`로
+- **진행**: Cloudflare 가입, `toffeechat.app` 구매 완료(자동 갱신 켬, 등록자는 개인 명의·Organization 비움).
+- **남은 일**: 이메일 전달 설정, Cloudflare 2단계 인증. 답장을 `support@`로
   보내는 설정(Resend 등)은 고객 응대 시작 전에.
 
 ## 2026-09-29 (이어서) — 젤리도 토피 법인으로(계정 결정 개정)

@@ -44,8 +44,8 @@
 순서가 중요하다: **도메인 → 회사 메일 → 서버(약관 주소) → 소셜 로그인 등록**. 소셜 로그인은 가입할 때 개인정보처리방침
 주소를 요구하는데, 그 주소는 서버에 이미 있는 `/legal/privacy` 페이지라 서버가 먼저 떠 있어야 한다.
 
-- [ ] **도메인 구매**(연 1~2만 원) — 앱 번들 ID(`com.toffeechat.app`, 잠정)도 도메인에 맞춰 이때 확정
-  — 2026-10-01: `toffeechat.app`으로 결정(Cloudflare, 연 14.20달러). 번들 ID `com.toffeechat.app`은 그대로 유지
+- [x] **도메인 구매**(연 1~2만 원) — 앱 번들 ID(`com.toffeechat.app`, 잠정)도 도메인에 맞춰 이때 확정
+  — 2026-10-01: `toffeechat.app` 구매 완료(Cloudflare, 첫해 8.20달러·이후 연 14.20달러 자동 갱신, 만료 2027-10-01). 번들 ID `com.toffeechat.app`은 그대로 유지
 - [x] 토피 전용 Gmail 생성 + 2단계 인증(2026-10-01) — 가입 현황은 [계정 장부](https://claude.ai/artifact/H7cjLDgBhgGkA8xpPR4oST)
 - [ ] **회사 메일**(`hello@`, `support@` 등) — Cloudflare 메일 전달(무료)로 시작, 보내기까지 필요하면 Google Workspace
 - [ ] 비밀번호 관리자 + 모든 계정 2단계 인증
