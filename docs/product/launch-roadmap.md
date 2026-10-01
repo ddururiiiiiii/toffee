@@ -1,5 +1,7 @@
 # 사업화 일정 — 지금부터 첫 매출까지
 
+> 체크리스트 페이지: [토피 사업화 일정](https://claude.ai/artifact/KfGKHugZEmWsavMYkbwYV7) · 계정·비용: [사업화 장부](https://claude.ai/artifact/H7cjLDgBhgGkA8xpPR4oST) — Claude가 진행될 때마다 같이 갱신
+
 2026-09-29 작성. **"이제 뭘 해야 하지?"를 이 문서 하나로 답하는 것**이 목적이다. 기능이 어디까지 됐는지는
 [`STATUS.md`](../../STATUS.md), 계정·인프라 결정의 자세한 이유는 [`ops-infra-backlog.md`](./ops-infra-backlog.md),
 비용은 [`cost-overview.md`](./cost-overview.md), 사업 질문 답은 [`business-faq.md`](./business-faq.md).
@@ -47,10 +49,12 @@
 - [x] **도메인 구매**(연 1~2만 원) — 앱 번들 ID(`com.toffeechat.app`, 잠정)도 도메인에 맞춰 이때 확정
   — 2026-10-01: `toffeechat.app` 구매 완료(Cloudflare, 첫해 8.20달러·이후 연 14.20달러 자동 갱신, 만료 2027-10-01). 번들 ID `com.toffeechat.app`은 그대로 유지
 - [x] 토피 전용 Gmail 생성 + 2단계 인증(2026-10-01) — 가입 현황·비용은 [사업화 장부](https://claude.ai/artifact/H7cjLDgBhgGkA8xpPR4oST)
-- [x] **회사 메일**(`hello@`, `support@` 등) — 2026-10-01 `support@`·`dev@`·`privacy@toffeechat.app` 전달 설정 완료. — Cloudflare 메일 전달(무료)로 시작, 보내기까지 필요하면 Google Workspace
-- [ ] 비밀번호 관리자 + 모든 계정 2단계 인증
+- [x] **회사 메일**(`hello@`, `support@` 등) — Cloudflare 메일 전달(무료)로 시작, 보내기까지 필요하면 Google Workspace
+  — 2026-10-01: `support@`·`dev@`·`privacy@toffeechat.app` → 전용 Gmail 전달 설정 완료
+- [ ] 비밀번호 관리자 + 모든 계정 2단계 인증 — 진행 중: 지금까지 만든 계정은 모두 2단계 인증 켬
 - [ ] **GitHub Organization**(무료)으로 저장소 옮기기 → Claude GitHub App 새로 설치
 - [ ] 토피 전용 메일로 가입: Cloudflare(R2 파일 저장소), Firebase(푸시), Sentry(오류), Expo(앱 빌드)
+  — 2026-10-01: Cloudflare·Expo·Sentry 완료(앱 설정에 Expo 프로젝트·Sentry 연결), Firebase 남음
 - [ ] **서버·DB 호스팅 고르고 데모 서버 띄우기** — 운영과 분리된 "데모" 환경에 가상 배우 데이터만(실제 배우 정보 금지)
 - [ ] 소셜 로그인 개발자 등록: 구글·카카오·네이버·라인(무료, 개인 가능), 애플은 **기존 개인 개발자 계정에서 개발용 번들
   ID(`…app.dev`)로만** — 운영 번들 ID는 법인 전환 전에 등록하지 않는다(이유: `ops-infra-backlog.md` 1번)
