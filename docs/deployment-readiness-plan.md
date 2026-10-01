@@ -36,7 +36,8 @@
 - **진행**: Cloudflare 가입, `toffeechat.app` 구매 완료(자동 갱신 켬, 등록자는 개인 명의·Organization 비움).
 - **메일 전달 완료**: Cloudflare Email Routing으로 `support@`·`dev@`·`privacy@toffeechat.app` → 전용 Gmail, catch-all 끔.
   테스트 메일 전달 확인(처음엔 Gmail이 스팸으로 분류 → "스팸 아님" 처리 + 도메인 주소 필터 권장).
-- **남은 일**: Cloudflare 2단계 인증. 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 답장을 `support@`로
+- **Cloudflare 2단계 인증 완료**(인증 앱 + 복구 코드 별도 보관).
+- **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 답장을 `support@`로
   보내는 설정(Resend 등)은 고객 응대 시작 전에.
 
 ## 2026-09-29 (이어서) — 젤리도 토피 법인으로(계정 결정 개정)
