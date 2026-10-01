@@ -53,8 +53,20 @@
   수십만 원을 넘거나, 보안 인증·데이터 위치 요구가 생기거나, 인프라 담당이 생길 때. 순서: GitHub Organization → Railway 가입.
 - **GitHub 조직 이전**: 조직 `toffeechat` 생성 → Claude GitHub App을 조직에 먼저 설치(All repositories) → 저장소
   `ddururiiiiiii/toffee` → `toffeechat/toffee` 이전. 다음 세션부터는 새 저장소로 열 것. 다음: Railway 가입(`dev@`) → GitHub 연결은 조직에만.
-- **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 답장을 `support@`로
-  보내는 설정(Resend 등)은 고객 응대 시작 전에.
+- **Railway 가입**: `dev@` 주소로 가입 + 2단계 인증(인증 앱, 복구 코드 별도 보관). 데모는 항상 켜져 있어야 해서 Trial 대신
+  **Hobby(월 $5, 사용료 $5 포함) 결제**(2026-10-01) + Workspace Usage에서 알림 $8·하드 리밋 $15 권장(하드 리밋에 닿으면 서버가 꺼짐). 배포 설정을 코드로 남기려고
+  `backend/railway.json` 추가(Dockerfile 빌드, 헬스체크 `/health/ready`, 실패 시 재시작, `backend/` 바뀔 때만 재배포) —
+  서비스 Root Directory를 `/backend`로 두면 설정 파일 경로는 저장소 기준 `/backend/railway.json`으로 지정해야 함.
+- **데모 서버 첫 배포 성공**: 프로젝트 `toffee-demo` = Postgres + 서버(`toffeechat/toffee` main, Root Directory `/backend`),
+  둘 다 싱가포르. Railway GitHub 앱은 `toffeechat` 조직의 `toffee` 저장소에만 설치. 임시 주소
+  `toffee-production.up.railway.app`(포트는 Railway가 주는 `PORT`=8080을 서버가 그대로 씀). 변수: `DATABASE_URL=${{Postgres.DATABASE_URL}}`,
+  `NODE_ENV=development`(소셜 키 전이라 테스트 로그인·결제 없는 구독이 필요한데 production이면 env-check가 막음 — 운영 서버는 따로
+  production으로), `JWT_SECRET`(무작위 48바이트), `TRUST_PROXY=1`, `SUPPORT_EMAIL`, `ADULTS_ONLY=true`. 대시보드 "Suggested Variables"는
+  `.env.example` 예시값(localhost DB 등)이라 추가하지 않음.
+- **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 데모: 서비스 설정에서 Config-as-code 경로를
+  `/backend/railway.json`으로 지정(Root Directory를 따라가지 않음) → 가짜 배우 데이터 넣기(실행 이미지엔 시드용 개발 도구가 없음) →
+  **테스트 로그인 보호**(주소만 알면 아무 이메일로 로그인 가능 — 운영자 계정 포함, 소속사에 보여 주기 전에) → 웹 데모(Cloudflare Pages) →
+  `api-demo.toffeechat.app` 연결 + `API_PUBLIC_URL`.
 
 ## 2026-09-29 (이어서) — 젤리도 토피 법인으로(계정 결정 개정)
 
