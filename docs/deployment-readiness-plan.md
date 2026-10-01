@@ -46,6 +46,11 @@
   지우면 30일간 ID 재사용 불가) 생성, 애널리틱스 끔(푸시에 불필요 + 개인정보 처리 범위 축소).
   개발용 앱만 등록(안드로이드·iOS 모두 `com.toffeechat.app.dev`) → 설정 파일을 `app/*.dev.*`로 커밋. 운영용 앱은 법인 후.
   APNs 인증 키 업로드는 애플 개발자 계정에서 키를 받는 실기기 빌드 때.
+- **호스팅 결정 — Railway**: 조건은 항상 켜짐(서버 내 cron), 긴 실시간 연결(SSE), 관리형 Postgres+백업, 싱가포르(태국 팬).
+  Railway(쉬움, DB 버튼 하나, 데모 월 $5~10) vs Render(메모리 1GB면 비쌈) vs Fly.io(관리형 DB 비쌈, 설정 어려움) vs
+  GCP Cloud Run+Cloud SQL(이전 필요 없지만 설정 많고 월 $15~30). 사용자 질문 "큰 기업은 안 쓰지 않나" → 맞지만 1인 팀엔
+  PaaS가 맞고, Docker·표준 Postgres·R2·환경변수·Cloudflare DNS로 이미 이전 비용을 낮춰 둠. 옮길 시점: 월 호스팅비가
+  수십만 원을 넘거나, 보안 인증·데이터 위치 요구가 생기거나, 인프라 담당이 생길 때. 순서: GitHub Organization → Railway 가입.
 - **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 답장을 `support@`로
   보내는 설정(Resend 등)은 고객 응대 시작 전에.
 
