@@ -51,6 +51,8 @@
   GCP Cloud Run+Cloud SQL(이전 필요 없지만 설정 많고 월 $15~30). 사용자 질문 "큰 기업은 안 쓰지 않나" → 맞지만 1인 팀엔
   PaaS가 맞고, Docker·표준 Postgres·R2·환경변수·Cloudflare DNS로 이미 이전 비용을 낮춰 둠. 옮길 시점: 월 호스팅비가
   수십만 원을 넘거나, 보안 인증·데이터 위치 요구가 생기거나, 인프라 담당이 생길 때. 순서: GitHub Organization → Railway 가입.
+- **GitHub 조직 이전**: 조직 `toffeechat` 생성 → Claude GitHub App을 조직에 먼저 설치(All repositories) → 저장소
+  `ddururiiiiiii/toffee` → `toffeechat/toffee` 이전. 다음 세션부터는 새 저장소로 열 것. 다음: Railway 가입(`dev@`) → GitHub 연결은 조직에만.
 - **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. 답장을 `support@`로
   보내는 설정(Resend 등)은 고객 응대 시작 전에.
 

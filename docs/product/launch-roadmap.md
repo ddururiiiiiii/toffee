@@ -52,7 +52,8 @@
 - [x] **회사 메일**(`hello@`, `support@` 등) — Cloudflare 메일 전달(무료)로 시작, 보내기까지 필요하면 Google Workspace
   — 2026-10-01: `support@`·`dev@`·`privacy@toffeechat.app` → 전용 Gmail 전달 설정 완료
 - [ ] 비밀번호 관리자 + 모든 계정 2단계 인증 — 진행 중: 지금까지 만든 계정은 모두 2단계 인증 켬
-- [ ] **GitHub Organization**(무료)으로 저장소 옮기기 → Claude GitHub App 새로 설치
+- [x] **GitHub Organization**(무료)으로 저장소 옮기기 → Claude GitHub App 새로 설치
+  — 2026-10-01: 조직 `toffeechat` 생성, 저장소 `toffeechat/toffee`로 이전(예전 주소는 자동 연결), Claude 앱 조직에 설치
 - [x] 토피 전용 메일로 가입: Cloudflare(R2 파일 저장소), Firebase(푸시), Sentry(오류), Expo(앱 빌드)
   — 2026-10-01: 넷 다 완료(앱 설정에 Expo 프로젝트·Sentry 연결, Firebase 프로젝트 `toffee-c6cba`). Firebase 앱 등록·설정 파일은 다음
 - [ ] **서버·DB 호스팅 고르고 데모 서버 띄우기** — 운영과 분리된 "데모" 환경에 가상 배우 데이터만(실제 배우 정보 금지)
