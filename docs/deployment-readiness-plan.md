@@ -53,11 +53,11 @@
   수십만 원을 넘거나, 보안 인증·데이터 위치 요구가 생기거나, 인프라 담당이 생길 때. 순서: GitHub Organization → Railway 가입.
 - **GitHub 조직 이전**: 조직 `toffeechat` 생성 → Claude GitHub App을 조직에 먼저 설치(All repositories) → 저장소
   `ddururiiiiiii/toffee` → `toffeechat/toffee` 이전. 다음 세션부터는 새 저장소로 열 것. 다음: Railway 가입(`dev@`) → GitHub 연결은 조직에만.
-- **Railway 가입**: `dev@` 주소로 가입 + 2단계 인증(인증 앱, 복구 코드 별도 보관). 요금제는 아직 Trial — 데모는 항상 켜져
-  있어야 해서 Hobby(월 $5, 사용료 $5 포함) + 사용량 상한을 추천, 결정은 사용자. 배포 설정을 코드로 남기려고
+- **Railway 가입**: `dev@` 주소로 가입 + 2단계 인증(인증 앱, 복구 코드 별도 보관). 데모는 항상 켜져 있어야 해서 Trial 대신
+  **Hobby(월 $5, 사용료 $5 포함) 결제**(2026-10-01) + Workspace Usage에서 알림 $8·하드 리밋 $15 권장(하드 리밋에 닿으면 서버가 꺼짐). 배포 설정을 코드로 남기려고
   `backend/railway.json` 추가(Dockerfile 빌드, 헬스체크 `/health/ready`, 실패 시 재시작, `backend/` 바뀔 때만 재배포) —
   서비스 Root Directory를 `/backend`로 두면 설정 파일 경로는 저장소 기준 `/backend/railway.json`으로 지정해야 함.
-- **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. Railway 요금제 결정 → 프로젝트(싱가포르)·
+- **남은 일**: 답장을 `support@`로 보내는 설정(Resend 등)은 고객 응대 시작 전에. Railway 프로젝트(싱가포르)·
   Postgres 생성 → 배포 → `api-demo.toffeechat.app` 연결.
 
 ## 2026-09-29 (이어서) — 젤리도 토피 법인으로(계정 결정 개정)
