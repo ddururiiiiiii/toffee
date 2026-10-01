@@ -51,7 +51,7 @@
 - [x] 토피 전용 Gmail 생성 + 2단계 인증(2026-10-01) — 가입 현황·비용은 [사업화 장부](https://claude.ai/artifact/H7cjLDgBhgGkA8xpPR4oST)
 - [x] **회사 메일**(`hello@`, `support@` 등) — Cloudflare 메일 전달(무료)로 시작, 보내기까지 필요하면 Google Workspace
   — 2026-10-01: `support@`·`dev@`·`privacy@toffeechat.app` → 전용 Gmail 전달 설정 완료
-- [ ] 비밀번호 관리자 + 모든 계정 2단계 인증 — 진행 중: 지금까지 만든 계정은 모두 2단계 인증 켬
+- [x] 비밀번호 관리자 + 모든 계정 2단계 인증 — 2026-10-01: 비밀번호는 아이폰 암호 앱, 만든 계정 전부 2단계 인증
 - [x] **GitHub Organization**(무료)으로 저장소 옮기기 → Claude GitHub App 새로 설치
   — 2026-10-01: 조직 `toffeechat` 생성, 저장소 `toffeechat/toffee`로 이전(예전 주소는 자동 연결), Claude 앱 조직에 설치
 - [x] 토피 전용 메일로 가입: Cloudflare(R2 파일 저장소), Firebase(푸시), Sentry(오류), Expo(앱 빌드)
