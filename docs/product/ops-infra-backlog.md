@@ -31,6 +31,14 @@
 - **토피 전용 이메일**: 개인 이메일 대신 토피 전용 주소로 모든 서비스에 가입한다. 도메인을
   사서 `dev@도메인` 같은 주소를 만들고(Cloudflare 무료 이메일 전달로 개인 메일함에서 받기),
   도메인이 부담되면 토피 전용 Gmail을 새로 만든다.
+  - **2026-10-01 진행**: 토피 전용 Gmail 생성 완료(2단계 인증 켬). 도메인은 **`toffeechat.app`**으로 결정
+    (`toffeechat.com`·`toffeeapp.com`·`gettoffee.com`·`trytoffee.com`은 이미 팔림) — Cloudflare에서 첫해
+    8.20달러, 이후 연 14.20달러. 메일 주소는 용도별로 `support@`(고객 문의·스토어 연락처), `dev@`(개발 서비스
+    가입), `privacy@`(개인정보처리방침)를 만들고 전부 Gmail 하나로 전달한다. Cloudflare 로그인 이메일은
+    도메인 주소로 바꾸지 말고 Gmail로 유지(도메인이 끊기면 계정 복구 메일도 못 받으므로).
+  - **어떤 서비스에 어떤 계정으로 가입했는지는 "계정 장부"에 정리**:
+    https://claude.ai/artifact/H7cjLDgBhgGkA8xpPR4oST (비공개, 비밀번호는 적지 않음). 계정을 만들 때마다
+    Claude가 자동으로 갱신한다.
 - **GitHub**: 무료 Organization(사업자 없이 만들 수 있음)을 만들어 `toffee` 저장소를 옮긴다.
   이력·이슈는 그대로 유지되고 예전 주소는 자동 연결된다. 인력이 생기면 Organization 멤버로
   초대해 권한을 나누고, 법인 설립 후 결제 정보만 법인으로 바꾼다.
