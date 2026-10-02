@@ -53,6 +53,16 @@
 - **첫 화면 문구 → 공식 슬로건**(사용자 지적: 원래 다른 걸 쓰기로 했던 것 같다): 로그인 화면 큰 문구가 브랜드 보드 시안의 "Real people…"
   번역이었음 → 가이드의 공식 슬로건 "Closer to what matters"로, 6개 언어 모두 영어 그대로(A안 — 로고에도 영어로 박혀 있고 슬로건은
   번역하지 않는 게 브랜드 기억에 유리). `brand-guide.md`에 뜻·규칙 추가.
+- **네이버·LINE·애플 등록**: 네이버는 1인 아이디 3개 제한이라 개인 아이디로(법인 후 멤버 관리로 이전). LINE은 Business ID(토피 Gmail),
+  Provider `Toffee` + LINE Login 채널(운영자 나라 South Korea, 서비스 지역 Thailand — 채널마다 하나, 변경 불가), Published로 전환.
+  애플은 개인 개발자 계정(젤리 공용)에 App ID `com.toffeechat.app.dev`(Sign in with Apple·Push) + 웹 Services ID
+  `com.toffeechat.app.dev.web` + 로그인 키(.p8은 서버 변수에만). 다섯 곳 모두 웹 데모에서 로그인 확인 → 사업화 일정 "소셜 로그인 개발자
+  등록" 완료.
+- **다음 세션(실기기 빌드)에 넘길 것**: ① `eas.json` preview에 `EXPO_PUBLIC_API_URL=https://api-demo.toffeechat.app`·
+  `EXPO_PUBLIC_ENABLE_DEV_LOGIN=true` 필요(지금 없음), Sentry 소스맵 업로드는 `SENTRY_AUTH_TOKEN` 없으면 `SENTRY_DISABLE_AUTO_UPLOAD=true`
+  ② 네이버 앱용 Secret을 EAS 비밀 변수 `EXPO_PUBLIC_NAVER_CONSUMER_SECRET_DEV`로(없으면 앱에서 네이버 버튼이 숨음) ③ iOS는 EAS 내부
+  배포(기기 등록) 또는 TestFlight, 안드로이드는 APK → EAS 서명 SHA-1·키 해시로 구글 안드로이드 클라이언트·카카오 키 해시·네이버/LINE
+  안드로이드 등록 ④ 푸시: 애플 APNs 키 → Firebase, 서버 `FIREBASE_SERVICE_ACCOUNT_JSON`(Railway) ⑤ 데모 서버 `SENTRY_DSN`.
 - **첫 화면 A안·버튼 순서·글꼴**(사용자 결정): 어두운 사진 배경이 앱 톤과 안 맞고 칙칙하다는 의견 → 시안 2개(밝은 A / 어두운 라벤더 B)
   스크린샷 비교 후 **A**(흰색 → Periwinkle, 검은 워드마크). 순서: 한국어 카카오·네이버·구글·애플·LINE, 그 외 LINE·구글·애플(카카오·
   네이버 숨김). 웹은 구글 공식 버튼도 그 순서 자리에(예전엔 항상 끝). 웹 버튼 글자를 구글 버튼(Roboto Medium 14)에 맞춤.
