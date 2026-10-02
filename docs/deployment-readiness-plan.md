@@ -22,6 +22,41 @@
 
 ---
 
+## 2026-10-02 — 웹 데모 화면(Cloudflare Pages)
+
+- PR toffeechat/toffee#18(웹 SPA 내보내기) 머지 후 Cloudflare Pages 프로젝트 `toffee-demo` 생성 — Cloudflare가 Workers 위주로
+  안내해서 "Continue to Pages"(옛 Pages 흐름)로 들어감. Pages GitHub 앱은 `toffeechat` 조직의 `toffee` 저장소에만. 루트 `app`,
+  `npm run build:web`, 출력 `dist`, 변수 `EXPO_PUBLIC_API_URL`(Railway 임시 주소)·`EXPO_PUBLIC_ENABLE_DEV_LOGIN=true`·
+  `EXPO_PUBLIC_SUPPORT_EMAIL`·`NODE_VERSION=22`. 첫 빌드 성공 → `https://toffee-demo.pages.dev`.
+- 입장 코드로 로그인 확인 → 사업화 일정 "데모 서버 띄우기" 완료 체크. 주소·데모 계정·입장 코드 위치를 사업화 장부(Railway·Pages
+  항목)에 정리(사용자 요청 — 코드 값 자체는 장부 규칙상 안 적음).
+- **도메인 연결**: `api-demo.toffeechat.app` = Railway 커스텀 도메인(포트 8080) + Cloudflare DNS CNAME(**DNS only** — 프록시를 켜면
+  100초 제한으로 SSE가 끊김) + `_railway-verify.api-demo` TXT(이게 없으면 "Waiting for DNS update"에서 안 넘어감).
+  `demo.toffeechat.app` = Pages 커스텀 도메인(DNS 자동, 프록시 켜도 됨). 그 뒤 Pages `EXPO_PUBLIC_API_URL`을 새 주소로 바꾸고
+  Retry deployment, Railway `API_PUBLIC_URL` 추가. 예전 주소(pages.dev·up.railway.app)도 계속 동작.
+- `JWT_SECRET`이 대화에 노출돼서 새 값으로 교체(데모라 피해 없음, 로그인한 사람만 로그아웃).
+- Pages 빌드 줄이기: Preview 브랜치 빌드 끔(작업 브랜치 push마다 빌드되고 있었음, 무료 월 500회), Build watch paths `app/*`.
+- 남은 일: 데모 영상·제안서(2단계). 운영 서버는 데모와 분리해 6단계에.
+- **구글 로그인 등록**(1단계 소셜 로그인 시작 — 개인정보처리방침 주소가 생겨서 가능해짐): 새 클라우드 프로젝트 대신 **Firebase 프로젝트
+  `toffee-c6cba`** 사용(안드로이드 구글 로그인은 Firebase 설정과 같은 프로젝트여야 해서). "조직 없음"은 Gmail 소유라 정상 — 법인 후
+  `toffeechat.app`으로 Cloud Identity 조직을 만들어 옮길지 검토(ops-infra-backlog). 동의 화면 External·In production(기본 범위라 심사
+  없음, 로고는 심사 생겨서 안 올림), 개인정보·약관은 `api-demo.toffeechat.app/legal/*`. 클라이언트: Web(서버 audience 겸, 허용 출처
+  demo·pages.dev·localhost:8081) + iOS 개발용(`com.toffeechat.app.dev`). Client ID는 공개 값이라 `eas.json`(development·preview·
+  production의 웹 ID)과 `.env.example`에 커밋. 안드로이드 클라이언트는 EAS 서명 SHA-1이 필요해 실기기 빌드 때.
+- **카카오 로그인 등록**: 카카오는 `dev@toffeechat.app`(`.app` 도메인)으로 계정 가입을 거절 → 토피 Gmail로 카카오계정(닉네임 Toffee).
+  앱 `Toffee`(앱 ID 1595119, 대표 도메인 demo). 새 콘솔은 "플랫폼" 메뉴 대신 **플랫폼 키 → 각 키 상세**에 설정(네이티브 앱 키에 iOS
+  번들 ID, REST API 키에 리다이렉트 URI `…/oauth/kakao`·클라이언트 시크릿). 동의항목 닉네임 필수·프로필 사진 선택(이메일은 비즈 앱 필요).
+  서버 `KAKAO_APP_ID`·`KAKAO_REST_API_KEY`·`KAKAO_CLIENT_SECRET`·`WEB_LOGIN_ORIGINS`, 웹 `EXPO_PUBLIC_WEB_KAKAO_REST_API_KEY`, 앱
+  `eas.json` 네이티브 키. 웹 데모에서 로그인 확인.
+- **첫 화면 문구 → 공식 슬로건**(사용자 지적: 원래 다른 걸 쓰기로 했던 것 같다): 로그인 화면 큰 문구가 브랜드 보드 시안의 "Real people…"
+  번역이었음 → 가이드의 공식 슬로건 "Closer to what matters"로, 6개 언어 모두 영어 그대로(A안 — 로고에도 영어로 박혀 있고 슬로건은
+  번역하지 않는 게 브랜드 기억에 유리). `brand-guide.md`에 뜻·규칙 추가.
+- **로그인 버튼 통일**(사용자 지적: 웹에서 구글 버튼과 카카오 버튼 모양이 너무 다름): 구글은 공식 버튼(GIS, 320×40 알약)이라 바꿀 수
+  없어서 나머지를 맞춤 — `SocialButton`(알약, 왼쪽 로고, 웹 320×40 가운데·앱은 폭 가득 48) + `SocialProviderIcon`(애플·네이버·LINE은
+  simple-icons CC0 모양, 카카오 말풍선, 구글 4색 G). 앱·웹 버튼이 같은 컴포넌트를 씀.
+
+---
+
 ## 2026-10-02 (이어서) — "커플방" → "CP"
 
 - 사용자 요청으로 화면에 보이는 "커플방"을 "CP"로 통일(제목·표시는 "CP", 문장 속은 "CP방"). 앱 6개 언어·운영자 화면·서버 오류 문구. 주석·코드·DB 이름은 그대로.
