@@ -35,7 +35,9 @@
   `demo.toffeechat.app` = Pages 커스텀 도메인(DNS 자동, 프록시 켜도 됨). 그 뒤 Pages `EXPO_PUBLIC_API_URL`을 새 주소로 바꾸고
   Retry deployment, Railway `API_PUBLIC_URL` 추가. 예전 주소(pages.dev·up.railway.app)도 계속 동작.
 - `JWT_SECRET`이 대화에 노출돼서 새 값으로 교체(데모라 피해 없음, 로그인한 사람만 로그아웃).
-- Pages 빌드 줄이기: Preview 브랜치 빌드 끔(작업 브랜치 push마다 빌드되고 있었음, 무료 월 500회), Build watch paths `app/*`.
+- Pages 빌드 줄이기: Preview 브랜치 빌드 끔(작업 브랜치 push마다 빌드되고 있었음, 무료 월 500회). Build watch paths를 `app/*`로
+  했더니 main 합치기(#19·#20)가 전부 건너뛰어짐("No deployment available") — Root directory가 `app`이라 경로가 그 안 기준으로 잡히는
+  것으로 보임. **`*`로 되돌림**, 건너뛴 최신 커밋은 그 줄에서 Retry deployment. 깨끗한 main으로 `npm run build:web` 성공 확인.
 - 남은 일: 데모 영상·제안서(2단계). 운영 서버는 데모와 분리해 6단계에.
 - **구글 로그인 등록**(1단계 소셜 로그인 시작 — 개인정보처리방침 주소가 생겨서 가능해짐): 새 클라우드 프로젝트 대신 **Firebase 프로젝트
   `toffee-c6cba`** 사용(안드로이드 구글 로그인은 Firebase 설정과 같은 프로젝트여야 해서). "조직 없음"은 Gmail 소유라 정상 — 법인 후
