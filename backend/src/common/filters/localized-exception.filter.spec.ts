@@ -11,11 +11,11 @@ describe('오류 문구 다국어', () => {
   it('appError로 던진 예외는 요청 언어로 번역되고 code가 붙음', () => {
     const localized = localizeHttpException(new BadRequestException(appError('REPLY_LIMIT', { limit: 3 })), 'th');
     expect(localized.getStatus()).toBe(400);
-    expect(body(localized)).toEqual({ statusCode: 400, code: 'REPLY_LIMIT', message: 'ตอบกลับข้อความนี้ได้สูงสุด 3 ครั้ง กรุณารอข้อความถัดไปจากสตาร์' });
+    expect(body(localized)).toEqual({ statusCode: 400, code: 'REPLY_LIMIT', message: 'ตอบกลับข้อความนี้ได้สูงสุด 3 ครั้ง กรุณารอข้อความถัดไปจากศิลปิน' });
   });
 
   it('서버 로그·테스트용 message는 한국어', () => {
-    expect(new NotFoundException(appError('ACTOR_NOT_FOUND')).message).toBe('배우를 찾을 수 없어요.');
+    expect(new NotFoundException(appError('ACTOR_NOT_FOUND')).message).toBe('아티스트를 찾을 수 없어요.');
   });
 
   it('ValidationPipe 오류(배열)는 "입력값을 확인해 주세요" + details에 원문', () => {

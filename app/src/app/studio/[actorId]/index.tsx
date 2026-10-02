@@ -167,7 +167,7 @@ export default function StudioChannelScreen() {
       headerTitle: () =>
         actor ? (
           <View style={styles.headerTitle}>
-            <Avatar uri={actor.chatProfileImageUrl} name={actor.chatDisplayName} size={34} />
+            <Avatar uri={actor.chatProfileImageUrl} size={34} />
             <ThemedText type="headline" numberOfLines={1}>
               {actor.chatDisplayName}
             </ThemedText>

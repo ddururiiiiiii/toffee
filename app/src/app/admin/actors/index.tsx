@@ -21,7 +21,7 @@ function ActorRow({ actor }: { actor: AdminActor }) {
       <AdminAvatar uri={actor.officialProfileImageUrl ?? actor.chatProfileImageUrl} name={actor.legalName} />
       <ThemedView style={styles.rowBody}>
         <ThemedText type="smallBold">
-          {actor.kind === 'COUPLE' ? '[커플방] ' : ''}
+          {actor.kind === 'COUPLE' ? '[CP] ' : ''}
           {actor.legalName}
           {actor.verified ? ' ✓' : ''}
         </ThemedText>
@@ -60,12 +60,12 @@ export default function AdminActorsScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="배우 이름·닉네임·소속사로 검색"
+          placeholder="아티스트 이름·닉네임·소속사로 검색"
           placeholderTextColor={theme.textSecondary}
           style={[styles.search, { color: theme.text, backgroundColor: theme.backgroundElement }]}
         />
-        <AdminButton label="+ 배우 등록" onPress={() => router.push('/admin/actors/new')} />
-        <AdminButton label="+ 커플방 만들기" onPress={() => router.push('/admin/actors/new-couple')} />
+        <AdminButton label="+ 아티스트 등록" onPress={() => router.push('/admin/actors/new')} />
+        <AdminButton label="+ CP방 만들기" onPress={() => router.push('/admin/actors/new-couple')} />
       </ThemedView>
 
       {isLoading ? (
@@ -77,7 +77,7 @@ export default function AdminActorsScreen() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
-              {query ? '검색 결과가 없어요.' : '등록된 배우가 없어요.'}
+              {query ? '검색 결과가 없어요.' : '등록된 아티스트가 없어요.'}
             </ThemedText>
           }
           renderItem={({ item }) => <ActorRow actor={item} />}

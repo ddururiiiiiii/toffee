@@ -23,6 +23,7 @@ const ADMIN_ACTOR_SELECT = {
   monthlyPriceCents: true,
   storeProductId: true,
   verified: true,
+  gender: true,
   kind: true,
   coupleMembers: { select: { member: { select: { id: true, legalName: true, chatDisplayName: true, officialProfileImageUrl: true, chatProfileImageUrl: true, retiredAt: true } } } },
   retiredAt: true,
@@ -134,7 +135,7 @@ export class AdminActorsService {
 
   async create(dto: CreateActorDto) {
     const actor = await this.prisma.actor.create({
-      data: { legalName: dto.legalName.trim(), chatDisplayName: dto.chatDisplayName.trim(), monthlyPriceCents: dto.monthlyPriceCents },
+      data: { legalName: dto.legalName.trim(), chatDisplayName: dto.chatDisplayName.trim(), monthlyPriceCents: dto.monthlyPriceCents, gender: dto.gender ?? null },
       select: { id: true },
     });
     if (dto.agencyId) {
@@ -150,8 +151,10 @@ export class AdminActorsService {
   }
 
   async update(adminId: string, id: string, dto: UpdateActorDto) {
-    const before = await this.prisma.actor.findUnique({ where: { id }, select: { monthlyPriceCents: true, storeProductId: true } });
+    const before = await this.prisma.actor.findUnique({ where: { id }, select: { monthlyPriceCents: true, storeProductId: true, kind: true } });
     if (!before) throw new NotFoundException(appError('ACTOR_NOT_FOUND'));
+    // 커플방은 성별이 없음(둘러보기 CP 줄로만)
+    const gender = before.kind === ActorKind.COUPLE ? undefined : dto.gender;
     await ensureStoreProductIdFree(this.prisma, dto.storeProductId, { actorId: id });
     await this.prisma.actor.update({
       where: { id },
@@ -160,6 +163,7 @@ export class AdminActorsService {
         chatDisplayName: dto.chatDisplayName?.trim(),
         monthlyPriceCents: dto.monthlyPriceCents,
         verified: dto.verified,
+        gender,
         storeProductId: dto.storeProductId,
       },
     });

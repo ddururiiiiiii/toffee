@@ -1333,3 +1333,45 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
   출력 `dist`, 변수 `EXPO_PUBLIC_API_URL`·`EXPO_PUBLIC_ENABLE_DEV_LOGIN=true`·`EXPO_PUBLIC_SUPPORT_EMAIL`·`NODE_VERSION=22`.
   서버 CORS는 `app.enableCors()`(전체 허용)라 추가 설정 없음.
 
+
+## 채팅방 묶음 기준·헤더·대화방 프로필 카드 (2026-10-02)
+
+- 말풍선 묶음: `GROUP_GAP_MS`(5분) 제거 → `sameMinute`(`floor(ms / 60_000)` 비교) + 같은 보낸 사람(커플방은 `sender.id`까지). `startsGroup`이면
+  아바타(36px, 위 정렬)·이름(1인 방도), `endsGroup`이면 시간·넓은 아래 여백. `MessageRow`의 `showAvatarAndTime`/`senderLabel` 대신
+  `startsGroup`/`endsGroup`/`onOpenProfile`.
+- 헤더: `headerTitleAlign: 'center'`, `Pressable` 두 줄(`chatDisplayName` + 다르면 `legalName`). `headerRight`는 검색 + `Ellipsis` — ⋯ 메뉴는
+  네이티브 헤더 밖이라 화면 본문 위에 `absoluteFill` 배경(누르면 닫힘) + 절대 위치 메뉴로 그림.
+- 새 라우트 `chat-profile/[actorId]`(`presentation: 'modal'`, 헤더 없음, `?memberId=`면 커플방 멤버). `useActor` 캐시를 그대로 씀(추가 API 없음).
+  사진 확대는 `media-viewer`에 `actorId` 없이 넘겨 단일 이미지로.
+- 구독 전 화면(`actor/[id]`, `subscribe/[actorId]`, `subscribe/bundle/[bundleId]`)의 `MembershipBenefits name`은 `legalName`.
+
+## 기본 프로필 이미지·대화방 사진 시작값 (2026-10-02)
+
+- 앱 `components/ui/person-figure.tsx`(`react-native-svg`, viewBox 100, `xMidYMax meet`) — 바탕 `tintSoft`, 실루엣 새 토큰 `avatarFigure`
+  (light `#FFFFFF`, dark `rgba(124,140,255,0.45)`). `Avatar`는 사진이 없으면 이걸 원으로 잘라 씀 → `name` prop 제거(호출부 전부 정리).
+  `AdminAvatar`도 기본은 실루엣, `org`(소속사 로고)만 이름 첫 글자. 배우 찾기 사진 카드는 Cloud 바탕 위쪽에 `Avatar`(아래 이름 그림자 피해서).
+- 서버 `src/actors/profile-images.ts` `withFirstOfficialAsChat` — `ActorsService.updateImages` 시작에서 변경을 보정: 공식 사진이 처음 생기고
+  (`officialProfileImageUrl === null`) 대화방 사진도 비어 있고 같은 요청에서 대화방 사진을 안 정했으면 `chat = official`. 같은 키를 두 칸이 가리켜도
+  기존 `stillUsed` 검사 때문에 한쪽을 바꿀 때 파일이 지워지지 않음. 스키마 변경 없음(대화방 사진 null = 기본 이미지).
+
+## 둘러보기 개편·아티스트 용어 (2026-10-02)
+
+- 스키마: `enum ArtistGender { FEMALE MALE }`, `Actor.gender ArtistGender?`(null = 지정 안 함, 커플방은 항상 null — `AdminActorsService.update`가
+  COUPLE이면 gender를 무시). `LIST_SELECT`에 `gender` 추가.
+- `GET /actors`: `kind`에 `ALL`(1인+커플, 새로 온 줄·검색), `gender=FEMALE|MALE`. `sort=trending`은 서버에 남아 있지만 앱은 안 씀.
+- 앱 `useActors`는 객체 인자(`{ query, agencyId, sort, kind, gender, enabled }`)로 바뀜. 둘러보기는 `DiscoverView` 상태(home/new/female/male/couple/agency)
+  하나로 홈 줄들과 "전체 보기" 목록을 같은 FlatList에서 전환(새 라우트 없음). "새로 온"은 서버 `sort=new` 결과를 앱에서 30일(`NEW_WINDOW_MS`)로 거름.
+- 운영자: `GENDER_OPTIONS`(admin-ui), 등록 화면은 칩 선택, 상세 화면은 누르면 바로 PATCH.
+- 용어 일괄 치환: 주석이 아닌 줄의 문자열만(`배우`/`스타`(스타일·스타트 제외)/`俳優`/`スター`(スタート 제외)/`นักแสดง`/`演员`/`明星` 등, 영어는 서버 문구
+  파일의 `en` 블록에서만 단어 경계로). 식별자·라우트(`/actor/[id]`)·API 이름은 그대로.
+
+## 해지 예정(`willRenew`)·지난 구독 (2026-10-02)
+
+- `Purchase.willRenew Boolean @default(true)`. 바뀌는 곳: `StoreEvent` `RENEWAL { originalTransactionId, willRenew }`(애플 `DID_CHANGE_RENEWAL_STATUS` 서브타입,
+  구글 type 3) → `applyStoreEvent`가 값만 바꾸고 방은 그대로. 그리고 `StoreTransaction.willRenew`(애플 알림의 `signedRenewalInfo.autoRenewStatus`,
+  구글 API `autoRenewing`)가 있으면 `upsertStorePurchase`가 같이 기록 — 앱의 영수증 확인엔 이 정보가 없어서 건드리지 않음(undefined면 그대로).
+  구글 7 RESTARTED는 PAID로 다시 받으며 `autoRenewing: true`로 되돌아감.
+- `endsAtOf(purchases)`: 방을 여는 구매가 전부 `willRenew=false`이고 `iapExpiresAt`이 있으면 그 최댓값, 아니면 null → `listMine`의 `endsAt`.
+- `GET /me/subscriptions/past` → `listPast`: `Subscription.cancelledAt != null`(방 이용권 기준 — 재구독하면 같은 행이 다시 열려서 목록에서 빠짐),
+  `cancelledAt desc` 50개, `roomRetired`면 제외, 공식 이름·`official ?? chat` 사진만.
+

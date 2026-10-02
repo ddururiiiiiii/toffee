@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import * as Clipboard from 'expo-clipboard';
-import { ArrowUp, Bell, BellOff, ChevronDown, ChevronUp, CloudOff, Copy, Flag, Images, Lock, MessageCircleHeart, Search, X } from 'lucide-react-native';
+import { type LucideIcon, ArrowUp, Bell, BellOff, ChevronDown, ChevronUp, CloudOff, Copy, CreditCard, Ellipsis, Flag, Images, Lock, MessageCircleHeart, Search, X } from 'lucide-react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Avatar } from '@/components/ui/avatar';
@@ -37,16 +37,17 @@ import { fontFor, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 
 // 맨 아래(최신)에서 이만큼 안쪽이면 "맨 아래를 보고 있음" — 새 메시지를 따라감
 const AT_BOTTOM_PX = 80;
-// 같은 사람이 이 시간 안에 이어 보낸 메시지는 한 묶음(시간·프로필 사진은 묶음 끝에 한 번)
-const GROUP_GAP_MS = 5 * 60 * 1000;
 // 알림·검색 결과로 이동할 메시지가 아직 안 불러온 예전 메시지면 이만큼(50개씩)까지만 더 불러옴 — 너무 오래된 건 안내만
 const MAX_FOCUS_PAGES = 20;
 
 const sameDay = (a: string, b: string) => new Date(a).toDateString() === new Date(b).toDateString();
+// 카톡처럼 같은 사람이 같은 시:분에 이어 보낸 메시지가 한 묶음 — 프로필 사진·이름은 묶음 첫 메시지 위, 시간은 마지막 메시지에 한 번
+const sameMinute = (a: string, b: string) => Math.floor(new Date(a).getTime() / 60_000) === Math.floor(new Date(b).getTime() / 60_000);
 
 /**
  * 팬 채팅방 — 시안 2A Minimal Premium(docs/product/brand/exploration/2a-chat-minimal-premium.png) + DESIGN_GUIDE §9.
- * 실제 1:1 DM처럼 조용하고 여백 있게: 스타는 왼쪽 Cloud 말풍선(묶음 끝에 작은 프로필 사진), 팬은 오른쪽 Periwinkle.
+ * 실제 1:1 DM처럼 조용하고 여백 있게: 스타는 왼쪽 Cloud 말풍선(묶음 첫 메시지 위에 프로필 사진·이름), 팬은 오른쪽 Periwinkle.
+ * 헤더 이름이나 프로필 사진을 누르면 대화방 프로필 카드(chat-profile), 헤더 ⋯에 모아보기·알림·구독 관리.
  * 팬은 글·이모지만(사진·음성·영상 없음). 말풍선을 길게 누르면 복사(글이 있을 때)·신고(스타 메시지) 메뉴(말풍선마다 버튼을 늘어놓지 않음).
  * 목록은 최신이 맨 아래인 뒤집힌 목록 — 맨 아래를 보고 있으면 새 메시지를 따라가고, 위로 올려 읽는 중이면 끌어내리지
  * 않고 "새 메시지 N개 ↓"만(예전엔 사진 로딩·폴링 때마다 맨 아래로 끌려 내려갔음). 위 끝까지 올리면 이전 대화를 더 불러옴.
@@ -69,6 +70,11 @@ export default function ChatRoomScreen() {
   const [draft, setDraft] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const openProfile = useCallback(
+    (memberId?: string) => router.push({ pathname: '/chat-profile/[actorId]', params: { actorId, ...(memberId ? { memberId } : {}) } }),
+    [router, actorId],
+  );
 
   // 최신 → 오래된 순(서버 순서) — 뒤집힌 목록이라 첫 항목이 맨 아래
   const messages = useMemo(() => {
@@ -152,39 +158,32 @@ export default function ChatRoomScreen() {
     navigation.setOptions({
       headerShadowVisible: false,
       headerStyle: { backgroundColor: theme.background },
+      // 닉네임(크게) + 공식 이름(작게, 닉네임과 다를 때만) — 사진은 넣지 않음(카톡처럼). 누르면 대화방 프로필 카드
+      headerTitleAlign: 'center',
       headerTitle: () =>
         actor ? (
-          <View style={styles.headerTitle}>
-            <Avatar uri={actor.chatProfileImageUrl} name={actor.chatDisplayName} size={34} />
-            <ThemedText type="headline" numberOfLines={1}>
+          <Pressable onPress={() => openProfile()} style={styles.headerTitle} accessibilityRole="button" accessibilityHint={t('chatProfile.open')}>
+            <ThemedText type="headline" numberOfLines={1} style={styles.headerName}>
               {actor.chatDisplayName}
             </ThemedText>
-          </View>
+            {actor.legalName !== actor.chatDisplayName ? (
+              <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1} style={styles.headerName}>
+                {actor.legalName}
+              </ThemedText>
+            ) : null}
+          </Pressable>
         ) : null,
-      // 구독 중일 때만: 사진·영상 모아보기(카톡 서랍처럼), 채팅방별 알림 끄기
+      // 구독 중일 때만: 검색 + ⋯(사진·영상 모아보기, 채팅방별 알림, 구독 관리)
       headerRight: subscription
         ? () => (
             <View style={styles.headerActions}>
               <IconButton icon={Search} label={t('chatSearch.open')} onPress={() => setSearchOpen(true)} />
-              <IconButton
-                icon={Images}
-                label={t('gallery.open')}
-                onPress={() => router.push({ pathname: '/media-gallery/[actorId]', params: { actorId } })}
-              />
-              <IconButton
-                icon={subscription.notificationsMuted ? BellOff : Bell}
-                label={t(subscription.notificationsMuted ? 'chat.notificationsOff' : 'chat.notificationsOn')}
-                color={subscription.notificationsMuted ? theme.textTertiary : theme.text}
-                onPress={() => {
-                  setNotice(t(subscription.notificationsMuted ? 'chat.unmuted' : 'chat.muted'));
-                  setMuted.mutate(!subscription.notificationsMuted);
-                }}
-              />
+              <IconButton icon={Ellipsis} label={t('chat.more')} onPress={() => setMoreOpen((open) => !open)} />
             </View>
           )
         : undefined,
     });
-  }, [actor, actorId, navigation, router, subscription, setMuted, t, theme]);
+  }, [actor, navigation, openProfile, subscription, t, theme]);
 
   // 알림 안내 등 짧은 문구는 잠깐 보였다 사라짐
   useEffect(() => {
@@ -288,17 +287,9 @@ export default function ChatRoomScreen() {
           const older = messages[index + 1];
           // 커플방은 보낸 배우가 바뀌어도 묶음을 나눔(누가 보냈는지 보이게)
           const sameSender = (a: ChatMessage, b: ChatMessage) => a.senderType === b.senderType && (!isCouple || a.sender?.id === b.sender?.id);
-          const endsGroup =
-            !newer ||
-            !sameSender(newer, item) ||
-            new Date(newer.createdAt).getTime() - new Date(item.createdAt).getTime() > GROUP_GAP_MS ||
-            !sameDay(newer.createdAt, item.createdAt);
+          const endsGroup = !newer || !sameSender(newer, item) || !sameMinute(newer.createdAt, item.createdAt);
           const dayChanged = !older || !sameDay(older.createdAt, item.createdAt);
-          const startsGroup =
-            !older ||
-            !sameSender(older, item) ||
-            new Date(item.createdAt).getTime() - new Date(older.createdAt).getTime() > GROUP_GAP_MS ||
-            dayChanged;
+          const startsGroup = !older || !sameSender(older, item) || !sameMinute(item.createdAt, older.createdAt);
           return (
             <View>
               {dayChanged && <DaySeparator iso={item.createdAt} locale={i18n.language} />}
@@ -306,9 +297,9 @@ export default function ChatRoomScreen() {
                 message={item}
                 avatarUri={isCouple ? (item.sender?.chatProfileImageUrl ?? actor?.chatProfileImageUrl) : actor?.chatProfileImageUrl}
                 actorName={isCouple ? (item.sender?.chatDisplayName ?? actor?.chatDisplayName) : actor?.chatDisplayName}
-                // 커플방: 묶음 첫 말풍선 위에 보낸 배우 이름(카톡 단톡방처럼)
-                senderLabel={isCouple && startsGroup && item.senderType === 'ARTIST' ? (item.sender?.chatDisplayName ?? null) : null}
-                showAvatarAndTime={endsGroup}
+                startsGroup={startsGroup}
+                endsGroup={endsGroup}
+                onOpenProfile={() => openProfile(isCouple ? item.sender?.id : undefined)}
                 highlighted={item.id === highlightId && (!searchOpen || item.id === activeMatchId)}
                 menuOpen={menuFor === item.id}
                 onOpenMenu={() => setMenuFor(item.id)}
@@ -383,6 +374,38 @@ export default function ChatRoomScreen() {
           </View>
         )}
         {body}
+        {moreOpen && subscription && (
+          <>
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => setMoreOpen(false)} accessibilityLabel={t('chat.closeMenu')} />
+            <View style={[styles.moreMenu, { backgroundColor: theme.background, borderColor: theme.border }]}>
+              <MoreItem
+                icon={Images}
+                label={t('gallery.open')}
+                onPress={() => {
+                  setMoreOpen(false);
+                  router.push({ pathname: '/media-gallery/[actorId]', params: { actorId } });
+                }}
+              />
+              <MoreItem
+                icon={subscription.notificationsMuted ? Bell : BellOff}
+                label={t(subscription.notificationsMuted ? 'chat.unmute' : 'chat.mute')}
+                onPress={() => {
+                  setMoreOpen(false);
+                  setNotice(t(subscription.notificationsMuted ? 'chat.unmuted' : 'chat.muted'));
+                  setMuted.mutate(!subscription.notificationsMuted);
+                }}
+              />
+              <MoreItem
+                icon={CreditCard}
+                label={t('mypage.subscriptions')}
+                onPress={() => {
+                  setMoreOpen(false);
+                  router.push({ pathname: '/subscriptions/[actorId]', params: { actorId } });
+                }}
+              />
+            </View>
+          </>
+        )}
         {showComposer && !searchOpen &&
           (!canReply || outOfReplies ? (
             <View style={[styles.waitingBar, { borderTopColor: theme.border }]}>
@@ -429,6 +452,16 @@ export default function ChatRoomScreen() {
   );
 }
 
+function MoreItem({ icon, label, onPress }: { icon: LucideIcon; label: string; onPress: () => void }) {
+  const theme = useTheme();
+  return (
+    <Pressable onPress={onPress} style={styles.moreItem} accessibilityRole="menuitem">
+      <Icon as={icon} size={18} color={theme.text} />
+      <ThemedText type="smallMedium">{label}</ThemedText>
+    </Pressable>
+  );
+}
+
 function DaySeparator({ iso, locale }: { iso: string; locale: string }) {
   return (
     <ThemedText type="caption" themeColor="textTertiary" style={styles.day}>
@@ -441,7 +474,9 @@ function MessageRow({
   message,
   avatarUri,
   actorName,
-  showAvatarAndTime,
+  startsGroup,
+  endsGroup,
+  onOpenProfile,
   highlighted,
   menuOpen,
   onOpenMenu,
@@ -451,12 +486,13 @@ function MessageRow({
   onCopy,
   actorId,
   nextVoiceId,
-  senderLabel,
 }: {
   message: ChatMessage;
   avatarUri?: string | null;
   actorName?: string;
-  showAvatarAndTime: boolean;
+  startsGroup: boolean;
+  endsGroup: boolean;
+  onOpenProfile: () => void;
   highlighted: boolean;
   menuOpen: boolean;
   onOpenMenu: () => void;
@@ -466,7 +502,6 @@ function MessageRow({
   onCopy: () => void;
   actorId: string;
   nextVoiceId?: string;
-  senderLabel?: string | null;
 }) {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
@@ -530,17 +565,21 @@ function MessageRow({
   );
 
   return (
-    <View style={[styles.row, !showAvatarAndTime && styles.rowTight]}>
+    <View style={[styles.row, !endsGroup && styles.rowTight]}>
       <View style={[styles.line, isArtist ? styles.lineLeft : styles.lineRight]}>
         {isArtist && (
           <View style={styles.avatarSlot}>
-            {showAvatarAndTime ? <Avatar uri={avatarUri} name={actorName} size={30} /> : null}
+            {startsGroup ? (
+              <Pressable onPress={onOpenProfile} accessibilityRole="button" accessibilityLabel={t('chatProfile.open')}>
+                <Avatar uri={avatarUri} size={36} />
+              </Pressable>
+            ) : null}
           </View>
         )}
         <View style={[styles.column, isArtist ? styles.columnLeft : styles.columnRight]}>
-          {senderLabel ? (
-            <ThemedText type="captionBold" themeColor="textSecondary" style={styles.senderLabel}>
-              {senderLabel}
+          {isArtist && startsGroup ? (
+            <ThemedText type="captionBold" themeColor="textSecondary" style={styles.senderLabel} numberOfLines={1}>
+              {actorName}
             </ThemedText>
           ) : null}
           {bubble}
@@ -563,7 +602,7 @@ function MessageRow({
               <IconButton icon={X} size={16} label={t('chat.closeMenu')} onPress={onCloseMenu} style={styles.menuClose} />
             </View>
           )}
-          {showAvatarAndTime && (
+          {endsGroup && (
             <ThemedText type="caption" themeColor="textTertiary" style={styles.time}>
               {time}
             </ThemedText>
@@ -577,7 +616,18 @@ function MessageRow({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
-  headerTitle: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, maxWidth: 240 },
+  headerTitle: { maxWidth: 220, alignItems: 'center' },
+  headerName: { textAlign: 'center' },
+  moreMenu: {
+    position: 'absolute',
+    top: Spacing.one,
+    right: Spacing.three,
+    minWidth: 200,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.one,
+  },
+  moreItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two + 2 },
   headerActions: { flexDirection: 'row', alignItems: 'center' },
   searchBar: {
     flexDirection: 'row',
@@ -602,10 +652,10 @@ const styles = StyleSheet.create({
   day: { textAlign: 'center', marginVertical: Spacing.three },
   row: { marginBottom: Spacing.three },
   rowTight: { marginBottom: 4 },
-  line: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.two },
+  line: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two },
   lineLeft: { justifyContent: 'flex-start' },
   lineRight: { justifyContent: 'flex-end' },
-  avatarSlot: { width: 30, marginBottom: 20 },
+  avatarSlot: { width: 36 },
   column: { maxWidth: '78%', gap: 4 },
   columnLeft: { alignItems: 'flex-start' },
   columnRight: { alignItems: 'flex-end' },

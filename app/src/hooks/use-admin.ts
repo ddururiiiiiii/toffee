@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Bundle } from './use-bundles';
-import type { CoupleMemberActor } from './use-actors';
+import type { ArtistGender, CoupleMemberActor } from './use-actors';
 import { apiClient } from '@/lib/api-client';
 
 // 같은 메시지 신고는 서버가 한 줄로 묶고(reportCount), 여러 명이 신고한 것부터 내려줌
@@ -190,6 +190,8 @@ export interface AdminActor {
   monthlyPriceCents: number;
   storeProductId: string | null;
   verified: boolean;
+  /** 성별(둘러보기 여성·남성 줄) — null이면 지정 안 함, 커플방은 항상 null */
+  gender: ArtistGender | null;
   kind: 'SOLO' | 'COUPLE';
   coupleMembers: { member: CoupleMemberActor }[];
   /** 활동 종료 시각(종료 안 했으면 null) */
@@ -245,14 +247,14 @@ function useActorMutation<TInput>(request: (input: TInput) => Promise<unknown>) 
 }
 
 export function useCreateActor() {
-  return useActorMutation((input: { legalName: string; chatDisplayName: string; monthlyPriceCents: number; agencyId?: string }) =>
+  return useActorMutation((input: { legalName: string; chatDisplayName: string; monthlyPriceCents: number; agencyId?: string; gender?: ArtistGender | null }) =>
     apiClient.post<AdminActor>('/admin/actors', input),
   );
 }
 
 export function useUpdateActor(id: string) {
   return useActorMutation(
-    (input: { legalName?: string; chatDisplayName?: string; monthlyPriceCents?: number; verified?: boolean; storeProductId?: string | null }) =>
+    (input: { legalName?: string; chatDisplayName?: string; monthlyPriceCents?: number; verified?: boolean; gender?: ArtistGender | null; storeProductId?: string | null }) =>
       apiClient.patch<AdminActor>(`/admin/actors/${id}`, input),
   );
 }

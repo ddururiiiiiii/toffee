@@ -119,7 +119,7 @@ export default function SubscribeScreen() {
           </View>
 
           <View style={styles.benefits}>
-            <MembershipBenefits name={actor.chatDisplayName} detailed />
+            <MembershipBenefits name={actor.legalName} detailed />
           </View>
 
           {failure && (

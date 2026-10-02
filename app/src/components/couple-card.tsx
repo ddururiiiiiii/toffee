@@ -10,7 +10,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { Radius, Spacing } from '@/constants/theme';
 import { formatPrice } from '@/utils/price';
 
-/** 커플방 한 줄(배우 프로필 "커플방", 둘러보기) — 멤버 사진 겹침 + 방 이름 + 멤버 공식 이름 + 월 가격 */
+/** 커플방(CP) 한 줄(아티스트 프로필 "CP", 둘러보기) — 멤버 사진 겹침 + 공식 이름 + 멤버 공식 이름 + 월 가격. 구독 전 화면이라 방 닉네임 대신 공식 이름(2026-10-02) */
 export function CoupleCard({ room, onPress }: { room: Actor; onPress: () => void }) {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -23,7 +23,7 @@ export function CoupleCard({ room, onPress }: { room: Actor; onPress: () => void
       <BundleAvatars actors={members} />
       <View style={styles.body}>
         <ThemedText type="defaultSemiBold" numberOfLines={1}>
-          {room.chatDisplayName}
+          {room.legalName}
         </ThemedText>
         <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
           {members.map((member) => member.legalName).join(' · ')} · {formatPrice(t, room.monthlyPriceCents)} {t('actorProfile.perMonth')}

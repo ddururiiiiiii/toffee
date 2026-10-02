@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Icon } from '@/components/ui/icon';
 import { useCancelPurchase, useMyBundles, type MyBundle } from '@/hooks/use-bundles';
-import { useMySubscriptions, type Subscription } from '@/hooks/use-subscriptions';
+import { useMySubscriptions, usePastSubscriptions, type PastSubscription, type Subscription } from '@/hooks/use-subscriptions';
 import { ApiError } from '@/lib/api-client';
 import { confirm } from '@/lib/confirm';
 import { openStoreSubscriptions, storeName } from '@/lib/store-subscriptions';
@@ -43,7 +43,12 @@ export default function ManageSubscriptionsScreen() {
           {bundles?.length ? <MyBundlesSection bundles={bundles} /> : null}
         </>
       }
-      ListFooterComponent={Platform.OS === 'web' ? null : <RestorePurchases />}
+      ListFooterComponent={
+        <>
+          <PastSubscriptionsSection />
+          {Platform.OS === 'web' ? null : <RestorePurchases />}
+        </>
+      }
       renderItem={({ item }) => <SubscriptionCard sub={item} onPress={() => router.push({ pathname: '/subscriptions/[actorId]', params: { actorId: item.actorId } })} />}
       ListEmptyComponent={
         isLoading ? (
@@ -137,6 +142,52 @@ function RestorePurchases() {
   );
 }
 
+/**
+ * 지난 구독(2026-10-02) — 예전에 구독했던 아티스트·CP. 대화 내용은 보여주지 않고(다시 구독해도 이전 대화는 안 보이는 정책) 공식 프로필로 보내
+ * 다시 구독하게 함. 활동 종료한 방은 서버가 뺌.
+ */
+function PastSubscriptionsSection() {
+  const theme = useTheme();
+  const router = useRouter();
+  const { t, i18n } = useTranslation();
+  const { data: past } = usePastSubscriptions();
+  if (!past?.length) return null;
+  const open = (item: PastSubscription) => router.push({ pathname: '/actor/[id]', params: { id: item.actorId } });
+  return (
+    <View style={[styles.section, styles.pastSection]}>
+      <View style={styles.pastHead}>
+        <ThemedText type="headline">{t('manage.pastTitle')}</ThemedText>
+        <ThemedText type="caption" themeColor="textTertiary">
+          {t('manage.pastHint')}
+        </ThemedText>
+      </View>
+      {past.map((item) => (
+        <Pressable
+          key={item.actorId}
+          onPress={() => open(item)}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.card, { borderWidth: 1, borderColor: theme.border, opacity: pressed ? 0.85 : 1 }]}>
+          <Avatar uri={item.actor.photoUrl} size={48} />
+          <View style={styles.body}>
+            <ThemedText type="defaultSemiBold" numberOfLines={1}>
+              {item.actor.legalName}
+            </ThemedText>
+            <ThemedText type="caption" themeColor="textTertiary">
+              {t('manage.endedOn', { date: new Date(item.endedAt).toLocaleDateString(i18n.language) })}
+            </ThemedText>
+          </View>
+          <View style={[styles.status, { backgroundColor: theme.tintSoft }]}>
+            <ThemedText type="captionBold" style={{ color: theme.tint }}>
+              {t('manage.resubscribe')}
+            </ThemedText>
+          </View>
+          <Icon as={ChevronRight} size={18} themeColor="textTertiary" />
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
 function SubscriptionCard({ sub, onPress }: { sub: Subscription; onPress: () => void }) {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
@@ -147,7 +198,7 @@ function SubscriptionCard({ sub, onPress }: { sub: Subscription; onPress: () => 
       onPress={onPress}
       accessibilityRole="button"
       style={({ pressed }) => [styles.card, { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.85 : 1 }]}>
-      <Avatar uri={sub.actor.chatProfileImageUrl} name={sub.actor.chatDisplayName} size={56} />
+      <Avatar uri={sub.actor.chatProfileImageUrl} size={56} />
       <View style={styles.body}>
         <ThemedText type="headline" numberOfLines={1}>
           {sub.actor.chatDisplayName}
@@ -157,13 +208,13 @@ function SubscriptionCard({ sub, onPress }: { sub: Subscription; onPress: () => 
             ? t('bundle.viaShort')
             : `${formatPrice(t, sub.actor.monthlyPriceCents)} ${t('actorProfile.perMonth')}`}
         </ThemedText>
-        <ThemedText type="caption" themeColor="textTertiary">
+        <ThemedText type="caption" themeColor="textTertiary" numberOfLines={1}>
           {t('manage.since', { date: new Date(sub.startedAt).toLocaleDateString(i18n.language) })}
         </ThemedText>
       </View>
       <View style={[styles.status, { backgroundColor: theme.tintSoft }]}>
         <ThemedText type="captionBold" style={{ color: theme.tint }}>
-          {t('manage.active')}
+          {sub.endsAt ? t('inbox.endsOn', { date: new Date(sub.endsAt).toLocaleDateString(i18n.language, { month: 'long', day: 'numeric' }) }) : t('manage.active')}
         </ThemedText>
       </View>
       <Icon as={ChevronRight} size={18} themeColor="textTertiary" />
@@ -182,5 +233,7 @@ const styles = StyleSheet.create({
   bundleHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   roomsTitle: { marginTop: Spacing.two },
   restore: { marginTop: Spacing.four, gap: Spacing.two },
+  pastSection: { marginTop: Spacing.four },
+  pastHead: { gap: 2 },
   center: { textAlign: 'center' },
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SubscriptionsService } from './subscriptions.service.js';
+import { endsAtOf, SubscriptionsService } from './subscriptions.service.js';
 import { CURRENT_TERMS_VERSION } from '../common/legal/terms.js';
 import { appleStoreEvent, googleStoreEvent } from './store-events.js';
 import { googleTransaction, type IapVerificationService, type StoreTransaction } from './iap-verification.service.js';
@@ -139,7 +139,7 @@ describe('스토어 결제 확인', () => {
     expect(t.charges).toEqual([expect.objectContaining({ purchaseId: t.purchases[0].id, storeTransactionId: 'tx-1' })]);
   });
 
-  it('다른 배우·묶음의 상품 영수증으로는 못 엶', async () => {
+  it('다른 아티스트·묶음의 상품 영수증으로는 못 엶', async () => {
     const t = setup();
     t.receipt({ productId: 'toffee.b1' });
     await expect(t.service.verifyPurchase('u', 'a1', t.iosDto)).rejects.toThrow('이 방의 구독 상품');
@@ -247,6 +247,27 @@ describe('스토어 알림 반영', () => {
     expect(t.open('a1')).toBeTruthy();
   });
 
+  it('자동 갱신을 끄면 방은 그대로, 기간 끝 날짜가 "○일까지 이용"으로 — 다시 켜면 사라짐', async () => {
+    const t = setup();
+    const receipt = t.receipt();
+    await t.service.verifyPurchase('u', 'a1', t.iosDto);
+    expect((await t.service.applyStoreEvent({ kind: 'RENEWAL', originalTransactionId: receipt.originalTransactionId, willRenew: false })).applied).toBe(true);
+    expect(t.open('a1')).toBeTruthy();
+    expect(endsAtOf(t.purchases as never)).toEqual(receipt.expiresAt);
+    await t.service.applyStoreEvent({ kind: 'RENEWAL', originalTransactionId: receipt.originalTransactionId, willRenew: true });
+    expect(endsAtOf(t.purchases as never)).toBeNull();
+  });
+
+  it('이용 종료 날짜: 방을 여는 구매가 전부 갱신 꺼짐일 때만, 그중 가장 늦은 날', () => {
+    const a = new Date('2026-11-01T00:00:00Z');
+    const b = new Date('2026-11-15T00:00:00Z');
+    expect(endsAtOf([{ iapExpiresAt: a, willRenew: false }, { iapExpiresAt: b, willRenew: false }])).toEqual(b);
+    expect(endsAtOf([{ iapExpiresAt: a, willRenew: false }, { iapExpiresAt: b, willRenew: true }])).toBeNull();
+    // 테스트 구독(만료일 없음)은 계속 이용
+    expect(endsAtOf([{ iapExpiresAt: null, willRenew: false }])).toBeNull();
+    expect(endsAtOf([])).toBeNull();
+  });
+
   it('결제 실패 유예 기간엔 만료일을 유예 끝까지 늘려 둠', async () => {
     const t = setup();
     t.receipt();
@@ -288,7 +309,12 @@ describe('스토어 알림 해석', () => {
       originalTransactionId: 'o',
       until,
     });
-    expect(appleStoreEvent({ type: 'DID_CHANGE_RENEWAL_STATUS', transaction: tx }).kind).toBe('IGNORED');
+    expect(appleStoreEvent({ type: 'DID_CHANGE_RENEWAL_STATUS', subtype: 'AUTO_RENEW_DISABLED', transaction: tx })).toEqual({
+      kind: 'RENEWAL',
+      originalTransactionId: 'o',
+      willRenew: false,
+    });
+    expect(appleStoreEvent({ type: 'DID_CHANGE_RENEWAL_STATUS', subtype: 'AUTO_RENEW_ENABLED', transaction: tx })).toMatchObject({ kind: 'RENEWAL', willRenew: true });
     expect(appleStoreEvent({ type: 'TEST' }).kind).toBe('IGNORED');
   });
 
@@ -299,7 +325,7 @@ describe('스토어 알림 해석', () => {
     expect((await googleStoreEvent(sub(6), fetch)).kind).toBe('GRACE');
     expect(await googleStoreEvent(sub(13), fetch)).toMatchObject({ kind: 'EXPIRED', originalTransactionId: 'pt', expiresAt: tx.expiresAt });
     expect(await googleStoreEvent(sub(5), fetch)).toMatchObject({ kind: 'EXPIRED', originalTransactionId: 'pt' });
-    expect((await googleStoreEvent(sub(3), fetch)).kind).toBe('IGNORED');
+    expect(await googleStoreEvent(sub(3), fetch)).toEqual({ kind: 'RENEWAL', originalTransactionId: 'pt', willRenew: false });
     expect(await googleStoreEvent({ voidedPurchaseNotification: { purchaseToken: 'pt', orderId: 'GPA.1..2' } }, fetch)).toEqual({
       kind: 'REFUNDED',
       originalTransactionId: 'pt',

@@ -7,11 +7,11 @@ import { useTheme } from '@/hooks/use-theme';
 import { Radius, Spacing } from '@/constants/theme';
 
 // 운영자 화면은 운영자(한국어) 전용이라 의도적으로 다국어 처리 안 함
-const REASON_LABELS: Record<AdminRefundEntry['reason'], string> = { STAR_IDLE: '스타 미발송', ACTOR_RETIRED: '활동 종료' };
+const REASON_LABELS: Record<AdminRefundEntry['reason'], string> = { STAR_IDLE: '아티스트 미발송', ACTOR_RETIRED: '활동 종료' };
 const SOURCE_LABELS: Record<AdminRefundEntry['source'], string> = { SANDBOX: '테스트', APPLE: '애플', GOOGLE: '구글' };
 const FILTERS: { value: AdminRefundEntry['reason'] | undefined; label: string }[] = [
   { value: undefined, label: '전체' },
-  { value: 'STAR_IDLE', label: '스타 미발송' },
+  { value: 'STAR_IDLE', label: '아티스트 미발송' },
   { value: 'ACTOR_RETIRED', label: '활동 종료' },
 ];
 
@@ -95,7 +95,7 @@ export default function AdminRefundsScreen() {
               팬: {item.fan ? `${item.fan.name}${item.fan.email ? ` (${item.fan.email})` : ''}` : '탈퇴한 회원'} · {SOURCE_LABELS[item.source]} 결제
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              배우 {item.actors.join(', ')} · {agencies} · 이용 기간 {day(item.chargedAt)} ~ {day(new Date(new Date(item.periodEnd).getTime() - 1).toISOString())}
+              아티스트 {item.actors.join(', ')} · {agencies} · 이용 기간 {day(item.chargedAt)} ~ {day(new Date(new Date(item.periodEnd).getTime() - 1).toISOString())}
             </ThemedText>
             <ThemedText type="caption" themeColor="textTertiary">
               요청 {new Date(item.requestedAt).toLocaleString('ko-KR')}

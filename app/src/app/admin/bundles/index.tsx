@@ -21,7 +21,7 @@ export default function AdminBundlesScreen() {
         <AdminButton label="새 묶음 만들기" onPress={() => router.push('/admin/bundles/new')} />
         {isLoading ? <ActivityIndicator color={theme.tint} /> : null}
         {bundles?.length === 0 ? (
-          <AdminSection title="아직 묶음이 없어요" hint="예: 배우 A + 배우 B를 개인 구독 합계보다 싸게. 커플방이 생기면 커플방도 넣을 수 있게 할 예정이에요." />
+          <AdminSection title="아직 묶음이 없어요" hint="예: 아티스트 A + 아티스트 B를 개인 구독 합계보다 싸게. CP방이 생기면 CP방도 넣을 수 있게 할 예정이에요." />
         ) : null}
         {bundles?.map((bundle) => (
           <Pressable

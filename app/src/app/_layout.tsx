@@ -174,6 +174,7 @@ function RootLayout() {
               <Stack.Screen name="settings/nickname" options={{ headerShown: true, title: t('profile.editNickname') }} />
               <Stack.Screen name="settings/notifications" options={{ headerShown: true, title: t('profile.notifications') }} />
               <Stack.Screen name="chat/[actorId]" options={{ headerShown: true, title: '' }} />
+              <Stack.Screen name="chat-profile/[actorId]" options={{ headerShown: false, presentation: 'modal' }} />
               <Stack.Screen name="report" options={{ headerShown: true, title: t('report.title'), presentation: 'modal' }} />
               <Stack.Screen name="blocks/[actorId]" options={{ headerShown: true, title: t('block.manage') }} />
               <Stack.Screen name="media-viewer" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
@@ -193,10 +194,10 @@ function RootLayout() {
               <Stack.Screen name="admin/reports" options={{ headerShown: true, title: '신고 처리' }} />
               <Stack.Screen name="admin/banned-words" options={{ headerShown: true, title: '금칙어 관리' }} />
               <Stack.Screen name="admin/users" options={{ headerShown: true, title: '회원 관리' }} />
-              <Stack.Screen name="admin/actors/index" options={{ headerShown: true, title: '배우 관리' }} />
-              <Stack.Screen name="admin/actors/new" options={{ headerShown: true, title: '배우 등록' }} />
-              <Stack.Screen name="admin/actors/new-couple" options={{ headerShown: true, title: '커플방 만들기' }} />
-              <Stack.Screen name="admin/actors/[id]" options={{ headerShown: true, title: '배우' }} />
+              <Stack.Screen name="admin/actors/index" options={{ headerShown: true, title: '아티스트 관리' }} />
+              <Stack.Screen name="admin/actors/new" options={{ headerShown: true, title: '아티스트 등록' }} />
+              <Stack.Screen name="admin/actors/new-couple" options={{ headerShown: true, title: 'CP방 만들기' }} />
+              <Stack.Screen name="admin/actors/[id]" options={{ headerShown: true, title: '아티스트' }} />
               <Stack.Screen name="admin/bundles/index" options={{ headerShown: true, title: '묶음 상품' }} />
               <Stack.Screen name="admin/bundles/new" options={{ headerShown: true, title: '묶음 만들기' }} />
               <Stack.Screen name="admin/bundles/[id]" options={{ headerShown: true, title: '묶음' }} />

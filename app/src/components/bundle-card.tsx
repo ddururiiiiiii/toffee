@@ -19,7 +19,6 @@ export function BundleAvatars({ actors, size = 40 }: { actors: Pick<Bundle['acto
         <Avatar
           key={actor.id}
           uri={actor.chatProfileImageUrl}
-          name={actor.chatDisplayName}
           size={size}
           style={[index > 0 && { marginLeft: -size * 0.32 }, { borderWidth: 2, borderColor: theme.background, borderRadius: size / 2 }]}
         />

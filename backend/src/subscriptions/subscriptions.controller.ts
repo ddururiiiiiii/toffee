@@ -19,6 +19,12 @@ export class SubscriptionsController {
     return this.subscriptionsService.listMine(user.id);
   }
 
+  // 지난 구독(구독 관리의 "지난 구독" — 다시 구독하기 안내용, 대화 내용은 없음)
+  @Get('me/subscriptions/past')
+  listPast(@CurrentUser() user: AuthenticatedUser) {
+    return this.subscriptionsService.listPast(user.id);
+  }
+
   // 결제 없는 테스트 구독 — ENABLE_SANDBOX_SUBSCRIBE=true인 서버에서만(운영에선 404)
   @UseGuards(SandboxSubscribeGuard)
   @Post('actors/:actorId/subscribe')

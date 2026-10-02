@@ -36,6 +36,8 @@ export type StoreEvent =
   // expiresAt: 알림이 말하는 만료 시각 — 우리가 아는 만료일이 더 뒤면(그 사이 갱신됨) 늦게 온 옛 알림이라 무시
   | { kind: 'EXPIRED'; originalTransactionId: string; expiresAt?: Date }
   | { kind: 'REFUNDED'; originalTransactionId: string; storeTransactionId?: string }
+  // 자동 갱신 끔(팬이 스토어에서 해지)·다시 켬 — 방은 그대로(기간 끝까지 이용), 표시만 바뀜
+  | { kind: 'RENEWAL'; originalTransactionId: string; willRenew: boolean }
   | { kind: 'IGNORED'; reason: string };
 
 /** 유효한 구매 하나 — 배우 개인(actorId) 또는 묶음(bundle, 포함 배우들) */
@@ -43,6 +45,18 @@ const PURCHASE_INCLUDE = {
   bundle: { select: { id: true, name: true, priceCents: true, actors: { select: { actorId: true } } } },
 } as const;
 type PurchaseRow = Prisma.PurchaseGetPayload<{ include: typeof PURCHASE_INCLUDE }>;
+
+// 구독 관리의 "지난 구독"은 최근 이만큼만
+const PAST_SUBSCRIPTIONS_LIMIT = 50;
+
+/**
+ * 해지 예정 방의 이용 종료 시각(2026-10-02) — 이 방을 열어 주는 구매가 전부 스토어 결제이고 자동 갱신이 꺼져 있으면 그중 가장 늦은 만료일.
+ * 하나라도 갱신 예정이거나 테스트 구독(만료일 없음)이면 null(계속 이용). 앱 대화 목록·구독 관리의 "○월 ○일까지 이용".
+ */
+export function endsAtOf(purchases: Pick<PurchaseRow, 'iapExpiresAt' | 'willRenew'>[]): Date | null {
+  if (purchases.length === 0 || purchases.some((purchase) => purchase.willRenew || !purchase.iapExpiresAt)) return null;
+  return new Date(Math.max(...purchases.map((purchase) => purchase.iapExpiresAt!.getTime())));
+}
 
 function actorIdsOf(purchase: PurchaseRow): string[] {
   return purchase.actorId ? [purchase.actorId] : (purchase.bundle?.actors.map((item) => item.actorId) ?? []);
@@ -100,13 +114,13 @@ export class SubscriptionsService {
           }),
           this.media.resolveImageUrl(subscription.actor.chatProfileImageUrl),
         ]);
+        const covering = purchases.filter((purchase) => actorIdsOf(purchase).includes(subscription.actorId));
         return {
           ...subscription,
           actor: { ...subscription.actor, chatProfileImageUrl },
           unreadCount,
-          coveredBy: purchases
-            .filter((purchase) => actorIdsOf(purchase).includes(subscription.actorId))
-            .map((purchase) => ({
+          endsAt: endsAtOf(covering),
+          coveredBy: covering.map((purchase) => ({
               purchaseId: purchase.id,
               // 스토어 결제면 해지는 스토어에서(앱이 바로 스토어 구독 관리로 안내)
               iapPlatform: purchase.iapPlatform,
@@ -126,6 +140,50 @@ export class SubscriptionsService {
     );
     const activity = (row: (typeof rows)[number]) => (row.lastMessage?.createdAt ?? row.startedAt).getTime();
     return rows.sort((a, b) => activity(b) - activity(a));
+  }
+
+  /**
+   * 지난 구독(2026-10-02) — 예전에 구독했다가 끝난 방. 구독 관리 화면의 "지난 구독"에서 다시 구독하기로 안내만 하고 대화 내용은 주지 않음
+   * (다시 구독해도 이전 대화는 안 보이는 정책 그대로). 활동 종료한 방은 다시 구독할 수 없어서 뺌. 구독 전 화면처럼 공식 이름·공식 사진.
+   */
+  async listPast(userId: string) {
+    const rows = await this.prisma.subscription.findMany({
+      where: { userId, cancelledAt: { not: null } },
+      orderBy: { cancelledAt: 'desc' },
+      take: PAST_SUBSCRIPTIONS_LIMIT,
+      select: {
+        actorId: true,
+        startedAt: true,
+        cancelledAt: true,
+        actor: {
+          select: {
+            legalName: true,
+            officialProfileImageUrl: true,
+            chatProfileImageUrl: true,
+            kind: true,
+            monthlyPriceCents: true,
+            retiredAt: true,
+            coupleMembers: { select: { member: { select: { retiredAt: true } } } },
+          },
+        },
+      },
+    });
+    return Promise.all(
+      rows
+        .filter((row) => !roomRetired(row.actor))
+        .map(async (row) => ({
+          actorId: row.actorId,
+          startedAt: row.startedAt,
+          endedAt: row.cancelledAt,
+          actor: {
+            id: row.actorId,
+            legalName: row.actor.legalName,
+            kind: row.actor.kind,
+            monthlyPriceCents: row.actor.monthlyPriceCents,
+            photoUrl: await this.media.resolveImageUrl(row.actor.officialProfileImageUrl ?? row.actor.chatProfileImageUrl),
+          },
+        })),
+    );
   }
 
   /** 내 유효한 묶음 구매 — 구독 관리 화면의 묶음 카드 */
@@ -305,7 +363,13 @@ export class SubscriptionsService {
       storeAmountMilli: verified.storeAmountMilli,
       storeCurrency: verified.storeCurrency,
     };
-    const iap = { iapPlatform: verified.platform, iapTransactionId: verified.originalTransactionId, iapExpiresAt: verified.expiresAt };
+    const iap = {
+      iapPlatform: verified.platform,
+      iapTransactionId: verified.originalTransactionId,
+      iapExpiresAt: verified.expiresAt,
+      // 갱신 여부는 스토어가 알려 줄 때만(앱의 영수증 확인엔 없음 — 그대로 둠)
+      ...(verified.willRenew === undefined ? {} : { willRenew: verified.willRenew }),
+    };
     let purchaseId: string;
     try {
       purchaseId = await this.writeStorePurchase(userId, verified, target, existing, iap, charge);
@@ -324,7 +388,7 @@ export class SubscriptionsService {
     verified: StoreTransaction,
     target: StoreTargetInfo,
     existing: { id: string; iapExpiresAt: Date | null } | null,
-    iap: { iapPlatform: 'IOS' | 'ANDROID'; iapTransactionId: string; iapExpiresAt: Date },
+    iap: { iapPlatform: 'IOS' | 'ANDROID'; iapTransactionId: string; iapExpiresAt: Date; willRenew?: boolean },
     charge: Parameters<ChargeLedgerService['record']>[2],
   ): Promise<string> {
     return this.prisma.$transaction(async (tx) => {
@@ -376,6 +440,13 @@ export class SubscriptionsService {
       if (charge && charge.periodEnd <= new Date()) return { applied: true };
     }
     if (!purchase) return { applied: event.kind === 'REFUNDED' };
+    if (event.kind === 'RENEWAL') {
+      if (purchase.willRenew !== event.willRenew) {
+        await this.prisma.purchase.update({ where: { id: purchase.id }, data: { willRenew: event.willRenew } });
+        this.accessChanged(purchase.userId);
+      }
+      return { applied: true };
+    }
     if (event.kind === 'GRACE') {
       if (!purchase.iapExpiresAt || event.until > purchase.iapExpiresAt) {
         await this.prisma.purchase.update({ where: { id: purchase.id }, data: { iapExpiresAt: event.until } });

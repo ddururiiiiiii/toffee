@@ -41,7 +41,7 @@ function statusLabel(status: AdminUser['status']) {
 
 const ROLE_LABELS: Record<AdminUser['role'], string> = {
   USER: '팬',
-  ACTOR: '배우',
+  ACTOR: '아티스트',
   AGENCY_STAFF: '소속사 직원',
   ADMIN: '운영자',
 };
@@ -60,7 +60,7 @@ function RoleControls({ user }: { user: AdminUser }) {
     if (role === user.role) return;
     const detail =
       user.role === 'ACTOR' && user.actorSelf
-        ? `\n${user.actorSelf.legalName} 배우 본인 계정 연결이 해제돼요.`
+        ? `\n${user.actorSelf.legalName} 아티스트 본인 계정 연결이 해제돼요.`
         : user.role === 'AGENCY_STAFF' && user.agency
           ? `\n${user.agency.name} 소속사 배정이 해제돼요.`
           : '';
