@@ -43,6 +43,14 @@
   없음, 로고는 심사 생겨서 안 올림), 개인정보·약관은 `api-demo.toffeechat.app/legal/*`. 클라이언트: Web(서버 audience 겸, 허용 출처
   demo·pages.dev·localhost:8081) + iOS 개발용(`com.toffeechat.app.dev`). Client ID는 공개 값이라 `eas.json`(development·preview·
   production의 웹 ID)과 `.env.example`에 커밋. 안드로이드 클라이언트는 EAS 서명 SHA-1이 필요해 실기기 빌드 때.
+- **카카오 로그인 등록**: 카카오는 `dev@toffeechat.app`(`.app` 도메인)으로 계정 가입을 거절 → 토피 Gmail로 카카오계정(닉네임 Toffee).
+  앱 `Toffee`(앱 ID 1595119, 대표 도메인 demo). 새 콘솔은 "플랫폼" 메뉴 대신 **플랫폼 키 → 각 키 상세**에 설정(네이티브 앱 키에 iOS
+  번들 ID, REST API 키에 리다이렉트 URI `…/oauth/kakao`·클라이언트 시크릿). 동의항목 닉네임 필수·프로필 사진 선택(이메일은 비즈 앱 필요).
+  서버 `KAKAO_APP_ID`·`KAKAO_REST_API_KEY`·`KAKAO_CLIENT_SECRET`·`WEB_LOGIN_ORIGINS`, 웹 `EXPO_PUBLIC_WEB_KAKAO_REST_API_KEY`, 앱
+  `eas.json` 네이티브 키. 웹 데모에서 로그인 확인.
+- **로그인 버튼 통일**(사용자 지적: 웹에서 구글 버튼과 카카오 버튼 모양이 너무 다름): 구글은 공식 버튼(GIS, 320×40 알약)이라 바꿀 수
+  없어서 나머지를 맞춤 — `SocialButton`(알약, 왼쪽 로고, 웹 320×40 가운데·앱은 폭 가득 48) + `SocialProviderIcon`(애플·네이버·LINE은
+  simple-icons CC0 모양, 카카오 말풍선, 구글 4색 G). 앱·웹 버튼이 같은 컴포넌트를 씀.
 
 ---
 

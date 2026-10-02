@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { ThemedText } from '@/components/themed-text';
-import { orderedProviders, PROVIDER_STYLE } from '@/components/social-button-style';
+import { orderedProviders } from '@/components/social-button-style';
+import { SocialButton } from '@/components/social-button';
 import { availableProviders, GOOGLE_WEB_CLIENT_ID, isRedirectProvider, startRedirectLogin } from '@/lib/social-sign-in.web';
-import { Radius, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import type { SocialCredential } from '@/lib/social-types';
 
 interface GoogleIdentity {
@@ -81,24 +81,9 @@ export function SocialLoginButtons({
   if (!GOOGLE_WEB_CLIENT_ID && redirects.length === 0) return null;
   return (
     <View style={styles.list}>
-      {redirects.map((provider) => {
-        const look = PROVIDER_STYLE[provider];
-        return (
-          <Pressable
-            key={provider}
-            onPress={() => startRedirectLogin(provider)}
-            accessibilityRole="button"
-            style={({ pressed }) => [
-              styles.button,
-              // 애플(검정)은 어두운 배경에서 안 보여서 얇은 테두리(앱 버튼과 같음)
-              { backgroundColor: look.background, opacity: pressed ? 0.85 : 1, borderWidth: look.border ? 1 : 0, borderColor: look.border },
-            ]}>
-            <ThemedText type="smallBold" style={{ color: look.text }}>
-              {t(`login.continueWith.${provider}`)}
-            </ThemedText>
-          </Pressable>
-        );
-      })}
+      {redirects.map((provider) => (
+        <SocialButton key={provider} provider={provider} label={t(`login.continueWith.${provider}`)} onPress={() => startRedirectLogin(provider)} />
+      ))}
       {GOOGLE_WEB_CLIENT_ID ? <View ref={container} style={styles.google} /> : null}
     </View>
   );
@@ -106,6 +91,6 @@ export function SocialLoginButtons({
 
 const styles = StyleSheet.create({
   list: { gap: Spacing.two },
-  button: { height: 50, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
-  google: { alignItems: 'center', minHeight: 44 },
+  // 구글 공식 버튼(320×40)이 그려질 자리 — 다른 버튼과 같은 크기
+  google: { alignItems: 'center', minHeight: 40 },
 });
