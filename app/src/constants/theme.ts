@@ -24,6 +24,8 @@ export const Colors = {
     primary: '#0F1115',
     onPrimary: '#ffffff',
     danger: '#E5484D',
+    // 사진 없는 기본 프로필의 사람 실루엣(바탕은 tintSoft)
+    avatarFigure: '#FFFFFF',
   },
   dark: {
     text: '#ffffff',
@@ -38,6 +40,7 @@ export const Colors = {
     primary: '#ffffff',
     onPrimary: '#0F1115',
     danger: '#FF6369',
+    avatarFigure: 'rgba(124, 140, 255, 0.45)',
   },
 } as const;
 

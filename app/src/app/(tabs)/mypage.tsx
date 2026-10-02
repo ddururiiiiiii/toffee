@@ -64,7 +64,7 @@ export default function ProfileScreen() {
         </ThemedText>
 
         <View style={[styles.me, { backgroundColor: theme.backgroundElement }]}>
-          <Avatar name={me?.nickname ?? '?'} size={56} />
+          <Avatar size={56} />
           <View style={styles.meBody}>
             <ThemedText type="headline" numberOfLines={1}>
               {me?.nickname ?? t('profile.noNickname')}

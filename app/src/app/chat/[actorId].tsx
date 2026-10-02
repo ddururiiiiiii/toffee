@@ -571,7 +571,7 @@ function MessageRow({
           <View style={styles.avatarSlot}>
             {startsGroup ? (
               <Pressable onPress={onOpenProfile} accessibilityRole="button" accessibilityLabel={t('chatProfile.open')}>
-                <Avatar uri={avatarUri} name={actorName} size={36} />
+                <Avatar uri={avatarUri} size={36} />
               </Pressable>
             ) : null}
           </View>

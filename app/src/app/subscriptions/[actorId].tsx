@@ -83,7 +83,7 @@ export default function SubscriptionDetailScreen() {
   return (
     <ScrollView style={{ backgroundColor: theme.background }} contentContainerStyle={styles.scroll}>
       <View style={styles.head}>
-        <Avatar uri={sub.actor.chatProfileImageUrl} name={sub.actor.chatDisplayName} size={72} />
+        <Avatar uri={sub.actor.chatProfileImageUrl} size={72} />
         <ThemedText type="title">{sub.actor.chatDisplayName}</ThemedText>
       </View>
 

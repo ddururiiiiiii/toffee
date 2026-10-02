@@ -268,9 +268,9 @@
   },
   "chatPhoto": {
     "change": "Change chat photo",
-    "remove": "Remove photo",
-    "removeTitle": "Remove chat photo",
-    "removeConfirm": "Fans will no longer see this photo in the chat room.",
+    "remove": "Use default image",
+    "removeTitle": "Switch to default image",
+    "removeConfirm": "Your chat photo will be removed and replaced with the default profile image.",
     "uploading": "Uploading…",
     "failed": "Couldn't change the photo. Please try again."
   },

@@ -1,9 +1,10 @@
 import { type ReactNode } from 'react';
-import { Image, Pressable, StyleSheet, TextInput, type TextInputProps } from 'react-native';
+import { Image, Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { PersonFigure } from '@/components/ui/person-figure';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
@@ -96,11 +97,21 @@ export function AdminMessage({ text, error }: { text: string | null; error?: boo
   );
 }
 
-/** 정사각 썸네일 — 사진이 없으면 이름 첫 글자(기본 이모지 대신) */
-export function AdminAvatar({ uri, name, size = 48 }: { uri: string | null; name: string; size?: number }) {
+/**
+ * 정사각 썸네일 — 사진이 없으면 사람 모양 기본 프로필(앱 Avatar와 같음, 2026-10-02).
+ * 소속사 로고처럼 사람이 아닌 것은 org로 — 이름 첫 글자.
+ */
+export function AdminAvatar({ uri, name, size = 48, org }: { uri: string | null; name: string; size?: number; org?: boolean }) {
   const theme = useTheme();
   const box = { width: size, height: size, borderRadius: size / 4 };
   if (uri) return <Image source={{ uri }} style={[box, { backgroundColor: theme.backgroundSelected }]} />;
+  if (!org) {
+    return (
+      <View style={[box, { overflow: 'hidden' }]}>
+        <PersonFigure width={size} />
+      </View>
+    );
+  }
   return (
     <ThemedView style={[box, styles.avatarFallback, { backgroundColor: theme.backgroundSelected }]}>
       <ThemedText type="smallBold">{name.trim().charAt(0)}</ThemedText>

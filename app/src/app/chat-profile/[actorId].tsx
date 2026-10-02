@@ -47,7 +47,7 @@ export default function ChatProfileScreen() {
       {profile ? (
         <ScrollView contentContainerStyle={styles.body}>
           <Pressable onPress={openPhoto} disabled={!profile.photo} accessibilityRole="imagebutton" accessibilityLabel={t('chatProfile.viewPhoto')}>
-            <Avatar uri={profile.photo} name={profile.name} size={128} />
+            <Avatar uri={profile.photo} size={128} />
           </Pressable>
           <View style={styles.names}>
             <ThemedText type="title" style={styles.center}>
@@ -72,7 +72,7 @@ export default function ChatProfileScreen() {
                   onPress={() => router.push({ pathname: '/chat-profile/[actorId]', params: { actorId, memberId: m.id } })}
                   style={styles.member}
                   accessibilityRole="button">
-                  <Avatar uri={m.chatProfileImageUrl ?? actor?.chatProfileImageUrl} name={m.chatDisplayName} size={44} />
+                  <Avatar uri={m.chatProfileImageUrl ?? actor?.chatProfileImageUrl} size={44} />
                   <View style={styles.memberNames}>
                     <ThemedText type="defaultSemiBold" numberOfLines={1}>
                       {m.chatDisplayName}

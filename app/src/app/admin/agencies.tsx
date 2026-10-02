@@ -69,7 +69,7 @@ function AgencyRow({ agency }: { agency: AdminAgency }) {
   return (
     <ThemedView style={[styles.row, { backgroundColor: theme.backgroundElement }]}>
       <ThemedView style={styles.rowHeader}>
-        <AdminAvatar uri={agency.logoUrl} name={agency.name} />
+        <AdminAvatar uri={agency.logoUrl} name={agency.name} org />
         <ThemedView style={styles.rowBody}>
           <ThemedText type="smallBold">{agency.name}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">

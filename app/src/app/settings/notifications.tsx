@@ -30,7 +30,7 @@ function ActorToggle({ sub }: { sub: Subscription }) {
   const setMuted = useSetNotificationsMuted(sub.actorId);
   return (
     <View style={styles.row}>
-      <Avatar uri={sub.actor.chatProfileImageUrl} name={sub.actor.chatDisplayName} size={40} />
+      <Avatar uri={sub.actor.chatProfileImageUrl} size={40} />
       <ThemedText type="defaultMedium" style={styles.name} numberOfLines={1}>
         {sub.actor.chatDisplayName}
       </ThemedText>

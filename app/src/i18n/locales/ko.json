@@ -268,9 +268,9 @@
   },
   "chatPhoto": {
     "change": "대화방 사진 바꾸기",
-    "remove": "사진 삭제",
-    "removeTitle": "대화방 사진 삭제",
-    "removeConfirm": "채팅방에서 팬들에게 보이는 사진이 지워져요.",
+    "remove": "기본 이미지로",
+    "removeTitle": "기본 이미지로 바꾸기",
+    "removeConfirm": "대화방 사진을 지우고 사람 모양 기본 이미지로 바꿔요.",
     "uploading": "올리는 중…",
     "failed": "사진을 바꾸지 못했어요. 다시 시도해 주세요."
   },

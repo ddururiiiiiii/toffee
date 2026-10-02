@@ -268,9 +268,9 @@
   },
   "chatPhoto": {
     "change": "更换聊天头像",
-    "remove": "删除照片",
-    "removeTitle": "删除聊天头像",
-    "removeConfirm": "粉丝在聊天室中将看不到这张照片。",
+    "remove": "使用默认头像",
+    "removeTitle": "改为默认头像",
+    "removeConfirm": "将删除聊天头像，并换成默认的人形头像。",
     "uploading": "上传中…",
     "failed": "无法更换照片，请重试。"
   },

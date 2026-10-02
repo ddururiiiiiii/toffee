@@ -67,7 +67,7 @@ export default function InboxScreen() {
             style={styles.storyItem}
             accessibilityRole="button"
             accessibilityLabel={sub.actor.chatDisplayName}>
-            <Avatar uri={sub.actor.chatProfileImageUrl} name={sub.actor.chatDisplayName} size={64} ring={sub.unreadCount > 0} dot={sub.unreadCount > 0} />
+            <Avatar uri={sub.actor.chatProfileImageUrl} size={64} ring={sub.unreadCount > 0} dot={sub.unreadCount > 0} />
             <ThemedText type={sub.unreadCount > 0 ? 'smallBold' : 'small'} numberOfLines={1} style={styles.storyName}>
               {sub.actor.chatDisplayName}
             </ThemedText>
@@ -83,7 +83,7 @@ export default function InboxScreen() {
           {highlight.actor.chatProfileImageUrl ? (
             <Image source={{ uri: highlight.actor.chatProfileImageUrl }} style={styles.highlightPhoto} contentFit="cover" />
           ) : (
-            <Avatar name={highlight.actor.chatDisplayName} size={64} />
+            <Avatar size={64} />
           )}
           <View style={styles.highlightBody}>
             <ThemedText type="headline" numberOfLines={1}>
@@ -147,7 +147,7 @@ function InboxRow({ sub, onPress, locale }: { sub: Subscription; onPress: () => 
         .filter(Boolean)
         .join(', ')}
       style={({ pressed }) => [styles.row, { backgroundColor: pressed ? theme.backgroundElement : 'transparent' }]}>
-      <Avatar uri={sub.actor.chatProfileImageUrl} name={sub.actor.chatDisplayName} size={56} ring={unread} />
+      <Avatar uri={sub.actor.chatProfileImageUrl} size={56} ring={unread} />
       <View style={styles.rowBody}>
         <View style={styles.rowTop}>
           <View style={styles.nameLine}>

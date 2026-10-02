@@ -147,7 +147,7 @@ function SubscriptionCard({ sub, onPress }: { sub: Subscription; onPress: () => 
       onPress={onPress}
       accessibilityRole="button"
       style={({ pressed }) => [styles.card, { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.85 : 1 }]}>
-      <Avatar uri={sub.actor.chatProfileImageUrl} name={sub.actor.chatDisplayName} size={56} />
+      <Avatar uri={sub.actor.chatProfileImageUrl} size={56} />
       <View style={styles.body}>
         <ThemedText type="headline" numberOfLines={1}>
           {sub.actor.chatDisplayName}

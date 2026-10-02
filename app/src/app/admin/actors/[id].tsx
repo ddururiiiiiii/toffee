@@ -67,7 +67,7 @@ function PhotoSlot({ actor, field, label }: { actor: AdminActor; field: ImageFie
   };
 
   const remove = async () => {
-    if (!(await confirm(`${label} 삭제`, '사진을 지우면 이름 첫 글자로 표시돼요.', '삭제', '취소'))) return;
+    if (!(await confirm(`${label} 삭제`, '사진을 지우면 사람 모양 기본 이미지로 표시돼요.', '삭제', '취소'))) return;
     updateImages.mutate({ [field]: null }, { onError: (e) => setMessage(errorText(e, '삭제하지 못했어요.')) });
   };
 
@@ -291,7 +291,7 @@ export default function AdminActorDetailScreen() {
           <ThemedText type="small" themeColor="textSecondary">
             {formatBaht(actor.monthlyPriceCents)}/월 · 구독자 {actor.activeSubscriberCount}명 · 등록 {formatDate(actor.createdAt)}
           </ThemedText>
-          <AdminSection title="프로필 사진" hint="공식 사진은 배우 찾기·배우 소개에, 대화방 사진은 채팅방에서 보여요. 정사각으로 잘라서 올려요.">
+          <AdminSection title="프로필 사진" hint="공식 사진은 배우 찾기·배우 소개에, 대화방 사진은 채팅방에서 보여요. 공식 사진을 처음 올리면 비어 있는 대화방 사진에도 같이 들어가요(배우가 나중에 바꾸거나 기본 이미지로 돌릴 수 있음). 정사각으로 잘라서 올려요.">
             <ThemedView style={styles.photos}>
               <PhotoSlot actor={actor} field="officialProfileImageKey" label="공식 사진" />
               <PhotoSlot actor={actor} field="chatProfileImageKey" label="대화방 사진" />

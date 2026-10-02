@@ -115,7 +115,7 @@ export default function SubscribeBundleScreen() {
           <ThemedText type="headline">{t('bundle.includes', { count: bundle.actors.length })}</ThemedText>
           {bundle.actors.map((actor) => (
             <View key={actor.id} style={styles.actorRow}>
-              <Avatar uri={actor.chatProfileImageUrl} name={actor.chatDisplayName} size={40} />
+              <Avatar uri={actor.chatProfileImageUrl} size={40} />
               <View style={styles.flex}>
                 <ThemedText type="defaultSemiBold">{actor.legalName}</ThemedText>
                 <ThemedText type="caption" themeColor="textTertiary">

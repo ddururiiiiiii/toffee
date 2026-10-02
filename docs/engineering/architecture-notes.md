@@ -1344,3 +1344,13 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
 - 새 라우트 `chat-profile/[actorId]`(`presentation: 'modal'`, 헤더 없음, `?memberId=`면 커플방 멤버). `useActor` 캐시를 그대로 씀(추가 API 없음).
   사진 확대는 `media-viewer`에 `actorId` 없이 넘겨 단일 이미지로.
 - 구독 전 화면(`actor/[id]`, `subscribe/[actorId]`, `subscribe/bundle/[bundleId]`)의 `MembershipBenefits name`은 `legalName`.
+
+## 기본 프로필 이미지·대화방 사진 시작값 (2026-10-02)
+
+- 앱 `components/ui/person-figure.tsx`(`react-native-svg`, viewBox 100, `xMidYMax meet`) — 바탕 `tintSoft`, 실루엣 새 토큰 `avatarFigure`
+  (light `#FFFFFF`, dark `rgba(124,140,255,0.45)`). `Avatar`는 사진이 없으면 이걸 원으로 잘라 씀 → `name` prop 제거(호출부 전부 정리).
+  `AdminAvatar`도 기본은 실루엣, `org`(소속사 로고)만 이름 첫 글자. 배우 찾기 사진 카드는 Cloud 바탕 위쪽에 `Avatar`(아래 이름 그림자 피해서).
+- 서버 `src/actors/profile-images.ts` `withFirstOfficialAsChat` — `ActorsService.updateImages` 시작에서 변경을 보정: 공식 사진이 처음 생기고
+  (`officialProfileImageUrl === null`) 대화방 사진도 비어 있고 같은 요청에서 대화방 사진을 안 정했으면 `chat = official`. 같은 키를 두 칸이 가리켜도
+  기존 `stillUsed` 검사 때문에 한쪽을 바꿀 때 파일이 지워지지 않음. 스키마 변경 없음(대화방 사진 null = 기본 이미지).
+

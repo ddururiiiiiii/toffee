@@ -99,7 +99,7 @@ export default function DiscoverScreen() {
                 style={styles.ringItem}
                 accessibilityRole="button"
                 accessibilityLabel={t('discover.openProfile', { name: actor.legalName })}>
-                <Avatar uri={photoOf(actor)} name={actor.legalName} size={68} ring />
+                <Avatar uri={photoOf(actor)} size={68} ring />
                 <View style={[styles.rank, { backgroundColor: theme.background, borderColor: theme.tintSoft }]}>
                   <ThemedText type="captionBold" style={{ color: theme.tint }}>
                     {index + 1}
@@ -195,10 +195,9 @@ function ActorPhotoCard({ actor, width, subscribed, onPress }: { actor: Actor; w
       {photo ? (
         <Image source={{ uri: photo }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
       ) : (
-        <View style={[StyleSheet.absoluteFill, styles.cardFallback, { backgroundColor: theme.tintSoft }]}>
-          <ThemedText type="display" style={{ color: theme.tint }}>
-            {actor.legalName.charAt(0)}
-          </ThemedText>
+        // 사진이 없으면 Cloud 바탕 위쪽에 기본 프로필 원(아래 이름 그림자에 가리지 않게)
+        <View style={[StyleSheet.absoluteFill, styles.cardFallback]}>
+          <Avatar size={width * 0.52} />
         </View>
       )}
       <LinearGradient colors={['transparent', 'rgba(15,17,21,0.78)']} style={styles.cardShade} />
@@ -257,7 +256,7 @@ const styles = StyleSheet.create({
   cardRow: { gap: Spacing.three, paddingHorizontal: Spacing.four },
   gridRow: { gap: Spacing.three, paddingHorizontal: Spacing.four, marginBottom: Spacing.three },
   card: { borderRadius: Radius.lg, overflow: 'hidden', justifyContent: 'flex-end' },
-  cardFallback: { alignItems: 'center', justifyContent: 'center' },
+  cardFallback: { alignItems: 'center', paddingTop: '12%' },
   cardShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
   tag: { position: 'absolute', top: 10, left: 10, borderRadius: Radius.pill, paddingHorizontal: 8, paddingVertical: 2 },
   cardText: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, gap: Spacing.two },
