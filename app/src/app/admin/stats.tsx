@@ -59,7 +59,7 @@ export default function AdminStatsScreen() {
             <Metric label="활성 구독" value={String(summary.subscriptions.active)} hint={`30일 시작 ${summary.subscriptions.started30d} · 해지 ${summary.subscriptions.cancelled30d}`} />
             <Metric label="접속" value={`${summary.fans.activeToday}`} hint={`오늘 · 30일 ${summary.fans.active30d}명`} />
             <Metric label="대기 중인 신고" value={String(summary.reports.pending)} />
-            <Metric label="오늘 메시지" value={`${summary.messages.starToday} / ${summary.messages.fanRepliesToday}`} hint="스타 / 팬 답장" />
+            <Metric label="오늘 메시지" value={`${summary.messages.starToday} / ${summary.messages.fanRepliesToday}`} hint="아티스트 / 팬 답장" />
           </ThemedView>
         )}
 
@@ -106,7 +106,7 @@ export default function AdminStatsScreen() {
                 <DailyBars
                   days={dayLabels}
                   series={[
-                    { label: '스타 메시지', values: pick('starMessages'), color: theme.tint },
+                    { label: '아티스트 메시지', values: pick('starMessages'), color: theme.tint },
                     { label: '팬 답장', values: pick('fanReplies'), color: theme.textSecondary },
                   ]}
                 />
@@ -138,7 +138,7 @@ export default function AdminStatsScreen() {
               </AdminSection>
             </ThemedView>
             <ThemedView style={[styles.cell, styles.full]}>
-              <AdminSection title="배우별 구독" hint="최근 30일">
+              <AdminSection title="아티스트별 구독" hint="최근 30일">
                 {breakdown.actors.map((actor) => (
                   <ThemedView key={actor.id} style={[styles.actorRow, { borderBottomColor: theme.backgroundSelected }]}>
                     <ThemedText type="smallBold" style={styles.actorName}>

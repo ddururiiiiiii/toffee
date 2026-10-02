@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -39,7 +39,8 @@ function previewText(sub: Subscription, t: TFunction): string {
 
 /**
  * Inbox — 시안 B3 Fandom Inbox(docs/product/brand/exploration/b3-fandom-inbox.png) + DESIGN_GUIDE §8.
- * "내 배우가 새로 뭘 보냈지?"의 설렘: 위에 구독 배우 줄(새 소식이면 라벤더 링·점), 가장 최근 새 소식 카드, 아래 대화 목록
+ * "내 아티스트가 새로 뭘 보냈지?"의 설렘: 위에 가장 최근 새 소식 카드(안 읽은 아티스트 메시지 하나), 아래 대화 목록
+ * 2026-10-02: 위쪽 구독 아티스트 동그라미 줄(안 읽음이면 링·점)은 뺌 — 링은 인스타처럼 "새 스토리" 뜻으로 2차 스토리 때 다시 씀(사용자 결정)
  * (마지막 메시지 미리보기·사진/음성/영상 힌트·시간·안 읽은 수). 최근 대화 순. 배지·강조색은 절제.
  */
 export default function InboxScreen() {
@@ -59,22 +60,6 @@ export default function InboxScreen() {
 
   const header = subscriptions && subscriptions.length > 0 ? (
     <View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storyRow}>
-        {subscriptions.map((sub) => (
-          <Pressable
-            key={sub.id}
-            onPress={() => open(sub)}
-            style={styles.storyItem}
-            accessibilityRole="button"
-            accessibilityLabel={sub.actor.chatDisplayName}>
-            <Avatar uri={sub.actor.chatProfileImageUrl} name={sub.actor.chatDisplayName} size={64} ring={sub.unreadCount > 0} dot={sub.unreadCount > 0} />
-            <ThemedText type={sub.unreadCount > 0 ? 'smallBold' : 'small'} numberOfLines={1} style={styles.storyName}>
-              {sub.actor.chatDisplayName}
-            </ThemedText>
-          </Pressable>
-        ))}
-      </ScrollView>
-
       {highlight && (
         <Pressable
           onPress={() => open(highlight)}
@@ -83,7 +68,7 @@ export default function InboxScreen() {
           {highlight.actor.chatProfileImageUrl ? (
             <Image source={{ uri: highlight.actor.chatProfileImageUrl }} style={styles.highlightPhoto} contentFit="cover" />
           ) : (
-            <Avatar name={highlight.actor.chatDisplayName} size={64} />
+            <Avatar size={64} />
           )}
           <View style={styles.highlightBody}>
             <ThemedText type="headline" numberOfLines={1}>
@@ -147,7 +132,7 @@ function InboxRow({ sub, onPress, locale }: { sub: Subscription; onPress: () => 
         .filter(Boolean)
         .join(', ')}
       style={({ pressed }) => [styles.row, { backgroundColor: pressed ? theme.backgroundElement : 'transparent' }]}>
-      <Avatar uri={sub.actor.chatProfileImageUrl} name={sub.actor.chatDisplayName} size={56} ring={unread} />
+      <Avatar uri={sub.actor.chatProfileImageUrl} size={56} />
       <View style={styles.rowBody}>
         <View style={styles.rowTop}>
           <View style={styles.nameLine}>
@@ -174,6 +159,12 @@ function InboxRow({ sub, onPress, locale }: { sub: Subscription; onPress: () => 
           </View>
           <CountBadge count={sub.unreadCount} />
         </View>
+        {/* 스토어에서 해지(자동 갱신 끔)한 방 — 기간 끝까지 이용, 언제 닫히는지 미리(2026-10-02) */}
+        {sub.endsAt ? (
+          <ThemedText type="caption" style={{ color: theme.tint }}>
+            {t('inbox.endsOn', { date: new Date(sub.endsAt).toLocaleDateString(locale, { month: 'long', day: 'numeric' }) })}
+          </ThemedText>
+        ) : null}
       </View>
     </Pressable>
   );
@@ -183,9 +174,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
   list: { paddingBottom: Spacing.five },
-  storyRow: { gap: Spacing.three, paddingHorizontal: Spacing.four, paddingBottom: Spacing.three },
-  storyItem: { width: 68, alignItems: 'center', gap: 6 },
-  storyName: { maxWidth: 68, textAlign: 'center' },
   highlight: {
     flexDirection: 'row',
     alignItems: 'center',

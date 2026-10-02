@@ -1,4 +1,4 @@
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, Max, Min, ValidateIf } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, Max, Min, ValidateIf } from 'class-validator';
 import { MAX_PRICE_CENTS, STORE_PRODUCT_ID_PATTERN } from '../../common/store/store-product.js';
 
 export class CreateActorDto {
@@ -21,6 +21,12 @@ export class CreateActorDto {
   @IsOptional()
   @IsString()
   agencyId?: string;
+
+  // 성별(2026-10-02) — 빼거나 null이면 지정 안 함(그룹·혼성 등)
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsIn(['FEMALE', 'MALE'])
+  gender?: 'FEMALE' | 'MALE' | null;
 }
 
 // 커플방 만들기 — 멤버 배우 2명(참조 ID라 @IsString), 공식 이름, 방 이름(멤버 배우가 나중에 바꿀 수 있음), 월 가격
@@ -69,6 +75,12 @@ export class UpdateActorDto {
   @IsOptional()
   @IsBoolean()
   verified?: boolean;
+
+  // 성별 — null이면 지정 안 함, 빼면 그대로. 커플방엔 못 넣음(서비스에서 확인)
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsIn(['FEMALE', 'MALE'])
+  gender?: 'FEMALE' | 'MALE' | null;
 
   // 개인 구독 스토어 상품 ID — null이면 지움, 빼면 그대로
   @IsOptional()

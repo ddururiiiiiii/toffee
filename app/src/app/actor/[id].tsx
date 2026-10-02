@@ -86,7 +86,7 @@ export default function ActorProfileScreen() {
                   onPress={() => router.push({ pathname: '/actor/[id]', params: { id: member.id } })}
                   style={styles.member}
                   accessibilityRole="link">
-                  <Avatar uri={member.chatProfileImageUrl ?? member.officialProfileImageUrl} name={member.legalName} size={28} />
+                  <Avatar uri={member.chatProfileImageUrl ?? member.officialProfileImageUrl} size={28} />
                   <ThemedText type="smallMedium">{member.legalName}</ThemedText>
                 </Pressable>
               ))}
@@ -110,7 +110,7 @@ export default function ActorProfileScreen() {
                 </ThemedText>
               </View>
             </View>
-            <MembershipBenefits name={actor.chatDisplayName} />
+            <MembershipBenefits name={actor.legalName} />
             {isSubscribed ? (
               <Button title={t('actorProfile.openChat')} iconRight={ArrowRight} onPress={() => router.push(`/chat/${id}`)} />
             ) : actor.retiredAt ? (

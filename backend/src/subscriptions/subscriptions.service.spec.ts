@@ -125,8 +125,8 @@ describe('구독 전 가입 절차 강제(서버)', () => {
   });
 });
 
-describe('활동 종료한 배우', () => {
-  it('개인 구독도, 그 배우가 든 묶음도 신규 구독 불가', async () => {
+describe('활동 종료한 아티스트', () => {
+  it('개인 구독도, 그 아티스트가 든 묶음도 신규 구독 불가', async () => {
     const db = fakeDb();
     db.actors.get('a1')!.retiredAt = new Date();
     await expect(db.service.subscribe('u', 'a1')).rejects.toThrow('활동을 종료한');
@@ -146,7 +146,7 @@ describe('묶음 구독', () => {
     ]);
   });
 
-  it('개인 구독 중이던 배우는 묶음으로 옮겨지고 대화 시작 시점은 그대로(개인 구독은 해지)', async () => {
+  it('개인 구독 중이던 아티스트는 묶음으로 옮겨지고 대화 시작 시점은 그대로(개인 구독은 해지)', async () => {
     const db = fakeDb();
     await db.service.subscribe('u', 'a1');
     const startedAt = db.open('a1')!.startedAt;
@@ -158,14 +158,14 @@ describe('묶음 구독', () => {
     expect(db.events.filter((e) => e.actorId === 'a1' && e.type === 'STARTED')).toHaveLength(1);
   });
 
-  it('같은 묶음을 두 번 살 수 없고, 묶음으로 열린 배우를 개인으로 또 살 수 없음', async () => {
+  it('같은 묶음을 두 번 살 수 없고, 묶음으로 열린 아티스트를 개인으로 또 살 수 없음', async () => {
     const db = fakeDb();
     await db.service.subscribeBundle('u', 'b1');
     await expect(db.service.subscribeBundle('u', 'b1')).rejects.toThrow('이미 구독 중인 묶음');
-    await expect(db.service.subscribe('u', 'a1')).rejects.toThrow('이미 구독 중인 배우');
+    await expect(db.service.subscribe('u', 'a1')).rejects.toThrow('이미 구독 중인 아티스트');
   });
 
-  it('묶음으로만 열린 배우를 배우 단위로 해지하려 하면 묶음 해지로 안내', async () => {
+  it('묶음으로만 열린 아티스트를 아티스트 단위로 해지하려 하면 묶음 해지로 안내', async () => {
     const db = fakeDb();
     await db.service.subscribeBundle('u', 'b1');
     await expect(db.service.unsubscribe('u', 'a1')).rejects.toThrow('묶음 구독(A+B)');

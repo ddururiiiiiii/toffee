@@ -32,7 +32,7 @@ function ReportRow({ report }: { report: PendingReport }) {
       <ThemedText type="small" themeColor="textSecondary">
         {report.message.actor.chatDisplayName} 채널 ·{' '}
         {report.message.senderType === 'ARTIST'
-          ? '배우 메시지'
+          ? '아티스트 메시지'
           : `팬 답장 (${report.message.fanUser?.nickname ?? '-'} / ${report.message.fanUser?.displayName ?? '-'})`}
       </ThemedText>
       {report.message.body && <ThemedText type="small">신고된 메시지: {showNameToken(report.message.body, '팬 닉네임')}</ThemedText>}
@@ -51,7 +51,7 @@ function ReportRow({ report }: { report: PendingReport }) {
           style={[styles.actionButton, { backgroundColor: theme.tint }]}>
           <ThemedText type="small" style={styles.actionButtonText}>
             {/* 승인하면 메시지를 가림 — 스타 메시지는 팬 화면에서 사라지고, 팬 답장은 스타·소속사 답장 목록에서 빠지고 인용 부분이 가려짐 */}
-            {report.message.senderType === 'ARTIST' ? '승인(팬 화면에서 가리기)' : '승인(스타·소속사 화면에서 가리기)'}
+            {report.message.senderType === 'ARTIST' ? '승인(팬 화면에서 가리기)' : '승인(아티스트·소속사 화면에서 가리기)'}
           </ThemedText>
         </Pressable>
         <Pressable

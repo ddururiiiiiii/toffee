@@ -4,8 +4,8 @@ import type { StoreEvent } from './subscriptions.service.js';
 /**
  * 애플 서버 알림 V2 → 우리 사건. https://developer.apple.com/documentation/appstoreservernotifications/notificationtype
  * 결제됨: SUBSCRIBED(첫 구독·재구독), DID_RENEW(갱신·결제 실패 후 회복), OFFER_REDEEMED. 유예: DID_FAIL_TO_RENEW + GRACE_PERIOD.
- * 만료: EXPIRED, GRACE_PERIOD_EXPIRED. 환불·취소: REFUND, REVOKE(가족 공유 해제). 자동 갱신 끔(DID_CHANGE_RENEWAL_STATUS)은 결제 기간
- * 끝까지 이용이라 할 일 없음(만료 알림이 따로 옴).
+ * 만료: EXPIRED, GRACE_PERIOD_EXPIRED. 환불·취소: REFUND, REVOKE(가족 공유 해제). 자동 갱신 끔·다시 켬(DID_CHANGE_RENEWAL_STATUS)은
+ * 기간 끝까지 이용이라 방은 그대로 두고 갱신 여부만 기록(RENEWAL, 2026-10-02 — 앱의 "○월 ○일까지 이용" 표시). 만료 알림은 따로 옴.
  */
 export function appleStoreEvent(notification: AppleNotification): StoreEvent {
   const transaction = notification.transaction;
@@ -22,6 +22,12 @@ export function appleStoreEvent(notification: AppleNotification): StoreEvent {
     case 'EXPIRED':
     case 'GRACE_PERIOD_EXPIRED':
       return { kind: 'EXPIRED', originalTransactionId: transaction.originalTransactionId, expiresAt: transaction.expiresAt };
+    case 'DID_CHANGE_RENEWAL_STATUS':
+      return {
+        kind: 'RENEWAL',
+        originalTransactionId: transaction.originalTransactionId,
+        willRenew: notification.subtype ? notification.subtype === 'AUTO_RENEW_ENABLED' : transaction.willRenew !== false,
+      };
     case 'REFUND':
     case 'REVOKE':
       return { kind: 'REFUNDED', originalTransactionId: transaction.originalTransactionId, storeTransactionId: transaction.storeTransactionId };
@@ -45,7 +51,8 @@ export const GOOGLE_GRACE_TYPE = 6;
 
 /**
  * 구글 알림 → 우리 사건. 결제·유예 알림은 구독 상태를 스토어 API로 다시 받아야 해서(알림엔 토큰만 있음) fetchTransaction을 부름.
- * 5 ON_HOLD(결제 보류 — 이용 중지)·13 EXPIRED는 만료, 12 REVOKED·환불(voided)은 환불. 3 CANCELED(자동 갱신 끔)는 기간 끝까지 이용.
+ * 5 ON_HOLD(결제 보류 — 이용 중지)·13 EXPIRED는 만료, 12 REVOKED·환불(voided)은 환불. 3 CANCELED(자동 갱신 끔)는 기간 끝까지 이용 —
+ * 갱신 여부만 기록(RENEWAL). 다시 켜면 7 RESTARTED(결제됨으로 다시 받으며 API의 autoRenewing이 true).
  */
 export async function googleStoreEvent(
   message: GoogleRtdn,
@@ -70,5 +77,6 @@ export async function googleStoreEvent(
     return { kind: 'EXPIRED', originalTransactionId: purchaseToken, expiresAt: transaction.expiresAt };
   }
   if (notificationType === 12) return { kind: 'REFUNDED', originalTransactionId: purchaseToken };
+  if (notificationType === 3) return { kind: 'RENEWAL', originalTransactionId: purchaseToken, willRenew: false };
   return { kind: 'IGNORED', reason: `google type ${notificationType}` };
 }

@@ -110,8 +110,8 @@ const charge = (id: string, extra: Partial<Charge> = {}): Charge => ({
 });
 const now = at('2026-09-03T00:00:00Z');
 
-describe('환불 — 스타 미발송 판정', () => {
-  it('기간 중 스타 메시지 0개 + 기간 끝난 뒤 7일 안이면 대상(팬 답장·지운 메시지는 안 셈)', async () => {
+describe('환불 — 아티스트 미발송 판정', () => {
+  it('기간 중 아티스트 메시지 0개 + 기간 끝난 뒤 7일 안이면 대상(팬 답장·지운 메시지는 안 셈)', async () => {
     const t = setup(
       [charge('c1')],
       [

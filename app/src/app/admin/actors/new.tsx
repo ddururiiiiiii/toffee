@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { ThemedView } from '@/components/themed-view';
-import { AdminButton, AdminChip, AdminField, AdminMessage, AdminSection, parseBahtToCents } from '@/components/admin-ui';
+import { AdminButton, AdminChip, AdminField, AdminMessage, AdminSection, GENDER_OPTIONS, parseBahtToCents } from '@/components/admin-ui';
 import { useAdminAgencies, useCreateActor } from '@/hooks/use-admin';
 import { ApiError } from '@/lib/api-client';
 import { Spacing } from '@/constants/theme';
@@ -18,6 +18,7 @@ export default function AdminNewActorScreen() {
   const [chatDisplayName, setChatDisplayName] = useState('');
   const [price, setPrice] = useState('');
   const [agencyId, setAgencyId] = useState<string | null>(null);
+  const [gender, setGender] = useState<'FEMALE' | 'MALE' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const submit = () => {
@@ -26,7 +27,7 @@ export default function AdminNewActorScreen() {
     if (monthlyPriceCents === null) return setError('월 구독료를 숫자로 입력해 주세요(예: 99).');
     setError(null);
     createActor.mutate(
-      { legalName: legalName.trim(), chatDisplayName: chatDisplayName.trim(), monthlyPriceCents, agencyId: agencyId ?? undefined },
+      { legalName: legalName.trim(), chatDisplayName: chatDisplayName.trim(), monthlyPriceCents, agencyId: agencyId ?? undefined, gender },
       {
         onSuccess: (actor) => router.replace({ pathname: '/admin/actors/[id]', params: { id: (actor as { id: string }).id } }),
         onError: (e) => setError(e instanceof ApiError ? e.message : '등록하지 못했어요.'),
@@ -37,9 +38,9 @@ export default function AdminNewActorScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <AdminSection title="기본 정보" hint="공식 이름은 배우 찾기 화면에, 닉네임은 채팅방 안에서 보여요. 닉네임과 대화방 사진은 배우가 나중에 직접 바꿀 수 있어요.">
+        <AdminSection title="기본 정보" hint="공식 이름은 아티스트 찾기 화면에, 닉네임은 채팅방 안에서 보여요. 닉네임과 대화방 사진은 아티스트가 나중에 직접 바꿀 수 있어요.">
           <AdminField label="공식 이름(실명·활동명)" value={legalName} onChangeText={setLegalName} maxLength={100} />
-          <AdminField label="닉네임(배우가 직접 바꿀 수 있음)" value={chatDisplayName} onChangeText={setChatDisplayName} maxLength={20} />
+          <AdminField label="닉네임(아티스트가 직접 바꿀 수 있음)" value={chatDisplayName} onChangeText={setChatDisplayName} maxLength={20} />
           <AdminField
             label="월 구독료(바트)"
             value={price}
@@ -47,6 +48,14 @@ export default function AdminNewActorScreen() {
             keyboardType="decimal-pad"
             placeholder="예: 99"
           />
+        </AdminSection>
+
+        <AdminSection title="성별" hint="둘러보기의 '여성 아티스트'·'남성 아티스트' 줄에 쓰여요. 그룹·혼성처럼 어느 쪽도 아니면 '지정 안 함'(검색·소속사별·새로 온 줄에만 나와요).">
+          <ThemedView style={styles.chips}>
+            {GENDER_OPTIONS.map((option) => (
+              <AdminChip key={option.label} label={option.label} selected={gender === option.value} onPress={() => setGender(option.value)} />
+            ))}
+          </ThemedView>
         </AdminSection>
 
         <AdminSection title="소속사" hint="나중에 상세 화면에서 바꿀 수 있고, 바꾸면 이적 기록이 남아요.">
