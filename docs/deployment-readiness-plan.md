@@ -28,8 +28,15 @@
   안내해서 "Continue to Pages"(옛 Pages 흐름)로 들어감. Pages GitHub 앱은 `toffeechat` 조직의 `toffee` 저장소에만. 루트 `app`,
   `npm run build:web`, 출력 `dist`, 변수 `EXPO_PUBLIC_API_URL`(Railway 임시 주소)·`EXPO_PUBLIC_ENABLE_DEV_LOGIN=true`·
   `EXPO_PUBLIC_SUPPORT_EMAIL`·`NODE_VERSION=22`. 첫 빌드 성공 → `https://toffee-demo.pages.dev`.
-- 남은 일: 입장 코드로 로그인·데모 초기화 한 번(고정 ID로 바꾸기) 확인 → `demo.toffeechat.app`·`api-demo.toffeechat.app` 연결
-  (Pages 웹 주소 바꾸면 `EXPO_PUBLIC_API_URL`도 새 API 주소로 바꾸고 다시 빌드, 서버 `API_PUBLIC_URL`도).
+- 입장 코드로 로그인 확인 → 사업화 일정 "데모 서버 띄우기" 완료 체크. 주소·데모 계정·입장 코드 위치를 사업화 장부(Railway·Pages
+  항목)에 정리(사용자 요청 — 코드 값 자체는 장부 규칙상 안 적음).
+- **도메인 연결**: `api-demo.toffeechat.app` = Railway 커스텀 도메인(포트 8080) + Cloudflare DNS CNAME(**DNS only** — 프록시를 켜면
+  100초 제한으로 SSE가 끊김) + `_railway-verify.api-demo` TXT(이게 없으면 "Waiting for DNS update"에서 안 넘어감).
+  `demo.toffeechat.app` = Pages 커스텀 도메인(DNS 자동, 프록시 켜도 됨). 그 뒤 Pages `EXPO_PUBLIC_API_URL`을 새 주소로 바꾸고
+  Retry deployment, Railway `API_PUBLIC_URL` 추가. 예전 주소(pages.dev·up.railway.app)도 계속 동작.
+- `JWT_SECRET`이 대화에 노출돼서 새 값으로 교체(데모라 피해 없음, 로그인한 사람만 로그아웃).
+- Pages 빌드 줄이기: Preview 브랜치 빌드 끔(작업 브랜치 push마다 빌드되고 있었음, 무료 월 500회), Build watch paths `app/*`.
+- 남은 일: 데모 영상·제안서(2단계). 운영 서버는 데모와 분리해 6단계에.
 
 ## 2026-10-01 — 도메인·전용 Gmail·계정 장부
 
