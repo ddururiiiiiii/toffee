@@ -70,10 +70,11 @@ export async function seedDemo(prisma: Prisma.TransactionClient): Promise<void> 
   const caramel = await prisma.actor.create({
     data: {
       id: DEMO_IDS.caramel,
-      legalName: '(가상) 데모 배우 A',
+      legalName: '(가상) 데모 아티스트 A',
       officialProfileImageUrl: 'https://placehold.co/600x800?text=Caramel',
       chatDisplayName: '캐러멜',
       chatProfileImageUrl: 'https://placehold.co/400x400?text=%EC%BA%90%EB%9F%AC%EB%A9%9C',
+      gender: 'FEMALE',
       monthlyPriceCents: 9900, // 데모 가격 — 실제 태국 시장 가격은 별도 검증 필요
       agencyId: demoAgency.id,
     },
@@ -82,10 +83,11 @@ export async function seedDemo(prisma: Prisma.TransactionClient): Promise<void> 
   const nougat = await prisma.actor.create({
     data: {
       id: DEMO_IDS.nougat,
-      legalName: '(가상) 데모 배우 B',
+      legalName: '(가상) 데모 아티스트 B',
       officialProfileImageUrl: 'https://placehold.co/600x800?text=Nougat',
       chatDisplayName: '누가',
       chatProfileImageUrl: 'https://placehold.co/400x400?text=%EB%88%84%EA%B0%80',
+      gender: 'MALE',
       monthlyPriceCents: 9900,
       agencyId: demoAgency.id,
     },
@@ -106,7 +108,7 @@ export async function seedDemo(prisma: Prisma.TransactionClient): Promise<void> 
     data: {
       id: DEMO_IDS.couple,
       kind: 'COUPLE',
-      legalName: '(가상) 데모 배우 A & B',
+      legalName: '(가상) 데모 아티스트 A & B',
       chatDisplayName: '캐러멜 & 누가',
       monthlyPriceCents: 6900,
       coupleMembers: { create: [{ memberId: caramel.id }, { memberId: nougat.id }] },

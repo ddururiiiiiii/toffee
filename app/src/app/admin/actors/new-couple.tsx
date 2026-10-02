@@ -40,7 +40,7 @@ export default function AdminNewCoupleScreen() {
 
   const submit = () => {
     const monthlyPriceCents = parseBahtToCents(price);
-    if (members.length !== 2) return setError('배우를 2명 골라 주세요.');
+    if (members.length !== 2) return setError('아티스트를 2명 골라 주세요.');
     if (!legalName.trim() || !chatDisplayName.trim()) return setError('공식 이름과 방 이름을 입력해 주세요.');
     if (monthlyPriceCents === null) return setError('월 구독료를 숫자로 입력해 주세요(예: 69).');
     setError(null);
@@ -56,13 +56,13 @@ export default function AdminNewCoupleScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <AdminSection title={`멤버 배우 (${members.length}/2)`} hint="같은 두 배우의 커플방은 하나만 만들 수 있어요.">
+        <AdminSection title={`멤버 아티스트 (${members.length}/2)`} hint="같은 두 아티스트의 커플방은 하나만 만들 수 있어요.">
           <ThemedView style={styles.chips}>
             {members.map((member) => (
               <AdminChip key={member.id} label={`✓ ${member.name}`} selected onPress={() => toggle({ id: member.id, legalName: member.name, chatDisplayName: member.chatName })} />
             ))}
           </ThemedView>
-          <AdminField label="배우 검색" value={query} onChangeText={setQuery} placeholder="이름·소속사" autoCapitalize="none" />
+          <AdminField label="아티스트 검색" value={query} onChangeText={setQuery} placeholder="이름·소속사" autoCapitalize="none" />
           <ThemedView style={styles.chips}>
             {actors
               ?.filter((actor) => actor.kind !== 'COUPLE' && !actor.retiredAt && !members.some((member) => member.id === actor.id))
@@ -71,7 +71,7 @@ export default function AdminNewCoupleScreen() {
               ))}
           </ThemedView>
         </AdminSection>
-        <AdminSection title="기본 정보" hint="공식 이름은 배우 찾기·커플방 소개에, 방 이름은 채팅방 위에 보여요(방 이름은 두 배우가 나중에 바꿀 수 있어요).">
+        <AdminSection title="기본 정보" hint="공식 이름은 아티스트 찾기·커플방 소개에, 방 이름은 채팅방 위에 보여요(방 이름은 두 아티스트가 나중에 바꿀 수 있어요).">
           <AdminField label="공식 이름" value={legalName} onChangeText={setLegalName} maxLength={100} />
           <AdminField label="방 이름" value={chatDisplayName} onChangeText={setChatDisplayName} maxLength={50} />
           <AdminField label="월 구독료(바트)" value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder="예: 69" />

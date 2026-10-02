@@ -97,6 +97,13 @@ export function AdminMessage({ text, error }: { text: string | null; error?: boo
   );
 }
 
+/** 아티스트 성별 선택지(2026-10-02, 둘러보기 여성·남성 줄) — null은 지정 안 함(그룹·혼성 등, 두 줄엔 안 나옴) */
+export const GENDER_OPTIONS: { value: 'FEMALE' | 'MALE' | null; label: string }[] = [
+  { value: 'FEMALE', label: '여성' },
+  { value: 'MALE', label: '남성' },
+  { value: null, label: '지정 안 함' },
+];
+
 /**
  * 정사각 썸네일 — 사진이 없으면 사람 모양 기본 프로필(앱 Avatar와 같음, 2026-10-02).
  * 소속사 로고처럼 사람이 아닌 것은 org로 — 이름 첫 글자.

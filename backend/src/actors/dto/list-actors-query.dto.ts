@@ -16,8 +16,13 @@ export class ListActorsQueryDto {
   @IsIn(['trending', 'new'])
   sort?: 'trending' | 'new';
 
-  // 1인 배우(기본) / 커플방(둘러보기의 커플방 줄, 2026-09-29)
+  // 1인 아티스트(기본) / 커플방(둘러보기의 CP 줄, 2026-09-29) / 둘 다(둘러보기의 "새로 온 아티스트·CP", 2026-10-02)
   @IsOptional()
-  @IsIn(['SOLO', 'COUPLE'])
-  kind?: 'SOLO' | 'COUPLE';
+  @IsIn(['SOLO', 'COUPLE', 'ALL'])
+  kind?: 'SOLO' | 'COUPLE' | 'ALL';
+
+  // 둘러보기의 "여성 아티스트"·"남성 아티스트"(2026-10-02) — 커플방은 성별이 없어 빠짐
+  @IsOptional()
+  @IsIn(['FEMALE', 'MALE'])
+  gender?: 'FEMALE' | 'MALE';
 }

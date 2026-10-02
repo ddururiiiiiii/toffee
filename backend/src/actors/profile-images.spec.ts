@@ -11,7 +11,7 @@ describe('withFirstOfficialAsChat', () => {
     expect(withFirstOfficialAsChat({ ...empty, chatProfileImageUrl: 'mine.jpg' }, { official: 'a.jpg' })).toEqual({ official: 'a.jpg' });
   });
 
-  it('공식 사진을 바꿀 때는(이전 공식 사진 있음) 대화방 사진을 안 채움 — 배우가 지운 기본 프로필 유지', () => {
+  it('공식 사진을 바꿀 때는(이전 공식 사진 있음) 대화방 사진을 안 채움 — 아티스트가 지운 기본 프로필 유지', () => {
     expect(withFirstOfficialAsChat({ ...empty, officialProfileImageUrl: 'old.jpg' }, { official: 'new.jpg' })).toEqual({ official: 'new.jpg' });
   });
 

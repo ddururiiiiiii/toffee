@@ -13,6 +13,7 @@ import {
   AdminMessage,
   AdminSection,
   formatBaht,
+  GENDER_OPTIONS,
   parseBahtToCents,
   pickSquarePhoto,
 } from '@/components/admin-ui';
@@ -116,7 +117,7 @@ function BasicInfo({ actor }: { actor: AdminActor }) {
       title="기본 정보"
       hint="구독료는 앱에 보이는 금액이에요 — 실제 결제 금액은 스토어에 등록한 상품 가격이 기준이라 같이 바꿔야 해요.">
       <AdminField label="공식 이름(실명·활동명)" value={legalName} onChangeText={setLegalName} maxLength={100} />
-      <AdminField label="닉네임(배우가 직접 바꿀 수 있음)" value={chatDisplayName} onChangeText={setChatDisplayName} maxLength={20} />
+      <AdminField label="닉네임(아티스트가 직접 바꿀 수 있음)" value={chatDisplayName} onChangeText={setChatDisplayName} maxLength={20} />
       <AdminField label="월 구독료(바트)" value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
       <AdminField
         label="스토어 상품 ID(앱스토어·플레이스토어에 등록한 구독 상품, 등록 전엔 비워 두기)"
@@ -127,6 +128,24 @@ function BasicInfo({ actor }: { actor: AdminActor }) {
         placeholder="예: toffee.actor.nawin"
         maxLength={100}
       />
+      {actor.kind === 'SOLO' && (
+        <>
+          <ThemedText type="small" themeColor="textSecondary">
+            성별(둘러보기 여성·남성 아티스트 줄, 누르면 바로 저장)
+          </ThemedText>
+          <ThemedView style={styles.chips}>
+            {GENDER_OPTIONS.map((option) => (
+              <AdminChip
+                key={option.label}
+                label={option.label}
+                selected={actor.gender === option.value}
+                disabled={updateActor.isPending}
+                onPress={() => updateActor.mutate({ gender: option.value })}
+              />
+            ))}
+          </ThemedView>
+        </>
+      )}
       <ThemedView style={styles.chips}>
         <AdminChip
           label={actor.verified ? '✓ 공식 인증됨' : '공식 인증 안 됨'}
@@ -152,7 +171,7 @@ function AgencySection({ actor }: { actor: AdminActor }) {
     if (agencyId === currentId) return;
     const ok = await confirm(
       '소속사 변경',
-      `${actor.legalName} 배우를 "${name}"(으)로 옮길까요?\n이전 소속사는 이 배우의 메시지를 더 이상 볼 수 없고, 이적 기록이 남아요.`,
+      `${actor.legalName} 아티스트를 "${name}"(으)로 옮길까요?\n이전 소속사는 이 아티스트의 메시지를 더 이상 볼 수 없고, 이적 기록이 남아요.`,
       '변경',
       '취소',
     );
@@ -204,7 +223,7 @@ function SelfAccountSection({ actor }: { actor: AdminActor }) {
   return (
     <AdminSection
       title="본인 계정"
-      hint="연결된 계정으로 로그인하면 스튜디오에서 이 배우로 메시지를 보내요. 회원 관리에서 역할을 '배우'로 바꾼 계정만 나와요.">
+      hint="연결된 계정으로 로그인하면 스튜디오에서 이 아티스트로 메시지를 보내요. 회원 관리에서 역할을 '아티스트'로 바꾼 계정만 나와요.">
       {actor.selfUser ? (
         <ThemedView style={styles.linkedRow}>
           <ThemedText type="small" style={styles.flex}>
@@ -214,7 +233,7 @@ function SelfAccountSection({ actor }: { actor: AdminActor }) {
         </ThemedView>
       ) : (
         <>
-          <AdminField label="배우 계정 검색" value={query} onChangeText={setQuery} placeholder="이름 또는 이메일" />
+          <AdminField label="아티스트 계정 검색" value={query} onChangeText={setQuery} placeholder="이름 또는 이메일" />
           {candidates?.length ? (
             candidates.map((user) => (
               <ThemedView key={user.id} style={[styles.linkedRow, { borderColor: theme.backgroundSelected }]}>
@@ -231,7 +250,7 @@ function SelfAccountSection({ actor }: { actor: AdminActor }) {
             ))
           ) : (
             <ThemedText type="small" themeColor="textSecondary">
-              배우 역할 계정이 없어요.
+              아티스트 역할 계정이 없어요.
             </ThemedText>
           )}
         </>
@@ -250,8 +269,8 @@ function RetireSection({ actor }: { actor: AdminActor }) {
     const ok = await confirm(
       retiring ? '활동 종료' : '활동 재개',
       retiring
-        ? `${actor.legalName} 배우를 둘러보기·검색에서 숨기고 신규 구독을 막을까요?\n\n지금 구독 중인 팬(${actor.activeSubscriberCount}명)은 대화를 계속 볼 수 있어요. 구독 팬에게 활동 종료 알림이 가고, 결제한 지 14일 안인 팬은 그 달 환불을 요청할 수 있어요. 입대도 활동 종료로 처리하고 전역하면 재개해 주세요. 스토어 결제가 붙으면 스토어 상품 판매도 같이 멈춰야 갱신이 안 돼요.`
-        : `${actor.legalName} 배우를 다시 둘러보기에 보이고 구독을 받을까요?`,
+        ? `${actor.legalName} 아티스트를 둘러보기·검색에서 숨기고 신규 구독을 막을까요?\n\n지금 구독 중인 팬(${actor.activeSubscriberCount}명)은 대화를 계속 볼 수 있어요. 구독 팬에게 활동 종료 알림이 가고, 결제한 지 14일 안인 팬은 그 달 환불을 요청할 수 있어요. 입대도 활동 종료로 처리하고 전역하면 재개해 주세요. 스토어 결제가 붙으면 스토어 상품 판매도 같이 멈춰야 갱신이 안 돼요.`
+        : `${actor.legalName} 아티스트를 다시 둘러보기에 보이고 구독을 받을까요?`,
       retiring ? '활동 종료' : '활동 재개',
       '취소',
     );
@@ -283,7 +302,7 @@ export default function AdminActorDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <Stack.Screen options={{ title: actor?.legalName ?? '배우' }} />
+      <Stack.Screen options={{ title: actor?.legalName ?? '아티스트' }} />
       {isLoading || !actor ? (
         <ActivityIndicator style={styles.loading} color={theme.tint} />
       ) : (
@@ -291,7 +310,7 @@ export default function AdminActorDetailScreen() {
           <ThemedText type="small" themeColor="textSecondary">
             {formatBaht(actor.monthlyPriceCents)}/월 · 구독자 {actor.activeSubscriberCount}명 · 등록 {formatDate(actor.createdAt)}
           </ThemedText>
-          <AdminSection title="프로필 사진" hint="공식 사진은 배우 찾기·배우 소개에, 대화방 사진은 채팅방에서 보여요. 공식 사진을 처음 올리면 비어 있는 대화방 사진에도 같이 들어가요(배우가 나중에 바꾸거나 기본 이미지로 돌릴 수 있음). 정사각으로 잘라서 올려요.">
+          <AdminSection title="프로필 사진" hint="공식 사진은 아티스트 찾기·아티스트 소개에, 대화방 사진은 채팅방에서 보여요. 공식 사진을 처음 올리면 비어 있는 대화방 사진에도 같이 들어가요(아티스트가 나중에 바꾸거나 기본 이미지로 돌릴 수 있음). 정사각으로 잘라서 올려요.">
             <ThemedView style={styles.photos}>
               <PhotoSlot actor={actor} field="officialProfileImageKey" label="공식 사진" />
               <PhotoSlot actor={actor} field="chatProfileImageKey" label="대화방 사진" />
@@ -300,7 +319,7 @@ export default function AdminActorDetailScreen() {
           <BasicInfo key={`${actor.id}-info`} actor={actor} />
           {actor.kind === 'COUPLE' ? (
             // 커플방: 소속사·본인 계정은 멤버 배우 쪽에서 정해짐(각 소속사가 자기 배우가 든 커플방을 모니터링, 두 배우 본인 계정이 보냄)
-            <AdminSection title="멤버 배우" hint="방 이름과 대화방 사진은 두 배우가 각자 스튜디오에서 바꿀 수 있어요. 멤버 중 한 명이라도 활동을 종료하면 새 구독이 멈춰요.">
+            <AdminSection title="멤버 아티스트" hint="방 이름과 대화방 사진은 두 아티스트가 각자 스튜디오에서 바꿀 수 있어요. 멤버 중 한 명이라도 활동을 종료하면 새 구독이 멈춰요.">
               {actor.coupleMembers.map(({ member }) => (
                 <ThemedText key={member.id} type="small">
                   {member.legalName} ({member.chatDisplayName}){member.retiredAt ? ' — 활동 종료' : ''}

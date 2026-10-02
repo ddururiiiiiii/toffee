@@ -5,7 +5,7 @@
     "requestFailed": "Request failed ({{status}})"
   },
   "tabs": {
-    "actors": "Actors",
+    "actors": "Artists",
     "chats": "Chats",
     "my": "My",
     "discover": "Discover",
@@ -22,7 +22,7 @@
     "amount": "฿{{price}}"
   },
   "login": {
-    "tagline": "Chat one-on-one with the actors you love",
+    "tagline": "Chat one-on-one with the artists you love",
     "demoTitle": "Demo login with email",
     "demoHint": "Social login will appear here once the real app credentials are ready. For now you can test the whole flow with just an email.",
     "namePlaceholder": "Nickname (optional)",
@@ -40,15 +40,15 @@
     "backToLogin": "Back to sign-in"
   },
   "actors": {
-    "title": "Find actors",
-    "searchPlaceholder": "Search by actor or agency name",
+    "title": "Find artists",
+    "searchPlaceholder": "Search by artist or agency name",
     "all": "All",
-    "loadFailed": "Couldn't load the actor list.",
+    "loadFailed": "Couldn't load the artist list.",
     "empty": "No results found."
   },
   "actorDetail": {
     "monthlyPrice": "{{price}} per month (sandbox payment — you won't be charged)",
-    "discountApplied": "You're also subscribed to their paired actor, so a discount was applied: {{base}} → {{effective}}.",
+    "discountApplied": "You're also subscribed to their paired artist, so a discount was applied: {{base}} → {{effective}}.",
     "subscribeFailed": "Couldn't subscribe.",
     "chat": "Chat",
     "subscribe": "Subscribe"
@@ -56,20 +56,20 @@
   "chats": {
     "title": "Chats",
     "loadFailed": "Couldn't load your chats.",
-    "empty": "You haven't subscribed to anyone yet. Start from the Actors tab.",
+    "empty": "You haven't subscribed to anyone yet. Start from the Artists tab.",
     "noConversation": "No messages yet"
   },
   "chat": {
-    "loadFailed": "Couldn't load this chat. Please check that you're subscribed to this actor.",
+    "loadFailed": "Couldn't load this chat. Please check that you're subscribed to this artist.",
     "replyPlaceholder": "Message…",
     "send": "Send",
     "waitingFirst": "You're subscribed! Messages from {{name}} will arrive here.",
-    "replyAfterFirst": "You can reply once the star sends their first message.",
+    "replyAfterFirst": "You can reply once the artist sends their first message.",
     "sendFailed": "Couldn't send. Please try again.",
     "notSubscribed": "Your subscription has ended, so you can't view the chat with {{name}}.",
     "resubscribe": "Subscribe again",
     "repliesLeft": "{{count}} replies left for this message",
-    "noRepliesLeft": "You can send up to {{limit}} replies per message. Please wait for the star's next message.",
+    "noRepliesLeft": "You can send up to {{limit}} replies per message. Please wait for the artist's next message.",
     "mute": "Mute notifications",
     "unmute": "Unmute notifications",
     "muted": "Notifications for this chat are off. You'll still receive messages.",
@@ -104,8 +104,8 @@
     "languageSystem": "Use device language"
   },
   "console": {
-    "title": "Actors I manage",
-    "empty": "You don't manage any actors yet.",
+    "title": "Artists I manage",
+    "empty": "You don't manage any artists yet.",
     "monitoring": "Monitoring {{name}}",
     "tabs": {
       "monitor": "Monitoring",
@@ -122,14 +122,14 @@
       "story": "Story",
       "message": "Message"
     },
-    "monitorEmpty": "The actor hasn't sent any messages or stories yet.",
+    "monitorEmpty": "The artist hasn't sent any messages or stories yet.",
     "repliesEmpty": "No fan replies yet.",
     "deletedFan": "Deleted user",
     "activeSubscribers": "Active subscribers",
     "lastBroadcast": "Last sent",
     "noBroadcast": "Nothing sent yet",
     "noNickname": "(no nickname)",
-    "deletedByActor": "Deleted by the star (not visible to fans)",
+    "deletedByActor": "Deleted by the artist (not visible to fans)",
     "lastMessageDays": "Last message {{count}} days ago",
     "noMessagesYet": "No messages sent yet",
     "lastMessageToday": "Sent a message today"
@@ -148,7 +148,7 @@
     "consentSend": "Send consent email",
     "consentSendFailed": "Couldn't send the email.",
     "nicknameTitle": "Choose a nickname",
-    "nicknameHint": "The actor's messages will call you by this nickname. If the actor quotes your reply, other subscribers can see it too, so please avoid using your real name.",
+    "nicknameHint": "The artist's messages will call you by this nickname. If the artist quotes your reply, other subscribers can see it too, so please avoid using your real name.",
     "birthDateInvalid": "Please check your date of birth.",
     "birthDateHintAdult": "Toffee is for people aged {{age}} and over. You can't change this later, so please enter it correctly."
   },
@@ -162,7 +162,7 @@
     "screen": "Studio",
     "repliesScreen": "Fan replies",
     "pickActor": "Choose a channel to send messages from",
-    "noActor": "No actor account is linked. Please contact the operator.",
+    "noActor": "No artist account is linked. Please contact the operator.",
     "empty": "You haven't sent any messages yet. Send your fans a first message!",
     "inputPlaceholder": "Message your fans",
     "send": "Send",
@@ -214,7 +214,7 @@
     "close": "Close",
     "open": "Open",
     "saveNoticeTitle": "For personal use only",
-    "saveNoticeBody": "Photos, videos and voice messages from the actor are for subscribers only. Sharing them with others or posting them online may lead to restrictions under our Terms of Service.",
+    "saveNoticeBody": "Photos, videos and voice messages from the artist are for subscribers only. Sharing them with others or posting them online may lead to restrictions under our Terms of Service.",
     "saveNoticeAgree": "Agree and save",
     "previous": "Previous",
     "next": "Next"
@@ -309,28 +309,29 @@
   },
   "discover": {
     "tagline": "Closer to what matters.",
-    "searchPlaceholder": "Search actors or agencies",
+    "searchPlaceholder": "Search artists or agencies",
     "clearSearch": "Clear search",
-    "forYou": "For You",
-    "trending": "Trending",
-    "new": "New",
-    "trendingTitle": "Trending on Toffee",
-    "newTitle": "New on Toffee",
-    "allTitle": "All actors",
+    "newTitle": "New artists & CPs",
     "seeAll": "See all",
     "newBadge": "NEW",
     "openProfile": "View {{name}}'s profile",
     "subscribed": "Subscribed",
-    "emptyTitle": "No actors found",
+    "emptyTitle": "No artists found",
     "emptyBody": "Try another name or agency.",
     "loadFailedTitle": "Couldn't load",
-    "retry": "Try again"
+    "retry": "Try again",
+    "femaleTitle": "Women artists",
+    "maleTitle": "Men artists",
+    "agenciesTitle": "Browse by agency",
+    "coupleTitle": "CP",
+    "cpBadge": "CP",
+    "back": "Back to Discover"
   },
   "time": {
     "yesterday": "Yesterday"
   },
   "inbox": {
-    "search": "Find actors",
+    "search": "Find artists",
     "sentPhoto": "Sent a photo",
     "sentVoice": "Sent a voice message",
     "sentVideo": "Sent a video",
@@ -343,8 +344,8 @@
     "muted": "Muted",
     "unread": "{{count}} unread",
     "emptyTitle": "No subscriptions yet",
-    "emptyBody": "Subscribe to an actor you love to receive their messages here.",
-    "discover": "Discover actors",
+    "emptyBody": "Subscribe to an artist you love to receive their messages here.",
+    "discover": "Discover artists",
     "loadFailed": "Couldn't load your inbox"
   },
   "actorProfile": {
@@ -363,8 +364,8 @@
     "noFreeTier": "No free tier. DM access requires a paid subscription.",
     "subscribed": "Subscribed",
     "openChat": "Open messages",
-    "notFound": "Actor not found",
-    "retired": "This actor is no longer active"
+    "notFound": "Artist not found",
+    "retired": "This artist is no longer active"
   },
   "subscribeFlow": {
     "subscribeTo": "Subscribe to",
@@ -395,7 +396,7 @@
     "account": "Account",
     "support": "Support",
     "languageSystem": "Use device language",
-    "notificationsHint": "Turn new-message alerts on or off for each actor. You'll still receive messages.",
+    "notificationsHint": "Turn new-message alerts on or off for each artist. You'll still receive messages.",
     "noSubscriptions": "No active subscriptions"
   },
   "manage": {
@@ -421,7 +422,7 @@
   },
   "welcome": {
     "headline": "Real people.\nReal messages.\nA closer world.",
-    "discover": "Find and subscribe to actors you love",
+    "discover": "Find and subscribe to artists you love",
     "dm": "Subscribing unlocks 1:1 messages",
     "media": "Photos, voice and video, straight from them",
     "paid": "Paid subscription · no free tier",
@@ -443,11 +444,11 @@
   },
   "bundle": {
     "sectionTitle": "Save with a bundle",
-    "sectionHint": "Subscribe to several actors at once for less than subscribing separately.",
+    "sectionHint": "Subscribe to several artists at once for less than subscribing separately.",
     "saveVsSingle": "{{percent}}% off vs. separately",
     "saveDetail": "{{regular}} separately · {{percent}}% off",
     "subscribeTo": "Bundle subscription",
-    "includes": "{{count}} actors included",
+    "includes": "{{count}} artists included",
     "singlePrice": "{{price}}/month on its own",
     "replacesSingle": "Your current subscription to {{names}} will move into this bundle. Your chats continue as they are.",
     "doneBody": "Your {{name}} bundle has started. You'll find every chat in the Inbox.",
@@ -458,8 +459,8 @@
     "via": "Bundle · {{name}}",
     "cancel": "Cancel bundle",
     "cancelTitle": "Cancel bundle",
-    "cancelConfirm": "Cancelling {{name}} closes the chats with {{names}} (actors you subscribe to separately stay open). Previous chats won't be visible if you subscribe again.",
-    "cancelFromActor": "This actor is part of your {{name}} bundle. Cancelling closes the other chats in the bundle too. Previous chats won't be visible if you subscribe again.",
+    "cancelConfirm": "Cancelling {{name}} closes the chats with {{names}} (artists you subscribe to separately stay open). Previous chats won't be visible if you subscribe again.",
+    "cancelFromActor": "This artist is part of your {{name}} bundle. Cancelling closes the other chats in the bundle too. Previous chats won't be visible if you subscribe again.",
     "cancelFailed": "Couldn't cancel. Please try again.",
     "viaShort": "Included in a bundle",
     "replacesSingleStore": "Your separate store subscriptions for {{names}} won't end automatically — cancel them in store subscription settings after buying the bundle (your chats continue)."
@@ -475,7 +476,7 @@
   },
   "couple": {
     "sectionTitle": "Couple rooms",
-    "sectionHint": "A room where two actors message you together. Subscribed to separately from individual rooms.",
+    "sectionHint": "A room where two artists message you together. Subscribed to separately from individual rooms.",
     "discoverTitle": "Couple rooms",
     "roomLabel": "Couple room",
     "soloLabel": "My room"
@@ -501,12 +502,12 @@
     "nextMonth": "Next month",
     "includeSandbox": "Include test payments",
     "sandboxIncluded": "Includes test (unpaid) subscriptions — not actual settlement amounts.",
-    "csvActors": "CSV by actor",
+    "csvActors": "CSV by artist",
     "csvRooms": "CSV by room",
     "downloadFailed": "Couldn't download",
     "loadFailed": "Couldn't load the settlement",
     "allAgencies": "All",
-    "independent": "Independent (paid to the actor)",
+    "independent": "Independent (paid to the artist)",
     "gross": "Sales",
     "storeFee": "Store fee {{percent}}%",
     "storeFeeShort": "Store fee",
@@ -515,13 +516,13 @@
     "platform": "Toffee share",
     "refunded": "Refunded",
     "charges": "Payments",
-    "actor": "Actor",
+    "actor": "Artist",
     "total": "Total",
     "share": "Share {{percent}}%",
     "soloRoom": "Solo room",
     "coupleRoom": "Couple room ({{name}})",
     "empty": "No payments this month",
-    "note": "Estimates from payment records (month in Thailand time). The {{fee}}% store fee and default {{share}}% share are provisional and vary by agency contract. Bundles are split by list-price ratio; couple rooms 50/50 between the two actors. Reconcile with store payout reports for actual amounts (local prices, FX, taxes).",
+    "note": "Estimates from payment records (month in Thailand time). The {{fee}}% store fee and default {{share}}% share are provisional and vary by agency contract. Bundles are split by list-price ratio; couple rooms 50/50 between the two artists. Reconcile with store payout reports for actual amounts (local prices, FX, taxes).",
     "adjustment": "Adjustments",
     "close": "Close month",
     "reopen": "Reopen",
@@ -556,7 +557,7 @@
   },
   "idleRefund": {
     "title": "You can request a refund",
-    "reason": "The star sent no messages during your {{from}} – {{to}} period.",
+    "reason": "The artist sent no messages during your {{from}} – {{to}} period.",
     "deadline": "Request by {{date}} · {{amount}}",
     "request": "Request refund",
     "requestApple": "Request refund from Apple",
@@ -567,6 +568,6 @@
     "guided": "We opened Apple's refund page. Apple will review and refund.",
     "guidedBefore": "We've shown you Apple's refund page. If you haven't requested yet, you can open it again.",
     "failed": "Couldn't process the refund request. Please try again in a moment.",
-    "reasonRetired": "The actor ended their activity on {{date}}, within 14 days of your payment, so you can get a full refund for this period."
+    "reasonRetired": "The artist ended their activity on {{date}}, within 14 days of your payment, so you can get a full refund for this period."
   }
 }

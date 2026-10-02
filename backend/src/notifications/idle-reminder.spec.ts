@@ -63,7 +63,7 @@ const room = (id: string, extra: Record<string, unknown> = {}) => ({
 describe('미발송 알림 보내기', () => {
   const now = new Date('2026-09-29T05:05:00Z');
 
-  it('3일째엔 배우에게만, 같은 단계는 다음 날 다시 안 보냄', async () => {
+  it('3일째엔 아티스트에게만, 같은 단계는 다음 날 다시 안 보냄', async () => {
     const t = setup([room('a1')], { a1: new Date(now.getTime() - 3 * DAY - 1000) });
     expect(await t.service.run(now)).toBe(1);
     expect(t.sent).toEqual([{ to: ['self-a1'], title: '팬 42명이 기다리고 있어요', body: '마지막 메시지가 3일 전이에요. 짧은 인사라도 남겨 볼까요?' }]);
@@ -71,7 +71,7 @@ describe('미발송 알림 보내기', () => {
     expect(await t.service.run(new Date(now.getTime() + DAY))).toBe(0);
   });
 
-  it('7일째엔 배우 + 소속사, 커플방은 두 배우에게 방 이름과 함께', async () => {
+  it('7일째엔 아티스트 + 소속사, 커플방은 두 아티스트에게 방 이름과 함께', async () => {
     const couple = room('ab', {
       kind: 'COUPLE',
       chatDisplayName: '캐러멜 & 누가',
@@ -93,7 +93,7 @@ describe('미발송 알림 보내기', () => {
     expect(t.sent).toEqual([]);
   });
 
-  it('27일째(환불 기준 3일 전)엔 배우·소속사·운영자에게 경고, 28일엔 다시 안 보내고 29일에 한 번 더', async () => {
+  it('27일째(환불 기준 3일 전)엔 아티스트·소속사·운영자에게 경고, 28일엔 다시 안 보내고 29일에 한 번 더', async () => {
     const t = setup([room('a1', { idleReminderStage: 21, idleReminderFor: new Date(now.getTime() - 27 * DAY - 1000) })], {
       a1: new Date(now.getTime() - 27 * DAY - 1000),
     });

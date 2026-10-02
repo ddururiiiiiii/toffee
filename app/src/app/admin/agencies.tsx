@@ -73,7 +73,7 @@ function AgencyRow({ agency }: { agency: AdminAgency }) {
         <ThemedView style={styles.rowBody}>
           <ThemedText type="smallBold">{agency.name}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            배우 {agency.actorCount}명 · 직원 {agency.staffCount}명 · 정산 배분{' '}
+            아티스트 {agency.actorCount}명 · 직원 {agency.staffCount}명 · 정산 배분{' '}
             {agency.revenueSharePercent === null ? '기본값' : `${agency.revenueSharePercent}%`}
           </ThemedText>
         </ThemedView>
@@ -140,7 +140,7 @@ export default function AdminAgenciesScreen() {
           ListHeaderComponent={
             <AdminSection
               title="소속사 등록"
-              hint="로고는 등록한 뒤에 올릴 수 있어요. 직원 배정은 회원 관리에서, 배우 소속은 배우 관리에서 해요.">
+              hint="로고는 등록한 뒤에 올릴 수 있어요. 직원 배정은 회원 관리에서, 아티스트 소속은 아티스트 관리에서 해요.">
               <AdminField label="소속사 이름" value={name} onChangeText={setName} maxLength={100} onSubmitEditing={create} />
               <AdminMessage text={message} error />
               <AdminButton label="등록" disabled={createAgency.isPending || !name.trim()} onPress={create} />

@@ -5,7 +5,7 @@
     "requestFailed": "請求失敗（{{status}}）"
   },
   "tabs": {
-    "actors": "演員",
+    "actors": "藝人",
     "chats": "聊天",
     "my": "我的",
     "discover": "探索",
@@ -22,7 +22,7 @@
     "amount": "฿{{price}}"
   },
   "login": {
-    "tagline": "和你喜歡的演員一對一聊天",
+    "tagline": "和你喜歡的藝人一對一聊天",
     "demoTitle": "使用電子郵件進行示範登入",
     "demoHint": "正式的社群帳號登入準備好後會顯示在這裡。現在只用電子郵件就可以體驗完整流程。",
     "namePlaceholder": "暱稱（選填）",
@@ -40,15 +40,15 @@
     "backToLogin": "返回登入"
   },
   "actors": {
-    "title": "尋找演員",
-    "searchPlaceholder": "依演員或經紀公司名稱搜尋",
+    "title": "尋找藝人",
+    "searchPlaceholder": "依藝人或經紀公司名稱搜尋",
     "all": "全部",
-    "loadFailed": "無法載入演員列表。",
+    "loadFailed": "無法載入藝人列表。",
     "empty": "沒有搜尋結果。"
   },
   "actorDetail": {
     "monthlyPrice": "每月 {{price}}（沙盒付款 — 不會實際扣款）",
-    "discountApplied": "你同時訂閱了搭檔演員，已套用折扣：{{base}} → {{effective}}。",
+    "discountApplied": "你同時訂閱了搭檔藝人，已套用折扣：{{base}} → {{effective}}。",
     "subscribeFailed": "訂閱失敗。",
     "chat": "去聊天",
     "subscribe": "訂閱"
@@ -56,20 +56,20 @@
   "chats": {
     "title": "聊天",
     "loadFailed": "無法載入聊天列表。",
-    "empty": "你還沒有訂閱任何演員，到「演員」分頁開始訂閱吧。",
+    "empty": "你還沒有訂閱任何藝人，到「藝人」分頁開始訂閱吧。",
     "noConversation": "還沒有訊息"
   },
   "chat": {
-    "loadFailed": "無法載入聊天。請確認你是否已訂閱這位演員。",
+    "loadFailed": "無法載入聊天。請確認你是否已訂閱這位藝人。",
     "replyPlaceholder": "傳送訊息…",
     "send": "傳送",
     "waitingFirst": "已開始訂閱！{{name}} 傳送的訊息會出現在這裡。",
-    "replyAfterFirst": "明星傳送第一則訊息後即可回覆。",
+    "replyAfterFirst": "藝人傳送第一則訊息後即可回覆。",
     "sendFailed": "傳送失敗，請重試。",
     "notSubscribed": "訂閱已結束，無法查看與 {{name}} 的聊天。",
     "resubscribe": "重新訂閱",
     "repliesLeft": "這則訊息還可回覆 {{count}} 則",
-    "noRepliesLeft": "每則訊息最多可回覆 {{limit}} 則，請等待明星的下一則訊息。",
+    "noRepliesLeft": "每則訊息最多可回覆 {{limit}} 則，請等待藝人的下一則訊息。",
     "mute": "關閉通知",
     "unmute": "開啟通知",
     "muted": "已關閉此聊天的通知，仍會照常收到訊息。",
@@ -95,7 +95,7 @@
     "title": "我的",
     "subscriptions": "訂閱管理",
     "subscriptionsHint": "這是不涉及付款、只管理訂閱狀態的示範頁面。正式上線後，退款規則將依照應用程式商店的政策。",
-    "empty": "你還沒有訂閱任何演員。",
+    "empty": "你還沒有訂閱任何藝人。",
     "since": "自 {{date}} 起",
     "unsubscribe": "取消訂閱",
     "unsubscribeTitle": "取消訂閱",
@@ -104,8 +104,8 @@
     "languageSystem": "跟隨裝置語言"
   },
   "console": {
-    "title": "我管理的演員",
-    "empty": "你還沒有負責的演員。",
+    "title": "我管理的藝人",
+    "empty": "你還沒有負責的藝人。",
     "monitoring": "正在監看 {{name}}",
     "tabs": {
       "monitor": "監看",
@@ -122,14 +122,14 @@
       "story": "限時動態",
       "message": "訊息"
     },
-    "monitorEmpty": "演員還沒有傳送訊息或限時動態。",
+    "monitorEmpty": "藝人還沒有傳送訊息或限時動態。",
     "repliesEmpty": "還沒有粉絲回覆。",
     "deletedFan": "已刪除帳號的粉絲",
     "activeSubscribers": "有效訂閱人數",
     "lastBroadcast": "最近傳送日期",
     "noBroadcast": "尚無傳送紀錄",
     "noNickname": "（無暱稱）",
-    "deletedByActor": "明星已刪除的訊息（粉絲看不到）",
+    "deletedByActor": "藝人已刪除的訊息（粉絲看不到）",
     "lastMessageDays": "上次訊息：{{count}} 天前",
     "noMessagesYet": "尚未傳送訊息",
     "lastMessageToday": "今天已傳送訊息"
@@ -148,7 +148,7 @@
     "consentSend": "寄送同意信",
     "consentSendFailed": "電子郵件寄送失敗。",
     "nicknameTitle": "請設定暱稱",
-    "nicknameHint": "演員的訊息會用這個暱稱稱呼你。演員引用你的回覆時，其他訂閱者也看得到，所以請避免使用真實姓名。",
+    "nicknameHint": "藝人的訊息會用這個暱稱稱呼你。藝人引用你的回覆時，其他訂閱者也看得到，所以請避免使用真實姓名。",
     "birthDateInvalid": "請再次確認出生日期。",
     "birthDateHintAdult": "Toffee 僅限 {{age}} 歲以上用戶使用。填寫後無法修改，請正確填寫。"
   },
@@ -162,7 +162,7 @@
     "screen": "工作室",
     "repliesScreen": "粉絲回覆",
     "pickActor": "請選擇要傳送訊息的頻道",
-    "noActor": "沒有連結的演員帳號，請聯絡營運人員。",
+    "noActor": "沒有連結的藝人帳號，請聯絡營運人員。",
     "empty": "你還沒有傳送過訊息，傳第一則訊息給粉絲吧！",
     "inputPlaceholder": "傳訊息給粉絲",
     "send": "傳送",
@@ -214,7 +214,7 @@
     "close": "關閉",
     "open": "檢視",
     "saveNoticeTitle": "僅限個人收藏",
-    "saveNoticeBody": "演員傳送的照片、影片和語音僅供訂閱者本人觀看。分享給他人或發布到社群媒體等，可能會依照服務條款被限制使用。",
+    "saveNoticeBody": "藝人傳送的照片、影片和語音僅供訂閱者本人觀看。分享給他人或發布到社群媒體等，可能會依照服務條款被限制使用。",
     "saveNoticeAgree": "同意並儲存",
     "previous": "上一個",
     "next": "下一個"
@@ -303,34 +303,35 @@
   },
   "deleteAccount": {
     "title": "刪除帳號",
-    "body": "刪除帳號後，暱稱、出生日期等資料將被刪除且無法復原。\n\n• 如有正在訂閱的明星，請先在 App Store 或 Google Play 取消訂閱。刪除帳號不會自動停止商店扣款。\n• 將無法再查看先前的聊天。想保留的照片、語音、影片請提前儲存。\n• 你傳送的回覆將向明星顯示為「已刪除帳號的粉絲」。",
+    "body": "刪除帳號後，暱稱、出生日期等資料將被刪除且無法復原。\n\n• 如有正在訂閱的藝人，請先在 App Store 或 Google Play 取消訂閱。刪除帳號不會自動停止商店扣款。\n• 將無法再查看先前的聊天。想保留的照片、語音、影片請提前儲存。\n• 你傳送的回覆將向藝人顯示為「已刪除帳號的粉絲」。",
     "confirm": "刪除",
     "failed": "刪除失敗，請重試。"
   },
   "discover": {
     "tagline": "Closer to what matters.",
-    "searchPlaceholder": "搜尋演員或經紀公司",
+    "searchPlaceholder": "搜尋藝人或經紀公司",
     "clearSearch": "清除搜尋",
-    "forYou": "推薦",
-    "trending": "熱門",
-    "new": "新加入",
-    "trendingTitle": "Toffee 熱門",
-    "newTitle": "Toffee 新加入",
-    "allTitle": "全部演員",
+    "newTitle": "新進駐藝人·CP",
     "seeAll": "查看全部",
     "newBadge": "NEW",
     "openProfile": "查看 {{name}} 的主頁",
     "subscribed": "已訂閱",
-    "emptyTitle": "找不到演員",
+    "emptyTitle": "找不到藝人",
     "emptyBody": "試試其他名字或經紀公司。",
     "loadFailedTitle": "載入失敗",
-    "retry": "重試"
+    "retry": "重試",
+    "femaleTitle": "女性藝人",
+    "maleTitle": "男性藝人",
+    "agenciesTitle": "依經紀公司瀏覽",
+    "coupleTitle": "CP",
+    "cpBadge": "CP",
+    "back": "返回探索"
   },
   "time": {
     "yesterday": "昨天"
   },
   "inbox": {
-    "search": "尋找演員",
+    "search": "尋找藝人",
     "sentPhoto": "傳送了照片",
     "sentVoice": "傳送了語音訊息",
     "sentVideo": "傳送了影片",
@@ -342,9 +343,9 @@
     "noMessagesYet": "第一則訊息即將到來",
     "muted": "已靜音",
     "unread": "{{count}} 則未讀",
-    "emptyTitle": "還沒有訂閱的演員",
-    "emptyBody": "訂閱喜愛的演員，就能在這裡收到 TA 的訊息。",
-    "discover": "探索演員",
+    "emptyTitle": "還沒有訂閱的藝人",
+    "emptyBody": "訂閱喜愛的藝人，就能在這裡收到 TA 的訊息。",
+    "discover": "探索藝人",
     "loadFailed": "訊息列表載入失敗"
   },
   "actorProfile": {
@@ -363,8 +364,8 @@
     "noFreeTier": "沒有免費方案，私訊需付費訂閱。",
     "subscribed": "已訂閱",
     "openChat": "查看訊息",
-    "notFound": "找不到該演員",
-    "retired": "該演員已停止活動"
+    "notFound": "找不到該藝人",
+    "retired": "該藝人已停止活動"
   },
   "subscribeFlow": {
     "subscribeTo": "訂閱",
@@ -395,8 +396,8 @@
     "account": "帳戶",
     "support": "支援",
     "languageSystem": "跟隨裝置語言",
-    "notificationsHint": "可以依演員開關新訊息通知，關閉後仍會收到訊息。",
-    "noSubscriptions": "沒有正在訂閱的演員"
+    "notificationsHint": "可以依藝人開關新訊息通知，關閉後仍會收到訊息。",
+    "noSubscriptions": "沒有正在訂閱的藝人"
   },
   "manage": {
     "active": "訂閱中",
@@ -421,9 +422,9 @@
   },
   "welcome": {
     "headline": "真實的人，\n真實的訊息，\n更近的世界。",
-    "discover": "找到並訂閱喜愛的演員",
+    "discover": "找到並訂閱喜愛的藝人",
     "dm": "訂閱即可開啟一對一私訊",
-    "media": "照片、語音與影片，由演員親自傳送",
+    "media": "照片、語音與影片，由藝人親自傳送",
     "paid": "付費訂閱服務 · 無免費方案",
     "devTitle": "開發用信箱登入",
     "devHint": "這是開發和展示用的登入方式。正式發布的應用程式中不會顯示，只顯示社群帳號登入按鈕。",
@@ -443,11 +444,11 @@
   },
   "bundle": {
     "sectionTitle": "組合更划算",
-    "sectionHint": "一次訂閱多位演員，比分別訂閱更便宜。",
+    "sectionHint": "一次訂閱多位藝人，比分別訂閱更便宜。",
     "saveVsSingle": "比單獨訂閱便宜 {{percent}}%",
     "saveDetail": "單獨訂閱共 {{regular}} · 省 {{percent}}%",
     "subscribeTo": "組合訂閱",
-    "includes": "包含 {{count}} 位演員",
+    "includes": "包含 {{count}} 位藝人",
     "singlePrice": "單獨訂閱每月 {{price}}",
     "replacesSingle": "你正在單獨訂閱的 {{names}} 將併入此組合，聊天紀錄保持不變。",
     "doneBody": "{{name}} 組合訂閱已開始，可在訊息頁查看所有聊天。",
@@ -458,8 +459,8 @@
     "via": "組合 · {{name}}",
     "cancel": "取消組合",
     "cancelTitle": "取消組合",
-    "cancelConfirm": "取消 {{name}} 後，與 {{names}} 的聊天室將一起關閉（單獨訂閱的演員不受影響）。重新訂閱也看不到之前的聊天。",
-    "cancelFromActor": "此演員包含在你的 {{name}} 組合中。取消後組合內其他聊天室也會關閉，重新訂閱也看不到之前的聊天。",
+    "cancelConfirm": "取消 {{name}} 後，與 {{names}} 的聊天室將一起關閉（單獨訂閱的藝人不受影響）。重新訂閱也看不到之前的聊天。",
+    "cancelFromActor": "此藝人包含在你的 {{name}} 組合中。取消後組合內其他聊天室也會關閉，重新訂閱也看不到之前的聊天。",
     "cancelFailed": "取消失敗，請再試一次。",
     "viaShort": "透過組合使用",
     "replacesSingleStore": "單獨訂閱的 {{names}} 的商店訂閱不會自動結束——購買套裝後請在商店訂閱管理中取消（聊天會繼續）。"
@@ -475,7 +476,7 @@
   },
   "couple": {
     "sectionTitle": "情侶房間",
-    "sectionHint": "兩位演員一起傳訊息給你的房間，需與個人房間分開訂閱。",
+    "sectionHint": "兩位藝人一起傳訊息給你的房間，需與個人房間分開訂閱。",
     "discoverTitle": "情侶房間",
     "roomLabel": "情侶房間",
     "soloLabel": "個人房間"
@@ -501,12 +502,12 @@
     "nextMonth": "下個月",
     "includeSandbox": "包含測試付款",
     "sandboxIncluded": "包含測試（未付款）訂閱，並非實際結算金額。",
-    "csvActors": "按演員 CSV",
+    "csvActors": "按藝人 CSV",
     "csvRooms": "按房間 CSV",
     "downloadFailed": "下載失敗",
     "loadFailed": "無法載入結算",
     "allAgencies": "全部",
-    "independent": "無經紀公司（結算給演員本人）",
+    "independent": "無經紀公司（結算給藝人本人）",
     "gross": "付款額",
     "storeFee": "商店手續費 {{percent}}%",
     "storeFeeShort": "商店手續費",
@@ -515,13 +516,13 @@
     "platform": "Toffee 分成",
     "refunded": "退款",
     "charges": "付款筆數",
-    "actor": "演員",
+    "actor": "藝人",
     "total": "合計",
     "share": "分成 {{percent}}%",
     "soloRoom": "個人房間",
     "coupleRoom": "情侶房間（{{name}}）",
     "empty": "本月沒有付款",
-    "note": "根據付款記錄估算（按泰國時間計月）。商店手續費 {{fee}}%、預設分成 {{share}}% 為暫定值，依各經紀公司合約而異。套裝按單獨定價比例分配，情侶房間由兩位演員平分。實際入帳金額（各國價格、匯率、稅費）需與商店結算報告核對。",
+    "note": "根據付款記錄估算（按泰國時間計月）。商店手續費 {{fee}}%、預設分成 {{share}}% 為暫定值，依各經紀公司合約而異。套裝按單獨定價比例分配，情侶房間由兩位藝人平分。實際入帳金額（各國價格、匯率、稅費）需與商店結算報告核對。",
     "adjustment": "調整（上月）",
     "close": "本月結帳",
     "reopen": "取消結帳",
@@ -556,7 +557,7 @@
   },
   "idleRefund": {
     "title": "可以申請退款",
-    "reason": "在 {{from}} – {{to}} 的使用期間，明星沒有傳送任何訊息。",
+    "reason": "在 {{from}} – {{to}} 的使用期間，藝人沒有傳送任何訊息。",
     "deadline": "{{date}} 前可申請 · {{amount}}",
     "request": "申請退款",
     "requestApple": "向 Apple 申請退款",
@@ -567,6 +568,6 @@
     "guided": "已開啟 Apple 退款申請頁面。Apple 審核後會退款。",
     "guidedBefore": "已為你開啟過 Apple 退款頁面。如果還沒申請，可以再次開啟。",
     "failed": "無法處理退款申請。請稍後再試。",
-    "reasonRetired": "演員已於 {{date}} 結束活動，在付款後 14 天內，因此可以全額退還本期費用。"
+    "reasonRetired": "藝人已於 {{date}} 結束活動，在付款後 14 天內，因此可以全額退還本期費用。"
   }
 }

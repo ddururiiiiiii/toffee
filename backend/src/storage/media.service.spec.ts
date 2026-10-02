@@ -17,7 +17,7 @@ function setup(object: { sizeBytes: number; head: Uint8Array } | null) {
 }
 
 describe('MediaService', () => {
-  it('업로드 발급: 배우/용도별 경로에 확장자를 붙인 키를 만든다', async () => {
+  it('업로드 발급: 아티스트/용도별 경로에 확장자를 붙인 키를 만든다', async () => {
     const { media } = setup(null);
     const ticket = await media.createUpload('a1', 'message', 'PHOTO', 'image/png', 1000);
     expect(ticket.objectKey).toMatch(/^actors\/a1\/message\/[0-9a-f-]{36}\.png$/);
@@ -29,7 +29,7 @@ describe('MediaService', () => {
     await expect(media.createUpload('a1', 'message', 'PHOTO', 'image/png', 21 * 1024 * 1024)).rejects.toThrow('너무 커요');
   });
 
-  it('첨부 검증: 다른 배우/다른 용도/경로 조작 키는 저장소를 보지도 않고 거절', async () => {
+  it('첨부 검증: 다른 아티스트/다른 용도/경로 조작 키는 저장소를 보지도 않고 거절', async () => {
     const { media, storage } = setup({ sizeBytes: 100, head: PNG_HEAD });
     for (const key of ['actors/a2/message/x.png', 'actors/a1/story/x.png', 'actors/a1/message/../../a2/message/x.png']) {
       await expect(media.verifyForAttach('a1', 'message', 'PHOTO', key)).rejects.toThrow();

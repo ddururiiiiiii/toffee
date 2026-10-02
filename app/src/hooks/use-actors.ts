@@ -27,6 +27,8 @@ export interface Actor {
   agency: AgencySummary | null;
   /** 1인 방 / 커플방(2026-09-29) — 커플방은 소속사가 없고 멤버 배우 2명 */
   kind?: 'SOLO' | 'COUPLE';
+  /** 성별(둘러보기 여성·남성 줄) — 커플방·지정 안 함은 null */
+  gender?: ArtistGender | null;
   coupleMembers?: { member: CoupleMemberActor }[];
 }
 
@@ -42,20 +44,34 @@ export interface CoupleMemberActor {
 /** 커플방 멤버 배우들(1인 방이면 빈 배열) */
 export const membersOf = (actor: Pick<Actor, 'coupleMembers'>): CoupleMemberActor[] => actor.coupleMembers?.map(({ member }) => member) ?? [];
 
-// q는 서버에서 배우 이름 + 소속사 이름 둘 다에 매칭됨
-export type ActorSort = 'trending' | 'new';
+// q는 서버에서 아티스트 공식 이름 + 소속사 이름 둘 다에 매칭됨. 서버는 인기순(trending)도 받지만 둘러보기에선 안 씀(2026-10-02 사용자 결정)
+export type ActorSort = 'new';
+export type ArtistGender = 'FEMALE' | 'MALE';
 
-export function useActors(query: string, agencyId?: string | null, sort?: ActorSort) {
+export interface ActorListParams {
+  query?: string;
+  agencyId?: string | null;
+  sort?: ActorSort;
+  /** SOLO(기본) / COUPLE / ALL(둘 다 — "새로 온 아티스트·CP", 검색) */
+  kind?: 'SOLO' | 'COUPLE' | 'ALL';
+  gender?: ArtistGender;
+  enabled?: boolean;
+}
+
+export function useActors({ query, agencyId, sort, kind, gender, enabled = true }: ActorListParams) {
   return useQuery({
-    queryKey: ['actors', { query, agencyId: agencyId ?? null, sort: sort ?? null }],
+    queryKey: ['actors', { query: query ?? '', agencyId: agencyId ?? null, sort: sort ?? null, kind: kind ?? null, gender: gender ?? null }],
     queryFn: () => {
       const params = new URLSearchParams();
       if (query) params.set('q', query);
       if (agencyId) params.set('agencyId', agencyId);
       if (sort) params.set('sort', sort);
+      if (kind) params.set('kind', kind);
+      if (gender) params.set('gender', gender);
       const search = params.toString();
       return apiClient.get<Actor[]>(`/actors${search ? `?${search}` : ''}`);
     },
+    enabled,
   });
 }
 

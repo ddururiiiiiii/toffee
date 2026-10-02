@@ -47,7 +47,7 @@ export function AdminBundleForm({
     const storeProductId = productId.trim() || null;
     if (!name.trim()) return setMessage({ text: '묶음 이름을 입력해 주세요.', error: true });
     if (priceCents === null) return setMessage({ text: '묶음 가격을 숫자로 입력해 주세요(예: 179).', error: true });
-    if (selected.length < 2) return setMessage({ text: '배우를 2명 이상 골라 주세요.', error: true });
+    if (selected.length < 2) return setMessage({ text: '아티스트를 2명 이상 골라 주세요.', error: true });
     if (storeProductId && !STORE_PRODUCT_ID_PATTERN.test(storeProductId)) {
       return setMessage({ text: '스토어 상품 ID는 소문자·숫자·_·. 만 쓸 수 있어요(예: toffee.bundle.nawin_pakin).', error: true });
     }
@@ -82,8 +82,8 @@ export function AdminBundleForm({
       </AdminSection>
 
       <AdminSection
-        title={`포함 배우 (${selected.length}명)`}
-        hint={locked ? `구독 중인 팬이 ${initial?.activePurchaseCount}명 있어서 배우 구성은 바꿀 수 없어요. 판매 중지 후 새 묶음을 만들어 주세요.` : '2명 이상 골라 주세요. 정산은 개인 구독 정가 비율로 나눠 기록돼요.'}>
+        title={`포함 아티스트 (${selected.length}명)`}
+        hint={locked ? `구독 중인 팬이 ${initial?.activePurchaseCount}명 있어서 아티스트 구성은 바꿀 수 없어요. 판매 중지 후 새 묶음을 만들어 주세요.` : '2명 이상 골라 주세요. 정산은 개인 구독 정가 비율로 나눠 기록돼요.'}>
         <ThemedView style={styles.chips}>
           {selected.map((actor) => (
             <AdminChip key={actor.id} label={`✓ ${actor.name}`} selected disabled={locked} onPress={() => toggle({ id: actor.id, legalName: actor.name, monthlyPriceCents: actor.priceCents })} />
@@ -91,7 +91,7 @@ export function AdminBundleForm({
         </ThemedView>
         {locked ? null : (
           <>
-            <AdminField label="배우 검색" value={query} onChangeText={setQuery} placeholder="이름·소속사" autoCapitalize="none" />
+            <AdminField label="아티스트 검색" value={query} onChangeText={setQuery} placeholder="이름·소속사" autoCapitalize="none" />
             <ThemedView style={styles.chips}>
               {actors
                 ?.filter((actor) => !actor.retiredAt && !selected.some((item) => item.id === actor.id))

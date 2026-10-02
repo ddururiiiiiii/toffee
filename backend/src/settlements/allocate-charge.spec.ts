@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { addMonths, allocateCharge } from './allocate-charge.js';
 
 describe('allocateCharge', () => {
-  it('개인방은 그 배우가 전부', () => {
+  it('개인방은 그 아티스트가 전부', () => {
     expect(allocateCharge(12900, [{ id: 'a', monthlyPriceCents: 12900, memberIds: ['a'] }])).toEqual([{ roomId: 'a', actorId: 'a', amountCents: 12900 }]);
   });
 
-  it('커플방은 두 배우가 반씩(홀수는 마지막에)', () => {
+  it('커플방은 두 아티스트가 반씩(홀수는 마지막에)', () => {
     expect(allocateCharge(19901, [{ id: 'c', monthlyPriceCents: 19901, memberIds: ['a', 'b'] }])).toEqual([
       { roomId: 'c', actorId: 'a', amountCents: 9951 },
       { roomId: 'c', actorId: 'b', amountCents: 9950 },

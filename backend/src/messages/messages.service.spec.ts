@@ -64,7 +64,7 @@ describe('MessagesService.sendBroadcast 푸시 문구', () => {
     });
   });
 
-  it('커플방: 보낸 배우가 기록되고, 팬 알림은 "방 이름" 제목 + "보낸 배우: 내용"', async () => {
+  it('커플방: 보낸 아티스트가 기록되고, 팬 알림은 "방 이름" 제목 + "보낸 아티스트: 내용"', async () => {
     const { service, fanPushes, prisma } = setup();
     const actor = (prisma as unknown as { actor: Record<string, ReturnType<typeof vi.fn>> }).actor;
     (prisma as unknown as { user: { findUniqueOrThrow: ReturnType<typeof vi.fn> } }).user.findUniqueOrThrow.mockResolvedValue({ role: Role.ACTOR });
@@ -188,7 +188,7 @@ describe('인용 답장 요약(toQuote)', () => {
     expect(toQuote({ ...base, reports: [{ id: 'r1' }] })).toEqual(hidden);
   });
 
-  it('스타 메시지(팬 답장이 자동으로 묶인 경우)는 인용이 아님', () => {
+  it('아티스트 메시지(팬 답장이 자동으로 묶인 경우)는 인용이 아님', () => {
     expect(toQuote({ ...base, senderType: 'ARTIST', fanUser: null })).toBeNull();
     expect(toQuote(null)).toBeNull();
   });
@@ -233,7 +233,7 @@ describe('MessagesService 답장 횟수 제한', () => {
     await expect(service.replyQuota('fan', 'actor')).resolves.toEqual({ messageId: 'star-1', limit: 5, used: 4, remaining: 1 });
   });
 
-  it('지워진 스타 메시지는 답장 대상에서 빠짐', async () => {
+  it('지워진 아티스트 메시지는 답장 대상에서 빠짐', async () => {
     const { service, prisma } = replySetup(0);
     await service.replyQuota('fan', 'actor');
     expect(prisma.message.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ deletedAt: null }) }));

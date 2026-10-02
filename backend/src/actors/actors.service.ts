@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { ensureCanViewActor, ensureIsActorSelf, viewableActorsWhere } from '../common/authorization/actor-access.js';
 import { normalizeNickname } from '../common/nickname/nickname.js';
 import { ModerationService } from '../moderation/moderation.service.js';
-import { ActorKind, MessageSenderType, Role } from '../generated/prisma/enums.js';
+import { ActorKind, ArtistGender, MessageSenderType, Role } from '../generated/prisma/enums.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { MediaService } from '../storage/media.service.js';
 import { appError } from '../common/i18n/app-error.js';
@@ -24,6 +24,8 @@ const LIST_SELECT = {
   storeProductId: true,
   // Discover의 "NEW" 표시용
   createdAt: true,
+  // 둘러보기 성별 줄(커플방·지정 안 함은 null)
+  gender: true,
   retiredAt: true,
   // 소속사는 팬에게도 공개(소속사별 목록/검색) — 무소속이면 null
   agency: { select: { id: true, name: true, logoUrl: true } },
@@ -48,11 +50,12 @@ export class ActorsService {
   ) {}
 
   // q는 배우 이름뿐 아니라 소속사 이름에도 매칭 — "GMMTV"로 검색하면 소속 배우가 다 나오게
-  async findAll(query?: string, agencyId?: string, sort?: 'trending' | 'new', kind: ActorKind = ActorKind.SOLO) {
-    // 활동 종료한 배우는 둘러보기·검색에서 숨김(프로필 링크로 들어오면 "활동 종료" 안내). 기본은 1인 배우만 —
-    // 커플방은 kind=COUPLE로 따로(둘러보기의 커플방 줄)
-    const where: Prisma.ActorWhereInput = { retiredAt: null, kind, ...NO_RETIRED_MEMBER };
+  async findAll(query?: string, agencyId?: string, sort?: 'trending' | 'new', kind: ActorKind | 'ALL' = ActorKind.SOLO, gender?: ArtistGender) {
+    // 활동 종료한 아티스트는 둘러보기·검색에서 숨김(프로필 링크로 들어오면 "활동 종료" 안내). 기본은 1인 아티스트만 —
+    // 커플방은 kind=COUPLE로 따로(둘러보기의 CP 줄), ALL은 둘 다(새로 온 아티스트·CP)
+    const where: Prisma.ActorWhereInput = { retiredAt: null, ...(kind === 'ALL' ? {} : { kind }), ...NO_RETIRED_MEMBER };
     if (agencyId) where.agencyId = agencyId;
+    if (gender) where.gender = gender;
     if (query) {
       where.OR = [
         { legalName: { contains: escapeLike(query), mode: 'insensitive' } },

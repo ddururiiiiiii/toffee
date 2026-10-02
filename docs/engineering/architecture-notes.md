@@ -1354,3 +1354,14 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
   (`officialProfileImageUrl === null`) 대화방 사진도 비어 있고 같은 요청에서 대화방 사진을 안 정했으면 `chat = official`. 같은 키를 두 칸이 가리켜도
   기존 `stillUsed` 검사 때문에 한쪽을 바꿀 때 파일이 지워지지 않음. 스키마 변경 없음(대화방 사진 null = 기본 이미지).
 
+## 둘러보기 개편·아티스트 용어 (2026-10-02)
+
+- 스키마: `enum ArtistGender { FEMALE MALE }`, `Actor.gender ArtistGender?`(null = 지정 안 함, 커플방은 항상 null — `AdminActorsService.update`가
+  COUPLE이면 gender를 무시). `LIST_SELECT`에 `gender` 추가.
+- `GET /actors`: `kind`에 `ALL`(1인+커플, 새로 온 줄·검색), `gender=FEMALE|MALE`. `sort=trending`은 서버에 남아 있지만 앱은 안 씀.
+- 앱 `useActors`는 객체 인자(`{ query, agencyId, sort, kind, gender, enabled }`)로 바뀜. 둘러보기는 `DiscoverView` 상태(home/new/female/male/couple/agency)
+  하나로 홈 줄들과 "전체 보기" 목록을 같은 FlatList에서 전환(새 라우트 없음). "새로 온"은 서버 `sort=new` 결과를 앱에서 30일(`NEW_WINDOW_MS`)로 거름.
+- 운영자: `GENDER_OPTIONS`(admin-ui), 등록 화면은 칩 선택, 상세 화면은 누르면 바로 PATCH.
+- 용어 일괄 치환: 주석이 아닌 줄의 문자열만(`배우`/`스타`(스타일·스타트 제외)/`俳優`/`スター`(スタート 제외)/`นักแสดง`/`演员`/`明星` 등, 영어는 서버 문구
+  파일의 `en` 블록에서만 단어 경계로). 식별자·라우트(`/actor/[id]`)·API 이름은 그대로.
+

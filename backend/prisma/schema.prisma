@@ -193,6 +193,13 @@ model ParentalConsent {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// 아티스트 성별(2026-10-02) — 둘러보기의 "여성 아티스트"·"남성 아티스트" 줄. 비어 있으면(그룹·혼성 등) 지정 안 함 — 두 줄엔 안 나오고
+// 검색·소속사별·새로 온 줄에만. 커플방은 항상 비움
+enum ArtistGender {
+  FEMALE
+  MALE
+}
+
 enum ActorKind {
   // 배우 1명의 개인방
   SOLO
@@ -209,8 +216,8 @@ model Actor {
   // 메시지·구독·구매·묶음·차단·신고·실시간·통계가 전부 actorId(= 방)로 동작해서 커플방도 같은 코드를 씀.
   // 커플방은 공식 이름·공식 사진·가격은 운영자, 방 이름(chatDisplayName)·대화방 사진은 두 멤버 배우가 각자 바꿀 수 있음.
   // 커플방은 소속사(agencyId)·본인 계정(selfUserId)이 없고 권한은 멤버 배우를 통해 판단(actor-access.ts).
-  id                      String    @id @default(uuid())
-  kind                    ActorKind @default(SOLO)
+  id                      String        @id @default(uuid())
+  kind                    ActorKind     @default(SOLO)
   // 장기 미발송 알림(2026-09-29) — 마지막으로 알린 단계(3일·7일·14일…)와 그때의 기준 시각(마지막 메시지 시각). 새 메시지를 보내면 기준 시각이
   // 바뀌어 처음부터 다시 셈. 같은 단계를 두 번 보내지 않게 기록만 함
   idleReminderStage       Int?
@@ -219,18 +226,19 @@ model Actor {
   officialProfileImageUrl String?
   chatDisplayName         String
   chatProfileImageUrl     String?
+  gender                  ArtistGender?
   monthlyPriceCents       Int
   // 개인 구독 스토어 상품 ID(애플·구글 공통, 소문자·숫자·_·.) — 등록 전엔 null(샌드박스 구독만). 2026-09-29
-  storeProductId          String?   @unique
-  verified                Boolean   @default(false)
-  selfUserId              String?   @unique
+  storeProductId          String?       @unique
+  verified                Boolean       @default(false)
+  selfUserId              String?       @unique
   // 현재 소속사(무소속이면 null) — 바꿀 때는 반드시 ActorAgencyHistory도 같이 갱신할 것
   // (AdminAgenciesService.assignActor 참고)
   agencyId                String?
   // 활동 종료(계약 종료 등) — 둘러보기·검색에서 숨기고 신규 구독을 막음. 기존 구독 팬은 대화 유지(잠정, STATUS 정책 표)
   retiredAt               DateTime?
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
 
   selfUser           User?                @relation("ActorSelf", fields: [selfUserId], references: [id])
   agency             Agency?              @relation(fields: [agencyId], references: [id])

@@ -139,7 +139,7 @@ describe('스토어 결제 확인', () => {
     expect(t.charges).toEqual([expect.objectContaining({ purchaseId: t.purchases[0].id, storeTransactionId: 'tx-1' })]);
   });
 
-  it('다른 배우·묶음의 상품 영수증으로는 못 엶', async () => {
+  it('다른 아티스트·묶음의 상품 영수증으로는 못 엶', async () => {
     const t = setup();
     t.receipt({ productId: 'toffee.b1' });
     await expect(t.service.verifyPurchase('u', 'a1', t.iosDto)).rejects.toThrow('이 방의 구독 상품');
