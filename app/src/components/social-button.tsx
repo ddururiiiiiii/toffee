@@ -64,5 +64,6 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 16,
   },
-  label: { flexShrink: 1 },
+  // 웹은 구글 공식 버튼 글자(Google Sans/Roboto 14·Medium)에 맞춤 — 구글 버튼은 바꿀 수 없어서 나머지를 맞춤(2026-10-02)
+  label: WEB ? { flexShrink: 1, fontFamily: "'Google Sans', Roboto, Arial, sans-serif", fontSize: 14, fontWeight: '500', letterSpacing: 0.25 } : { flexShrink: 1 },
 });

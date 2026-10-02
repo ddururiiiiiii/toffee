@@ -77,14 +77,18 @@ export function SocialLoginButtons({
     };
   }, [i18n.language, onCredential, onError, t]);
 
-  const redirects = orderedProviders(availableProviders(), i18n.language).filter(isRedirectProvider);
-  if (!GOOGLE_WEB_CLIENT_ID && redirects.length === 0) return null;
+  // 구글 공식 버튼도 정해진 순서 자리에 그림(예전엔 항상 맨 끝)
+  const providers = orderedProviders(availableProviders(), i18n.language);
+  if (providers.length === 0) return null;
   return (
     <View style={styles.list}>
-      {redirects.map((provider) => (
-        <SocialButton key={provider} provider={provider} label={t(`login.continueWith.${provider}`)} onPress={() => startRedirectLogin(provider)} />
-      ))}
-      {GOOGLE_WEB_CLIENT_ID ? <View ref={container} style={styles.google} /> : null}
+      {providers.map((provider) =>
+        provider === 'google' ? (
+          <View key="google" ref={container} style={styles.google} />
+        ) : isRedirectProvider(provider) ? (
+          <SocialButton key={provider} provider={provider} label={t(`login.continueWith.${provider}`)} onPress={() => startRedirectLogin(provider)} />
+        ) : null,
+      )}
     </View>
   );
 }

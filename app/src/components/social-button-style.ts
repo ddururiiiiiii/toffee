@@ -9,8 +9,9 @@ export const PROVIDER_STYLE: Record<SocialProvider, { background: string; text: 
   naver: { background: '#03C75A', text: '#FFFFFF' },
 };
 
-// 나라마다 많이 쓰는 로그인을 위로 — 한국어면 카카오·네이버, 그 외(태국·일본·대만)는 LINE
+// 나라마다 많이 쓰는 로그인을 위로(2026-10-02 사용자 결정) — 한국어: 카카오 → 네이버 → 구글 → 애플 → LINE,
+// 그 외(태국·일본·대만 등): LINE → 구글 → 애플. 카카오·네이버는 한국 밖에선 거의 안 써서 한국어 화면에서만 보임
 export function orderedProviders(providers: SocialProvider[], language: string): SocialProvider[] {
-  const order: SocialProvider[] = language.startsWith('ko') ? ['kakao', 'naver', 'apple', 'google', 'line'] : ['line', 'apple', 'google', 'kakao', 'naver'];
+  const order: SocialProvider[] = language.startsWith('ko') ? ['kakao', 'naver', 'google', 'apple', 'line'] : ['line', 'google', 'apple'];
   return order.filter((provider) => providers.includes(provider));
 }

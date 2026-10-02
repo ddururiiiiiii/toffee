@@ -1,3 +1,6 @@
+/* 웹 소셜 로그인 버튼 글자를 구글 공식 버튼(Roboto Medium)과 맞추려고(2026-10-02) — 앱(네이티브)에선 쓰이지 않음 */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@500&display=swap');
+
 :root {
   --font-display:
     'Pretendard_400Regular', 'NotoSansThai_400Regular', Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji,
