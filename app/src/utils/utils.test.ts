@@ -26,6 +26,15 @@ describe('번역 보기를 보여 줄지(글자 종류)', () => {
     expect(needsTranslation('💛', 'en')).toBe(false);
     expect(needsTranslation(null, 'en')).toBe(false);
   });
+
+  it('베트남어 — 베트남어에만 있는 글자로 영어와 구분', () => {
+    expect(detectScript('Hôm nay quay phim xong rồi, nhớ mọi người lắm 💛')).toBe('vietnamese');
+    expect(detectScript('Café au lait')).toBe('latin');
+    expect(needsTranslation('Cảm ơn anh nhiều lắm!', 'en')).toBe(true);
+    expect(needsTranslation('See you tomorrow!', 'vi')).toBe(true);
+    expect(needsTranslation('Cảm ơn anh nhiều lắm!', 'vi')).toBe(false);
+    expect(needsTranslation('오늘 촬영 끝', 'vi')).toBe(true);
+  });
 });
 
 describe('미발송 일수', () => {

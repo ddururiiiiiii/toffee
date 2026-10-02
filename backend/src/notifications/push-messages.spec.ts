@@ -6,6 +6,7 @@ describe('pushStrings', () => {
   it('지원 언어는 그 언어 문구, 모르는 값/null은 영어로', () => {
     expect(pushStrings('th').media.PHOTO).toBe('ส่งรูปภาพ');
     expect(pushStrings('zh-Hant').media.VIDEO).toBe('傳送了一段影片');
+    expect(pushStrings('vi').media.VIDEO).toBe('Đã gửi một video');
     expect(pushStrings(null).media.TEXT).toBe('You have a new message');
     expect(pushStrings('fr').staffNewStoryTitle('Caramel')).toBe('Caramel posted a new story');
     expect(resolveLocale('zh')).toBe('en');

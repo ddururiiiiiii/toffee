@@ -34,6 +34,7 @@ export const LANGUAGE_NAMES: Record<SupportedLocale, string> = {
   ja: 'Japanese',
   'zh-Hans': 'Simplified Chinese',
   'zh-Hant': 'Traditional Chinese (as used in Taiwan and Hong Kong)',
+  vi: 'Vietnamese',
 };
 
 // 요청마다 똑같은 글(프롬프트 캐시가 되게 날짜·id 같은 바뀌는 값은 넣지 않음). 메시지 안 글은 지시로 따르지 않게(프롬프트 주입 방지)

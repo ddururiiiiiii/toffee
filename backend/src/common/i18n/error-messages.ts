@@ -2,7 +2,7 @@ import { resolveLocale, type SupportedLocale } from './locales.js';
 
 // 서버가 앱에 돌려주는 오류 문구 — 코드에서는 appError('코드')로 던지고, 응답 직전에 LocalizedExceptionFilter가
 // 요청의 Accept-Language(앱이 지금 쓰는 언어)로 골라 message에 넣음. 앱 쪽 번역처럼 th/ja/zh는 원어민 검수 전
-// (2026-09-28 기계 작성). 새 오류를 추가할 때는 6개 언어를 모두 채울 것(타입이 강제함).
+// (2026-09-28 기계 작성, vi는 2026-10-02). 새 오류를 추가할 때는 7개 언어를 모두 채울 것(타입이 강제함).
 
 export type ErrorParams = Record<string, string | number>;
 type Text = string | ((params: ErrorParams, locale: SupportedLocale) => string);
@@ -14,6 +14,7 @@ const INTL_LOCALE: Record<SupportedLocale, string> = {
   ja: 'ja-JP',
   'zh-Hans': 'zh-CN',
   'zh-Hant': 'zh-TW',
+  vi: 'vi-VN',
 };
 
 /** 날짜 파라미터(ISO 문자열)를 받는 사람 언어의 태국 시간 표기로 */
@@ -34,8 +35,9 @@ const SANCTION_LABEL: Record<SupportedLocale, Record<string, string>> = {
   ja: { SPAM: 'スパム・広告', ABUSE: '暴言・嫌がらせ', SEXUAL: '性的な内容', PRIVACY: '個人情報の公開', OTHER: '運営ポリシー違反' },
   'zh-Hans': { SPAM: '垃圾信息或广告', ABUSE: '辱骂或骚扰', SEXUAL: '色情内容', PRIVACY: '泄露个人信息', OTHER: '违反运营政策' },
   'zh-Hant': { SPAM: '垃圾訊息或廣告', ABUSE: '辱罵或騷擾', SEXUAL: '色情內容', PRIVACY: '洩露個人資訊', OTHER: '違反營運政策' },
+  vi: { SPAM: 'spam hoặc quảng cáo', ABUSE: 'lăng mạ hoặc quấy rối', SEXUAL: 'nội dung tình dục', PRIVACY: 'làm lộ thông tin cá nhân', OTHER: 'vi phạm chính sách vận hành' },
 };
-const REASON_PREFIX: Record<SupportedLocale, string> = { ko: ' 사유: ', en: ' Reason: ', th: ' เหตุผล: ', ja: ' 理由：', 'zh-Hans': ' 原因：', 'zh-Hant': ' 原因：' };
+const REASON_PREFIX: Record<SupportedLocale, string> = { ko: ' 사유: ', en: ' Reason: ', th: ' เหตุผล: ', ja: ' 理由：', 'zh-Hans': ' 原因：', 'zh-Hant': ' 原因：', vi: ' Lý do: ' };
 const reason = (p: ErrorParams, l: SupportedLocale) =>
   p.reason && SANCTION_LABEL[l][String(p.reason)] ? `${REASON_PREFIX[l]}${SANCTION_LABEL[l][String(p.reason)]}` : '';
 
@@ -50,6 +52,7 @@ export const ERROR_MESSAGES = {
     ja: 'リクエストを処理できませんでした。入力内容をご確認ください。',
     'zh-Hans': '无法处理请求，请检查输入的内容。',
     'zh-Hant': '無法處理請求，請檢查輸入的內容。',
+    vi: 'Không thể xử lý yêu cầu. Vui lòng kiểm tra nội dung bạn đã nhập.',
   },
   VALIDATION_FAILED: {
     ko: '입력값을 확인해 주세요.',
@@ -58,6 +61,7 @@ export const ERROR_MESSAGES = {
     ja: '入力内容をご確認ください。',
     'zh-Hans': '请检查输入的内容。',
     'zh-Hant': '請檢查輸入的內容。',
+    vi: 'Vui lòng kiểm tra nội dung bạn đã nhập.',
   },
   UNAUTHORIZED: {
     ko: '다시 로그인해 주세요.',
@@ -66,6 +70,7 @@ export const ERROR_MESSAGES = {
     ja: 'もう一度ログインしてください。',
     'zh-Hans': '请重新登录。',
     'zh-Hant': '請重新登入。',
+    vi: 'Vui lòng đăng nhập lại.',
   },
   FORBIDDEN: {
     ko: '이 작업을 할 권한이 없어요.',
@@ -74,6 +79,7 @@ export const ERROR_MESSAGES = {
     ja: 'この操作を行う権限がありません。',
     'zh-Hans': '你没有执行此操作的权限。',
     'zh-Hant': '你沒有執行此操作的權限。',
+    vi: 'Bạn không có quyền thực hiện thao tác này.',
   },
   NOT_FOUND: {
     ko: '찾을 수 없어요.',
@@ -82,6 +88,7 @@ export const ERROR_MESSAGES = {
     ja: '見つかりませんでした。',
     'zh-Hans': '未找到。',
     'zh-Hant': '找不到。',
+    vi: 'Không tìm thấy.',
   },
   CONFLICT: {
     ko: '이미 처리된 요청이에요.',
@@ -90,6 +97,7 @@ export const ERROR_MESSAGES = {
     ja: 'すでに処理済みです。',
     'zh-Hans': '该请求已处理。',
     'zh-Hant': '該請求已處理。',
+    vi: 'Thao tác này đã được thực hiện.',
   },
   TOO_MANY_REQUESTS: {
     ko: '요청이 너무 많아요. 잠시 후 다시 시도해 주세요.',
@@ -98,6 +106,7 @@ export const ERROR_MESSAGES = {
     ja: 'リクエストが多すぎます。しばらくしてからもう一度お試しください。',
     'zh-Hans': '请求过多，请稍后再试。',
     'zh-Hant': '請求過多，請稍後再試。',
+    vi: 'Quá nhiều yêu cầu. Vui lòng thử lại sau giây lát.',
   },
   PAYLOAD_TOO_LARGE: {
     ko: '보낸 내용이 너무 커요.',
@@ -106,6 +115,7 @@ export const ERROR_MESSAGES = {
     ja: '送信内容が大きすぎます。',
     'zh-Hans': '发送的内容过大。',
     'zh-Hant': '傳送的內容過大。',
+    vi: 'Yêu cầu quá lớn.',
   },
   SERVICE_UNAVAILABLE: {
     ko: '지금은 이용할 수 없어요. 잠시 후 다시 시도해 주세요.',
@@ -114,6 +124,7 @@ export const ERROR_MESSAGES = {
     ja: '現在ご利用いただけません。しばらくしてからもう一度お試しください。',
     'zh-Hans': '当前无法使用，请稍后再试。',
     'zh-Hant': '目前無法使用，請稍後再試。',
+    vi: 'Hiện không thể sử dụng. Vui lòng thử lại sau.',
   },
   INTERNAL: {
     ko: '일시적인 오류가 생겼어요. 잠시 후 다시 시도해 주세요.',
@@ -122,6 +133,7 @@ export const ERROR_MESSAGES = {
     ja: '一時的なエラーが発生しました。しばらくしてからもう一度お試しください。',
     'zh-Hans': '出现暂时性错误，请稍后再试。',
     'zh-Hant': '發生暫時性錯誤，請稍後再試。',
+    vi: 'Đã xảy ra lỗi. Vui lòng thử lại sau giây lát.',
   },
 
   // ── 계정·로그인 ──
@@ -132,6 +144,7 @@ export const ERROR_MESSAGES = {
     ja: 'アクセスコードが正しくありません。受け取ったコードをもう一度ご確認ください。',
     'zh-Hans': '访问码不正确，请再次确认收到的访问码。',
     'zh-Hant': '存取碼不正確，請再次確認收到的存取碼。',
+    vi: 'Mã truy cập không đúng. Vui lòng kiểm tra mã bạn được cung cấp.',
   },
   SOCIAL_TOKEN_INVALID: {
     ko: (p) => `${p.provider} 로그인을 확인하지 못했어요. 다시 시도해 주세요.`,
@@ -140,6 +153,7 @@ export const ERROR_MESSAGES = {
     ja: (p) => `${p.provider}のログインを確認できませんでした。もう一度お試しください。`,
     'zh-Hans': (p) => `无法验证 ${p.provider} 登录，请重试。`,
     'zh-Hant': (p) => `無法驗證 ${p.provider} 登入，請再試一次。`,
+    vi: (p) => `Không xác minh được đăng nhập ${p.provider}. Vui lòng thử lại.`,
   },
   ACCOUNT_DELETED: {
     ko: '탈퇴한 계정이에요.',
@@ -148,6 +162,7 @@ export const ERROR_MESSAGES = {
     ja: '退会済みのアカウントです。',
     'zh-Hans': '该账号已注销。',
     'zh-Hant': '此帳號已註銷。',
+    vi: 'Tài khoản này đã bị xóa.',
   },
   ACCOUNT_BANNED: {
     ko: (p, l) => `이용이 제한된 계정이에요.${reason(p, l)}`,
@@ -156,6 +171,7 @@ export const ERROR_MESSAGES = {
     ja: (p, l) => `利用が制限されたアカウントです。${reason(p, l)}`,
     'zh-Hans': (p, l) => `该账号已被限制使用。${reason(p, l)}`,
     'zh-Hant': (p, l) => `此帳號已被限制使用。${reason(p, l)}`,
+    vi: (p, l) => `Tài khoản này đã bị hạn chế.${reason(p, l)}`,
   },
   ACCOUNT_SUSPENDED: {
     ko: (p, l) => `일시정지된 계정이에요. ${date('until', true)(p, l)}(태국 시간)부터 다시 이용할 수 있어요.${reason(p, l)}`,
@@ -164,6 +180,7 @@ export const ERROR_MESSAGES = {
     ja: (p, l) => `一時停止中のアカウントです。${date('until', true)(p, l)}（タイ時間）から再びご利用いただけます。${reason(p, l)}`,
     'zh-Hans': (p, l) => `该账号已被暂停使用，可于 ${date('until', true)(p, l)}（泰国时间）起重新使用。${reason(p, l)}`,
     'zh-Hant': (p, l) => `此帳號已被暫停使用，可於 ${date('until', true)(p, l)}（泰國時間）起重新使用。${reason(p, l)}`,
+    vi: (p, l) => `Tài khoản này đang bị tạm khóa. Bạn có thể dùng lại từ ${date('until', true)(p, l)} (giờ Thái Lan).${reason(p, l)}`,
   },
   STAFF_CANNOT_SELF_DELETE: {
     ko: '아티스트·소속사 계정은 앱에서 탈퇴할 수 없어요. 운영자에게 요청해 주세요.',
@@ -172,6 +189,7 @@ export const ERROR_MESSAGES = {
     ja: 'アーティスト・事務所アカウントはアプリから退会できません。運営者にお問い合わせください。',
     'zh-Hans': '艺人和经纪公司账号无法在应用内注销，请联系管理员。',
     'zh-Hant': '藝人與經紀公司帳號無法在應用程式內註銷，請聯絡管理員。',
+    vi: 'Không thể xóa tài khoản nghệ sĩ và công ty quản lý trong ứng dụng. Vui lòng liên hệ quản trị viên.',
   },
   TERMS_UPDATED: {
     ko: '약관이 새로 바뀌었어요. 앱을 다시 열어 최신 약관을 확인해 주세요.',
@@ -180,6 +198,7 @@ export const ERROR_MESSAGES = {
     ja: '利用規約が更新されました。アプリを開き直して最新の規約をご確認ください。',
     'zh-Hans': '条款已更新，请重新打开应用查看最新条款。',
     'zh-Hant': '條款已更新，請重新開啟應用程式查看最新條款。',
+    vi: 'Điều khoản của chúng tôi đã được cập nhật. Vui lòng mở lại ứng dụng để xem điều khoản mới nhất.',
   },
 
   // ── 닉네임 ──
@@ -190,6 +209,7 @@ export const ERROR_MESSAGES = {
     ja: 'ニックネームを入力してください。',
     'zh-Hans': '请输入昵称。',
     'zh-Hant': '請輸入暱稱。',
+    vi: 'Vui lòng nhập biệt danh.',
   },
   NICKNAME_TOO_LONG: {
     ko: (p) => `닉네임은 ${p.max}자까지 쓸 수 있어요.`,
@@ -198,6 +218,7 @@ export const ERROR_MESSAGES = {
     ja: (p) => `ニックネームは${p.max}文字まで使用できます。`,
     'zh-Hans': (p) => `昵称最多 ${p.max} 个字符。`,
     'zh-Hant': (p) => `暱稱最多 ${p.max} 個字元。`,
+    vi: (p) => `Biệt danh tối đa ${p.max} ký tự.`,
   },
   NICKNAME_INVALID_CHARS: {
     ko: '사용할 수 없는 문자가 있어요.',
@@ -206,6 +227,7 @@ export const ERROR_MESSAGES = {
     ja: '使用できない文字が含まれています。',
     'zh-Hans': '包含无法使用的字符。',
     'zh-Hant': '包含無法使用的字元。',
+    vi: 'Biệt danh có ký tự không được phép.',
   },
   NICKNAME_BANNED_WORD: {
     ko: '사용할 수 없는 단어가 포함되어 있어요.',
@@ -214,6 +236,7 @@ export const ERROR_MESSAGES = {
     ja: '使用できない単語が含まれています。',
     'zh-Hans': '包含无法使用的词语。',
     'zh-Hant': '包含無法使用的詞語。',
+    vi: 'Biệt danh có từ không được phép.',
   },
   NICKNAME_INAPPROPRIATE: {
     ko: '부적절한 표현이 포함된 닉네임은 쓸 수 없어요.',
@@ -222,6 +245,7 @@ export const ERROR_MESSAGES = {
     ja: '不適切な表現を含むニックネームは使用できません。',
     'zh-Hans': '昵称不能包含不当内容。',
     'zh-Hant': '暱稱不能包含不當內容。',
+    vi: 'Biệt danh không được chứa từ ngữ không phù hợp.',
   },
   NICKNAME_MATCHES_ACTOR: {
     ko: '아티스트 이름과 같은 닉네임은 쓸 수 없어요.',
@@ -230,6 +254,7 @@ export const ERROR_MESSAGES = {
     ja: 'アーティストと同じ名前はニックネームに使用できません。',
     'zh-Hans': '不能使用与艺人相同的昵称。',
     'zh-Hant': '不能使用與藝人相同的暱稱。',
+    vi: 'Bạn không thể dùng tên nghệ sĩ làm biệt danh.',
   },
   NICKNAME_CHANGE_LOCKED: {
     ko: (p, l) => `닉네임은 ${date('availableAt')(p, l)} 이후에 바꿀 수 있어요.`,
@@ -238,6 +263,7 @@ export const ERROR_MESSAGES = {
     ja: (p, l) => `ニックネームは${date('availableAt')(p, l)}以降に変更できます。`,
     'zh-Hans': (p, l) => `昵称可在 ${date('availableAt')(p, l)} 之后修改。`,
     'zh-Hant': (p, l) => `暱稱可在 ${date('availableAt')(p, l)} 之後修改。`,
+    vi: (p, l) => `Bạn có thể đổi biệt danh sau ${date('availableAt')(p, l)}.`,
   },
   ACTOR_NAME_TAKEN: {
     ko: '다른 아티스트가 쓰고 있는 이름이에요.',
@@ -246,6 +272,7 @@ export const ERROR_MESSAGES = {
     ja: 'ほかのアーティストが使用している名前です。',
     'zh-Hans': '该名称已被其他艺人使用。',
     'zh-Hant': '此名稱已被其他藝人使用。',
+    vi: 'Tên này đã được nghệ sĩ khác sử dụng.',
   },
 
   // ── 권한·구독 ──
@@ -256,6 +283,7 @@ export const ERROR_MESSAGES = {
     ja: 'このアーティスト本人のアカウントのみ操作できます。',
     'zh-Hans': '只有该艺人本人账号可以操作。',
     'zh-Hant': '只有該藝人本人帳號可以操作。',
+    vi: 'Chỉ tài khoản của chính nghệ sĩ này mới làm được việc này.',
   },
   ACTOR_STAFF_OR_SELF_ONLY: {
     ko: '이 아티스트의 소속사 스태프 또는 본인만 접근할 수 있어요.',
@@ -264,6 +292,7 @@ export const ERROR_MESSAGES = {
     ja: 'このアーティスト本人または所属事務所のスタッフのみアクセスできます。',
     'zh-Hans': '只有该艺人本人或其经纪公司工作人员可以访问。',
     'zh-Hant': '只有該藝人本人或其經紀公司工作人員可以存取。',
+    vi: 'Chỉ nghệ sĩ này hoặc nhân viên công ty quản lý của họ mới truy cập được.',
   },
   SUBSCRIPTION_REQUIRED: {
     ko: '이 아티스트를 구독해야 콘텐츠를 볼 수 있어요.',
@@ -272,6 +301,7 @@ export const ERROR_MESSAGES = {
     ja: 'このアーティストを購読するとコンテンツを見られます。',
     'zh-Hans': '订阅该艺人后才能查看内容。',
     'zh-Hant': '訂閱該藝人後才能查看內容。',
+    vi: 'Hãy đăng ký nghệ sĩ này để xem nội dung của họ.',
   },
   ACTOR_RETIRED: {
     ko: '활동을 종료한 아티스트라 새로 구독할 수 없어요.',
@@ -280,6 +310,7 @@ export const ERROR_MESSAGES = {
     ja: '活動を終了したアーティストのため、新たに購読できません。',
     'zh-Hans': '该艺人已停止活动，无法新订阅。',
     'zh-Hant': '該藝人已停止活動，無法新訂閱。',
+    vi: 'Nghệ sĩ này không còn hoạt động nên không thể đăng ký mới.',
   },
   ALREADY_SUBSCRIBED: {
     ko: '이미 구독 중인 아티스트예요.',
@@ -288,6 +319,7 @@ export const ERROR_MESSAGES = {
     ja: 'すでに購読中のアーティストです。',
     'zh-Hans': '你已订阅该艺人。',
     'zh-Hant': '你已訂閱該藝人。',
+    vi: 'Bạn đã đăng ký nghệ sĩ này rồi.',
   },
   ALREADY_SUBSCRIBED_BUNDLE: {
     ko: '이미 구독 중인 묶음이에요.',
@@ -296,6 +328,7 @@ export const ERROR_MESSAGES = {
     ja: 'このセットはすでに購読中です。',
     'zh-Hans': '你已订阅此套餐。',
     'zh-Hant': '你已訂閱此組合。',
+    vi: 'Bạn đã đăng ký gói combo này rồi.',
   },
   COVERED_BY_BUNDLE: {
     ko: (p) => `이 아티스트는 묶음 구독(${p.name})으로 이용 중이에요. 해지하려면 묶음 구독을 해지해 주세요.`,
@@ -304,6 +337,7 @@ export const ERROR_MESSAGES = {
     ja: (p) => `このアーティストはセット購読（${p.name}）でご利用中です。解約するにはセット購読を解約してください。`,
     'zh-Hans': (p) => `该艺人包含在你的套餐（${p.name}）中。如需取消，请取消该套餐。`,
     'zh-Hant': (p) => `此藝人包含在你的組合（${p.name}）中。如需取消，請取消該組合。`,
+    vi: (p) => `Nghệ sĩ này thuộc gói combo của bạn (${p.name}). Để hủy, hãy hủy gói combo.`,
   },
   PURCHASE_NOT_FOUND: {
     ko: '해지할 구독을 찾을 수 없어요.',
@@ -312,6 +346,7 @@ export const ERROR_MESSAGES = {
     ja: '該当する購読が見つかりません。',
     'zh-Hans': '找不到该订阅。',
     'zh-Hant': '找不到該訂閱。',
+    vi: 'Không tìm thấy gói đăng ký đó.',
   },
   BUNDLE_NOT_FOUND: {
     ko: '묶음 상품을 찾을 수 없어요.',
@@ -320,6 +355,7 @@ export const ERROR_MESSAGES = {
     ja: 'セットが見つかりません。',
     'zh-Hans': '找不到该套餐。',
     'zh-Hant': '找不到該組合。',
+    vi: 'Không tìm thấy gói combo đó.',
   },
   BUNDLE_UNAVAILABLE: {
     ko: '지금은 구독할 수 없는 묶음이에요.',
@@ -328,6 +364,7 @@ export const ERROR_MESSAGES = {
     ja: 'このセットは現在購読できません。',
     'zh-Hans': '该套餐目前无法订阅。',
     'zh-Hant': '該組合目前無法訂閱。',
+    vi: 'Gói combo này hiện không có sẵn.',
   },
   BUNDLE_ACTORS_INVALID: {
     ko: '묶음에는 서로 다른 아티스트를 2명 이상 넣어야 해요.',
@@ -336,6 +373,7 @@ export const ERROR_MESSAGES = {
     ja: 'セットには異なるアーティストを2人以上入れてください。',
     'zh-Hans': '套餐至少需要包含两位不同的艺人。',
     'zh-Hant': '組合至少需要包含兩位不同的藝人。',
+    vi: 'Gói combo cần ít nhất hai nghệ sĩ khác nhau.',
   },
   BUNDLE_IN_USE: {
     ko: '구독 중인 팬이 있는 묶음은 아티스트 구성을 바꿀 수 없어요. 판매를 중지하고 새 묶음을 만들어 주세요.',
@@ -344,6 +382,7 @@ export const ERROR_MESSAGES = {
     ja: '購読中のファンがいるセットはアーティスト構成を変更できません。販売を停止して新しいセットを作成してください。',
     'zh-Hans': '已有粉丝订阅的套餐无法更改艺人组合。请停售后新建套餐。',
     'zh-Hant': '已有粉絲訂閱的組合無法變更藝人。請停售後新建組合。',
+    vi: 'Không thể thay đổi nghệ sĩ trong gói combo đang có fan đăng ký. Hãy ngừng bán và tạo gói combo mới.',
   },
   STORE_PRODUCT_ID_TAKEN: {
     ko: '이미 다른 아티스트나 묶음에 쓰인 스토어 상품 ID예요.',
@@ -352,6 +391,7 @@ export const ERROR_MESSAGES = {
     ja: 'このストア商品IDはすでに別のアーティストまたはセットで使われています。',
     'zh-Hans': '该商店商品 ID 已被其他艺人或套餐使用。',
     'zh-Hant': '該商店商品 ID 已被其他藝人或組合使用。',
+    vi: 'Mã sản phẩm cửa hàng này đã được nghệ sĩ hoặc gói combo khác sử dụng.',
   },
   IAP_RECEIPT_IN_USE: {
     ko: '이미 다른 계정에서 사용한 결제 내역이에요. 결제한 계정으로 로그인해 주세요.',
@@ -360,6 +400,7 @@ export const ERROR_MESSAGES = {
     ja: 'この購入はすでに別のアカウントで使われています。購入したアカウントでログインしてください。',
     'zh-Hans': '此购买记录已关联其他账号，请使用付款的账号登录。',
     'zh-Hant': '此購買紀錄已連結其他帳號，請使用付款的帳號登入。',
+    vi: 'Giao dịch mua này đã được liên kết với tài khoản khác. Vui lòng đăng nhập bằng tài khoản bạn đã dùng để thanh toán.',
   },
   STORY_NOT_FOR_COUPLE: {
     ko: 'CP방에는 스토리를 올릴 수 없어요.',
@@ -368,6 +409,7 @@ export const ERROR_MESSAGES = {
     ja: 'CPルームではストーリーを投稿できません。',
     'zh-Hans': 'CP房间无法发布快拍。',
     'zh-Hant': 'CP房間無法發布限時動態。',
+    vi: 'Story không khả dụng trong phòng CP.',
   },
   COUPLE_MEMBERS_INVALID: {
     ko: 'CP방에는 서로 다른 1인 아티스트 2명을 골라야 해요.',
@@ -376,6 +418,7 @@ export const ERROR_MESSAGES = {
     ja: 'CPルームには異なるアーティストを2人選んでください。',
     'zh-Hans': 'CP房间需要选择两位不同的艺人。',
     'zh-Hant': 'CP房間需要選擇兩位不同的藝人。',
+    vi: 'Phòng CP cần hai nghệ sĩ cá nhân khác nhau.',
   },
   COUPLE_EXISTS: {
     ko: '이 두 아티스트의 CP방이 이미 있어요.',
@@ -384,6 +427,7 @@ export const ERROR_MESSAGES = {
     ja: 'この2人のCPルームはすでにあります。',
     'zh-Hans': '这两位艺人的CP房间已存在。',
     'zh-Hant': '這兩位藝人的CP房間已存在。',
+    vi: 'Phòng CP của hai nghệ sĩ này đã tồn tại.',
   },
   SEARCH_QUERY_TOO_SHORT: {
     ko: '검색어를 두 글자 이상 입력해 주세요.',
@@ -392,6 +436,7 @@ export const ERROR_MESSAGES = {
     ja: '検索ワードを2文字以上入力してください。',
     'zh-Hans': '请输入至少 2 个字进行搜索。',
     'zh-Hant': '請輸入至少 2 個字進行搜尋。',
+    vi: 'Nhập ít nhất 2 ký tự để tìm kiếm.',
   },
   SETTLEMENT_MONTH_INVALID: {
     ko: '정산 월은 2026-09 같은 형식이어야 해요.',
@@ -400,6 +445,7 @@ export const ERROR_MESSAGES = {
     ja: '精算月は 2026-09 の形式で指定してください。',
     'zh-Hans': '结算月份格式应为 2026-09。',
     'zh-Hant': '結算月份格式應為 2026-09。',
+    vi: 'Tháng quyết toán phải có dạng 2026-09.',
   },
   IAP_MANAGE_IN_STORE: {
     ko: '스토어에서 결제한 구독은 App Store·Google Play의 구독 관리에서 해지해 주세요. 결제 기간이 끝날 때까지는 계속 이용할 수 있어요.',
@@ -408,6 +454,7 @@ export const ERROR_MESSAGES = {
     ja: 'ストアで購入した購読は、App Store・Google Playの購読管理から解約してください。支払い済みの期間が終わるまでは引き続き利用できます。',
     'zh-Hans': '通过商店购买的订阅，请在 App Store 或 Google Play 的订阅管理中取消。已付费期间结束前可继续使用。',
     'zh-Hant': '透過商店購買的訂閱，請在 App Store 或 Google Play 的訂閱管理中取消。已付費期間結束前可繼續使用。',
+    vi: 'Gói đăng ký mua qua cửa hàng được hủy trong cài đặt đăng ký của App Store hoặc Google Play. Bạn vẫn dùng được đến hết kỳ đã thanh toán.',
   },
   IAP_EXPIRED: {
     ko: '이미 만료된 결제예요. 다시 구독해 주세요.',
@@ -416,6 +463,7 @@ export const ERROR_MESSAGES = {
     ja: 'この購入はすでに期限切れです。もう一度購読してください。',
     'zh-Hans': '该购买已过期，请重新订阅。',
     'zh-Hant': '此購買已過期，請重新訂閱。',
+    vi: 'Giao dịch mua này đã hết hạn. Vui lòng đăng ký lại.',
   },
   IAP_PRODUCT_UNKNOWN: {
     ko: '토피에 등록되지 않은 상품의 결제예요.',
@@ -424,6 +472,7 @@ export const ERROR_MESSAGES = {
     ja: 'Toffeeに登録されていない商品の購入です。',
     'zh-Hans': '该购买对应的商品未在 Toffee 中登记。',
     'zh-Hant': '此購買對應的商品未在 Toffee 中登記。',
+    vi: 'Giao dịch mua này dành cho sản phẩm chưa được đăng ký trong Toffee.',
   },
   IAP_PRODUCT_MISMATCH: {
     ko: '이 방의 구독 상품 결제가 아니에요.',
@@ -432,6 +481,7 @@ export const ERROR_MESSAGES = {
     ja: 'このルームの購読商品の購入ではありません。',
     'zh-Hans': '该购买不是此房间的订阅商品。',
     'zh-Hant': '此購買不是這個房間的訂閱商品。',
+    vi: 'Giao dịch mua này không phải gói đăng ký của phòng này.',
   },
   SETTLEMENT_NOT_ENDED: {
     ko: '아직 끝나지 않은 달은 마감할 수 없어요.',
@@ -440,6 +490,7 @@ export const ERROR_MESSAGES = {
     ja: 'まだ終わっていない月は締められません。',
     'zh-Hans': '尚未结束的月份不能结账。',
     'zh-Hant': '尚未結束的月份不能結帳。',
+    vi: 'Không thể chốt tháng chưa kết thúc.',
   },
   SETTLEMENT_ALREADY_CLOSED: {
     ko: '이미 마감한 달이에요.',
@@ -448,6 +499,7 @@ export const ERROR_MESSAGES = {
     ja: 'この月はすでに締め済みです。',
     'zh-Hans': '该月份已结账。',
     'zh-Hant': '該月份已結帳。',
+    vi: 'Tháng này đã được chốt.',
   },
   SETTLEMENT_NOT_CLOSED: {
     ko: '마감하지 않은 달이에요.',
@@ -456,6 +508,7 @@ export const ERROR_MESSAGES = {
     ja: 'この月はまだ締められていません。',
     'zh-Hans': '该月份尚未结账。',
     'zh-Hant': '該月份尚未結帳。',
+    vi: 'Tháng này chưa được chốt.',
   },
   SETTLEMENT_CLOSE_ORDER: {
     ko: (p) => `앞 달(${p.month})부터 마감해 주세요.`,
@@ -464,6 +517,7 @@ export const ERROR_MESSAGES = {
     ja: (p) => `先に前の月（${p.month}）を締めてください。`,
     'zh-Hans': (p) => `请先结账之前的月份（${p.month}）。`,
     'zh-Hant': (p) => `請先結帳之前的月份（${p.month}）。`,
+    vi: (p) => `Hãy chốt tháng trước đó (${p.month}) trước.`,
   },
   SETTLEMENT_REOPEN_ORDER: {
     ko: (p) => `뒤 달(${p.month})의 마감을 먼저 취소해 주세요.`,
@@ -472,6 +526,7 @@ export const ERROR_MESSAGES = {
     ja: (p) => `先に後の月（${p.month}）の締めを取り消してください。`,
     'zh-Hans': (p) => `请先取消之后月份（${p.month}）的结账。`,
     'zh-Hant': (p) => `請先取消之後月份（${p.month}）的結帳。`,
+    vi: (p) => `Hãy mở lại tháng sau đó (${p.month}) trước.`,
   },
   SETTLEMENT_REOPEN_PAID: {
     ko: '이미 지급 기록이 있는 달은 마감을 취소할 수 없어요. 차이는 다음 달 조정으로 처리해 주세요.',
@@ -480,6 +535,7 @@ export const ERROR_MESSAGES = {
     ja: 'この月はすでに支払い記録があるため、締めを取り消せません。差額は翌月の調整で処理してください。',
     'zh-Hans': '该月份已有付款记录，无法取消结账。差额请在下个月的调整中处理。',
     'zh-Hant': '該月份已有付款紀錄，無法取消結帳。差額請在下個月的調整中處理。',
+    vi: 'Tháng này đã có bản ghi chi trả nên không thể mở lại. Hãy xử lý chênh lệch ở phần điều chỉnh tháng sau.',
   },
   SETTLEMENT_PAYOUT_INVALID: {
     ko: '이 달 정산표에 지급할 금액이 있는 소속사나 무소속 아티스트만 지급 기록을 남길 수 있어요.',
@@ -488,6 +544,7 @@ export const ERROR_MESSAGES = {
     ja: 'この月の精算表で支払額がある事務所またはフリーのアーティストにのみ、支払い記録を残せます。',
     'zh-Hans': '只能为本月结算表中有应付金额的经纪公司或独立艺人记录付款。',
     'zh-Hant': '只能為本月結算表中有應付金額的經紀公司或獨立藝人記錄付款。',
+    vi: 'Chỉ có thể ghi nhận chi trả cho công ty quản lý hoặc nghệ sĩ tự do có số tiền cần trả trong bảng kê tháng này.',
   },
   SETTLEMENT_PAYOUT_EXISTS: {
     ko: '이미 지급 기록이 있어요. 잘못 적었다면 지우고 다시 기록해 주세요.',
@@ -496,6 +553,7 @@ export const ERROR_MESSAGES = {
     ja: 'すでに支払い記録があります。誤りの場合は削除してから記録し直してください。',
     'zh-Hans': '已有付款记录。如有错误，请删除后重新记录。',
     'zh-Hant': '已有付款紀錄。如有錯誤，請刪除後重新記錄。',
+    vi: 'Đã có bản ghi chi trả. Nếu sai, hãy xóa rồi ghi nhận lại.',
   },
   REFUND_NOT_ELIGIBLE: {
     ko: '환불 요청 대상이 아니에요. 이용 기간 동안 아티스트 메시지가 하나도 없었고, 기간이 끝난 뒤 7일 안일 때만 요청할 수 있어요.',
@@ -504,6 +562,7 @@ export const ERROR_MESSAGES = {
     ja: 'この支払いは返金申請の対象外です。期間中にアーティストからのメッセージが一件もなく、期間終了後7日以内の場合のみ申請できます。',
     'zh-Hans': '该付款不符合退款条件。仅当该期间内艺人未发送任何消息，且在期间结束后 7 天内才能申请。',
     'zh-Hant': '該付款不符合退款條件。僅當該期間內藝人未傳送任何訊息，且在期間結束後 7 天內才能申請。',
+    vi: 'Khoản thanh toán này không đủ điều kiện. Bạn chỉ có thể yêu cầu hoàn tiền khi nghệ sĩ không gửi tin nhắn nào trong kỳ đó, trong vòng 7 ngày sau khi kỳ kết thúc.',
   },
   REFUND_FAILED: {
     ko: '지금은 환불하지 못했어요. 잠시 후 다시 시도하거나 고객센터에 문의해 주세요.',
@@ -512,6 +571,7 @@ export const ERROR_MESSAGES = {
     ja: '現在、返金を処理できませんでした。しばらくしてからもう一度お試しいただくか、サポートにお問い合わせください。',
     'zh-Hans': '暂时无法退款。请稍后重试或联系客服。',
     'zh-Hant': '暫時無法退款。請稍後再試或聯絡客服。',
+    vi: 'Hiện không xử lý được hoàn tiền. Vui lòng thử lại sau hoặc liên hệ hỗ trợ.',
   },
   TRANSLATION_UNAVAILABLE: {
     ko: '번역 기능을 준비 중이에요.',
@@ -520,6 +580,7 @@ export const ERROR_MESSAGES = {
     ja: '翻訳機能は準備中です。',
     'zh-Hans': '翻译功能正在准备中。',
     'zh-Hant': '翻譯功能正在準備中。',
+    vi: 'Tính năng dịch chưa khả dụng.',
   },
   TRANSLATION_FAILED: {
     ko: '지금은 번역하지 못했어요. 잠시 후 다시 시도해 주세요.',
@@ -528,6 +589,7 @@ export const ERROR_MESSAGES = {
     ja: '今は翻訳できませんでした。しばらくしてからもう一度お試しください。',
     'zh-Hans': '暂时无法翻译，请稍后重试。',
     'zh-Hant': '暫時無法翻譯，請稍後再試。',
+    vi: 'Hiện không dịch được. Vui lòng thử lại sau giây lát.',
   },
   NOT_FOR_COUPLE: {
     ko: 'CP방에는 할 수 없는 설정이에요(소속사·본인 계정은 멤버 아티스트 쪽에서 정해져요).',
@@ -536,6 +598,7 @@ export const ERROR_MESSAGES = {
     ja: 'CPルームではこの設定はできません（事務所・本人アカウントはメンバーアーティスト側で決まります）。',
     'zh-Hans': 'CP房间无法进行此设置（经纪公司和账号取决于成员艺人）。',
     'zh-Hant': 'CP房間無法進行此設定（經紀公司和帳號取決於成員藝人）。',
+    vi: 'Cài đặt này không áp dụng cho phòng CP (công ty quản lý và tài khoản lấy theo nghệ sĩ thành viên).',
   },
   NOT_SUBSCRIBED: {
     ko: '구독 중인 아티스트가 아니에요.',
@@ -544,6 +607,7 @@ export const ERROR_MESSAGES = {
     ja: '購読中のアーティストではありません。',
     'zh-Hans': '你未订阅该艺人。',
     'zh-Hant': '你未訂閱該藝人。',
+    vi: 'Bạn chưa đăng ký nghệ sĩ này.',
   },
   ONBOARDING_REQUIRED: {
     ko: '가입 절차(약관 동의·생년월일)를 먼저 마쳐 주세요.',
@@ -552,6 +616,7 @@ export const ERROR_MESSAGES = {
     ja: '先に登録手続き（規約への同意・生年月日の入力）を完了してください。',
     'zh-Hans': '请先完成注册流程（同意条款并填写出生日期）。',
     'zh-Hant': '請先完成註冊流程（同意條款並填寫出生日期）。',
+    vi: 'Vui lòng hoàn tất đăng ký (điều khoản và ngày sinh) trước.',
   },
   UNDERAGE: {
     ko: '토피는 성인만 이용할 수 있어요.',
@@ -560,6 +625,7 @@ export const ERROR_MESSAGES = {
     ja: 'Toffeeは成人の方のみご利用いただけます。',
     'zh-Hans': 'Toffee 仅限成年人使用。',
     'zh-Hant': 'Toffee 僅限成年人使用。',
+    vi: 'Toffee chỉ dành cho người trưởng thành.',
   },
   CONSENT_REQUIRED_TO_SUBSCRIBE: {
     ko: '법정대리인 동의가 완료된 후 구독할 수 있어요.',
@@ -568,6 +634,7 @@ export const ERROR_MESSAGES = {
     ja: '保護者の同意が完了すると購読できます。',
     'zh-Hans': '监护人同意后才能订阅。',
     'zh-Hant': '監護人同意後才能訂閱。',
+    vi: 'Bạn có thể đăng ký sau khi cha mẹ hoặc người giám hộ đồng ý.',
   },
   CONSENT_NOT_REQUIRED: {
     ko: '법정대리인 동의가 필요한 계정이 아니에요.',
@@ -576,6 +643,7 @@ export const ERROR_MESSAGES = {
     ja: '保護者の同意が必要なアカウントではありません。',
     'zh-Hans': '该账号不需要监护人同意。',
     'zh-Hant': '此帳號不需要監護人同意。',
+    vi: 'Tài khoản này không cần sự đồng ý của phụ huynh.',
   },
   CONSENT_LINK_INVALID: {
     ko: '유효하지 않거나 만료된 동의 링크예요.',
@@ -584,6 +652,7 @@ export const ERROR_MESSAGES = {
     ja: 'この同意リンクは無効か、有効期限が切れています。',
     'zh-Hans': '该同意链接无效或已过期。',
     'zh-Hant': '此同意連結無效或已過期。',
+    vi: 'Liên kết xác nhận đồng ý không hợp lệ hoặc đã hết hạn.',
   },
   BIRTH_DATE_INVALID: {
     ko: '생년월일을 다시 확인해 주세요.',
@@ -592,6 +661,7 @@ export const ERROR_MESSAGES = {
     ja: '生年月日をもう一度ご確認ください。',
     'zh-Hans': '请重新确认出生日期。',
     'zh-Hant': '請重新確認出生日期。',
+    vi: 'Vui lòng kiểm tra lại ngày sinh.',
   },
   BIRTH_DATE_ONCE: {
     ko: '생년월일은 한 번만 입력할 수 있어요. 잘못 입력했다면 고객센터로 문의해 주세요.',
@@ -600,6 +670,7 @@ export const ERROR_MESSAGES = {
     ja: '生年月日は一度しか入力できません。誤って入力した場合はサポートにお問い合わせください。',
     'zh-Hans': '出生日期只能填写一次。如填写有误，请联系客服。',
     'zh-Hant': '出生日期只能填寫一次。如填寫有誤，請聯絡客服。',
+    vi: 'Ngày sinh chỉ được nhập một lần. Nếu nhập sai, vui lòng liên hệ hỗ trợ.',
   },
   EMAIL_NOT_CONFIGURED: {
     ko: '메일 발송이 설정되지 않았어요(RESEND_API_KEY/EMAIL_FROM_ADDRESS).',
@@ -608,6 +679,7 @@ export const ERROR_MESSAGES = {
     ja: 'メール送信が設定されていません（RESEND_API_KEY/EMAIL_FROM_ADDRESS）。',
     'zh-Hans': '未配置邮件发送（RESEND_API_KEY/EMAIL_FROM_ADDRESS）。',
     'zh-Hant': '未設定郵件寄送（RESEND_API_KEY/EMAIL_FROM_ADDRESS）。',
+    vi: 'Chưa cấu hình gửi email (RESEND_API_KEY/EMAIL_FROM_ADDRESS).',
   },
   EMAIL_SEND_FAILED: {
     ko: '이메일을 보내지 못했어요. 잠시 후 다시 시도해 주세요.',
@@ -616,6 +688,7 @@ export const ERROR_MESSAGES = {
     ja: 'メールを送信できませんでした。しばらくしてからもう一度お試しください。',
     'zh-Hans': '邮件发送失败，请稍后再试。',
     'zh-Hant': '郵件寄送失敗，請稍後再試。',
+    vi: 'Không gửi được email. Vui lòng thử lại sau giây lát.',
   },
   IAP_GOOGLE_VERIFY_FAILED: {
     ko: '구글 플레이 구매를 확인하지 못했어요.',
@@ -624,6 +697,7 @@ export const ERROR_MESSAGES = {
     ja: 'Google Play の購入を確認できませんでした。',
     'zh-Hans': '无法验证 Google Play 购买。',
     'zh-Hant': '無法驗證 Google Play 購買。',
+    vi: 'Không xác minh được giao dịch mua trên Google Play.',
   },
   IAP_GOOGLE_AUTH_FAILED: {
     ko: '구글 플레이 인증 토큰을 발급받지 못했어요.',
@@ -632,6 +706,7 @@ export const ERROR_MESSAGES = {
     ja: 'Google Play の認証トークンを取得できませんでした。',
     'zh-Hans': '无法获取 Google Play 授权令牌。',
     'zh-Hant': '無法取得 Google Play 授權權杖。',
+    vi: 'Không lấy được mã xác thực Google Play.',
   },
   IAP_APPLE_VERIFY_FAILED: {
     ko: '애플 구매를 확인하지 못했어요.',
@@ -640,6 +715,7 @@ export const ERROR_MESSAGES = {
     ja: 'App Store の購入を確認できませんでした。',
     'zh-Hans': '无法验证 App Store 购买。',
     'zh-Hant': '無法驗證 App Store 購買。',
+    vi: 'Không xác minh được giao dịch mua trên App Store.',
   },
 
   // ── 메시지·신고·차단 ──
@@ -650,6 +726,7 @@ export const ERROR_MESSAGES = {
     ja: 'メッセージが見つかりません。',
     'zh-Hans': '找不到该消息。',
     'zh-Hant': '找不到該訊息。',
+    vi: 'Không tìm thấy tin nhắn này.',
   },
   REPLY_BEFORE_FIRST: {
     ko: '아티스트의 첫 메시지가 오면 답장할 수 있어요.',
@@ -658,6 +735,7 @@ export const ERROR_MESSAGES = {
     ja: 'アーティストから最初のメッセージが届くと返信できます。',
     'zh-Hans': '艺人发来第一条消息后即可回复。',
     'zh-Hant': '艺人傳來第一則訊息後即可回覆。',
+    vi: 'Bạn có thể trả lời sau khi nghệ sĩ gửi tin nhắn đầu tiên.',
   },
   REPLY_LIMIT: {
     ko: (p) => `이 메시지에는 답장을 ${p.limit}개까지 보낼 수 있어요. 아티스트의 다음 메시지를 기다려 주세요.`,
@@ -666,6 +744,7 @@ export const ERROR_MESSAGES = {
     ja: (p) => `このメッセージには${p.limit}件まで返信できます。アーティストの次のメッセージをお待ちください。`,
     'zh-Hans': (p) => `这条消息最多可回复 ${p.limit} 条，请等待艺人的下一条消息。`,
     'zh-Hant': (p) => `這則訊息最多可回覆 ${p.limit} 則，請等待藝人的下一則訊息。`,
+    vi: (p) => `Bạn có thể gửi tối đa ${p.limit} câu trả lời cho tin nhắn này. Hãy chờ tin nhắn tiếp theo của nghệ sĩ nhé.`,
   },
   REPLY_BLOCKED: {
     ko: '이 채널에서는 답장을 보낼 수 없어요.',
@@ -674,6 +753,7 @@ export const ERROR_MESSAGES = {
     ja: 'このチャンネルでは返信できません。',
     'zh-Hans': '你无法在此频道回复。',
     'zh-Hant': '你無法在此頻道回覆。',
+    vi: 'Bạn không thể gửi câu trả lời trong kênh này.',
   },
   QUOTE_INVALID: {
     ko: '이 채널의 팬 메시지만 인용할 수 있어요.',
@@ -682,6 +762,7 @@ export const ERROR_MESSAGES = {
     ja: 'このチャンネルのファンメッセージのみ引用できます。',
     'zh-Hans': '只能引用此频道的粉丝消息。',
     'zh-Hant': '只能引用此頻道的粉絲訊息。',
+    vi: 'Bạn chỉ có thể trích dẫn tin nhắn của fan trong kênh này.',
   },
   CONTENT_INAPPROPRIATE: {
     ko: '부적절한 표현이 포함되어 있어 전송할 수 없어요.',
@@ -690,6 +771,7 @@ export const ERROR_MESSAGES = {
     ja: '不適切な表現が含まれているため送信できません。',
     'zh-Hans': '内容包含不当用语，无法发送。',
     'zh-Hant': '內容包含不當用語，無法傳送。',
+    vi: 'Không thể gửi vì có từ ngữ không phù hợp.',
   },
   BANNED_WORD_EXISTS: {
     ko: '이미 등록된 금칙어예요.',
@@ -698,6 +780,7 @@ export const ERROR_MESSAGES = {
     ja: 'すでに登録済みの禁止ワードです。',
     'zh-Hans': '该违禁词已存在。',
     'zh-Hant': '該禁用詞已存在。',
+    vi: 'Từ này đã có trong danh sách cấm.',
   },
   REPORT_OWN_MESSAGE: {
     ko: '내 메시지는 신고할 수 없어요.',
@@ -706,6 +789,7 @@ export const ERROR_MESSAGES = {
     ja: '自分のメッセージは通報できません。',
     'zh-Hans': '不能举报自己的消息。',
     'zh-Hant': '不能檢舉自己的訊息。',
+    vi: 'Bạn không thể báo cáo tin nhắn của chính mình.',
   },
   REPORT_NOT_ALLOWED: {
     ko: '이 메시지를 신고할 수 없어요.',
@@ -714,6 +798,7 @@ export const ERROR_MESSAGES = {
     ja: 'このメッセージは通報できません。',
     'zh-Hans': '无法举报该消息。',
     'zh-Hant': '無法檢舉該訊息。',
+    vi: 'Bạn không thể báo cáo tin nhắn này.',
   },
   REPORT_DUPLICATE: {
     ko: '이미 신고한 메시지예요.',
@@ -722,6 +807,7 @@ export const ERROR_MESSAGES = {
     ja: 'すでに通報したメッセージです。',
     'zh-Hans': '你已举报过该消息。',
     'zh-Hant': '你已檢舉過該訊息。',
+    vi: 'Bạn đã báo cáo tin nhắn này rồi.',
   },
   REPORT_TARGET_NOT_FOUND: {
     ko: '신고하려는 메시지를 찾을 수 없어요.',
@@ -730,6 +816,7 @@ export const ERROR_MESSAGES = {
     ja: '通報しようとしたメッセージが見つかりません。',
     'zh-Hans': '找不到要举报的消息。',
     'zh-Hant': '找不到要檢舉的訊息。',
+    vi: 'Không tìm thấy tin nhắn bạn muốn báo cáo.',
   },
   REPORT_NOT_FOUND: {
     ko: '신고 내역을 찾을 수 없어요.',
@@ -738,6 +825,7 @@ export const ERROR_MESSAGES = {
     ja: '通報履歴が見つかりません。',
     'zh-Hans': '找不到该举报记录。',
     'zh-Hant': '找不到該檢舉紀錄。',
+    vi: 'Không tìm thấy báo cáo này.',
   },
   REPORT_ALREADY_HANDLED: {
     ko: '이미 처리된 신고예요.',
@@ -746,6 +834,7 @@ export const ERROR_MESSAGES = {
     ja: 'すでに処理済みの通報です。',
     'zh-Hans': '该举报已处理。',
     'zh-Hant': '該檢舉已處理。',
+    vi: 'Báo cáo này đã được xử lý.',
   },
   BLOCK_FANS_ONLY: {
     ko: '팬 계정만 차단할 수 있어요.',
@@ -754,6 +843,7 @@ export const ERROR_MESSAGES = {
     ja: 'ブロックできるのはファンアカウントのみです。',
     'zh-Hans': '只能屏蔽粉丝账号。',
     'zh-Hant': '只能封鎖粉絲帳號。',
+    vi: 'Chỉ có thể chặn tài khoản fan.',
   },
   STORY_NOT_FOUND: {
     ko: '스토리를 찾을 수 없어요.',
@@ -762,6 +852,7 @@ export const ERROR_MESSAGES = {
     ja: 'ストーリーが見つかりません。',
     'zh-Hans': '找不到该限时动态。',
     'zh-Hant': '找不到該限時動態。',
+    vi: 'Không tìm thấy story này.',
   },
 
   // ── 업로드 ──
@@ -772,6 +863,7 @@ export const ERROR_MESSAGES = {
     ja: (p) => `アップロードできないファイル形式です（${p.contentType}）。`,
     'zh-Hans': (p) => `不支持上传该文件格式（${p.contentType}）。`,
     'zh-Hant': (p) => `不支援上傳此檔案格式（${p.contentType}）。`,
+    vi: (p) => `Không thể tải lên loại tệp này (${p.contentType}).`,
   },
   UPLOAD_TOO_LARGE: {
     ko: (p) => `파일이 너무 커요(최대 ${p.maxMb}MB).`,
@@ -780,6 +872,7 @@ export const ERROR_MESSAGES = {
     ja: (p) => `ファイルが大きすぎます（最大${p.maxMb}MB）。`,
     'zh-Hans': (p) => `文件过大（最大 ${p.maxMb}MB）。`,
     'zh-Hant': (p) => `檔案過大（最大 ${p.maxMb}MB）。`,
+    vi: (p) => `Tệp quá lớn (tối đa ${p.maxMb}MB).`,
   },
   UPLOAD_CONTENT_MISMATCH: {
     ko: '파일 내용이 선택한 형식과 달라요. 다른 파일로 다시 시도해 주세요.',
@@ -788,6 +881,7 @@ export const ERROR_MESSAGES = {
     ja: 'ファイルの内容が形式と一致しません。別のファイルでお試しください。',
     'zh-Hans': '文件内容与格式不符，请换一个文件再试。',
     'zh-Hant': '檔案內容與格式不符，請換一個檔案再試。',
+    vi: 'Nội dung tệp không khớp với loại tệp. Vui lòng thử tệp khác.',
   },
   UPLOAD_MISSING: {
     ko: '파일이 아직 업로드되지 않았어요.',
@@ -796,6 +890,7 @@ export const ERROR_MESSAGES = {
     ja: 'ファイルがまだアップロードされていません。',
     'zh-Hans': '文件尚未上传。',
     'zh-Hant': '檔案尚未上傳。',
+    vi: 'Tệp chưa được tải lên.',
   },
   UPLOAD_WRONG_PLACE: {
     ko: '이 용도로 올린 파일이 아니에요.',
@@ -804,6 +899,7 @@ export const ERROR_MESSAGES = {
     ja: 'この用途でアップロードされたファイルではありません。',
     'zh-Hans': '该文件不是为此用途上传的。',
     'zh-Hant': '此檔案不是為此用途上傳的。',
+    vi: 'Tệp này không được tải lên cho mục đích này.',
   },
   STORAGE_NOT_CONFIGURED: {
     ko: '파일 저장소가 설정되지 않았어요(STORAGE_* 환경변수).',
@@ -812,6 +908,7 @@ export const ERROR_MESSAGES = {
     ja: 'ファイルストレージが設定されていません（STORAGE_* 環境変数）。',
     'zh-Hans': '未配置文件存储（STORAGE_* 环境变量）。',
     'zh-Hant': '未設定檔案儲存（STORAGE_* 環境變數）。',
+    vi: 'Chưa cấu hình lưu trữ tệp (biến môi trường STORAGE_*).',
   },
 
   // ── 운영자·배우·소속사 관리 ──
@@ -822,6 +919,7 @@ export const ERROR_MESSAGES = {
     ja: 'アーティストが見つかりません。',
     'zh-Hans': '找不到该艺人。',
     'zh-Hant': '找不到該藝人。',
+    vi: 'Không tìm thấy nghệ sĩ này.',
   },
   USER_NOT_FOUND: {
     ko: '사용자를 찾을 수 없어요.',
@@ -830,6 +928,7 @@ export const ERROR_MESSAGES = {
     ja: 'ユーザーが見つかりません。',
     'zh-Hans': '找不到该用户。',
     'zh-Hant': '找不到該使用者。',
+    vi: 'Không tìm thấy người dùng này.',
   },
   AGENCY_NOT_FOUND: {
     ko: '소속사를 찾을 수 없어요.',
@@ -838,6 +937,7 @@ export const ERROR_MESSAGES = {
     ja: '事務所が見つかりません。',
     'zh-Hans': '找不到该经纪公司。',
     'zh-Hant': '找不到該經紀公司。',
+    vi: 'Không tìm thấy công ty quản lý này.',
   },
   AGENCY_NAME_TAKEN: {
     ko: '같은 이름의 소속사가 이미 있어요.',
@@ -846,6 +946,7 @@ export const ERROR_MESSAGES = {
     ja: '同じ名前の事務所がすでにあります。',
     'zh-Hans': '已存在同名的经纪公司。',
     'zh-Hant': '已存在同名的經紀公司。',
+    vi: 'Đã có công ty quản lý với tên này.',
   },
   AGENCY_LOGO_AFTER_CREATE: {
     ko: '로고는 소속사를 만든 뒤에 올려 주세요.',
@@ -854,6 +955,7 @@ export const ERROR_MESSAGES = {
     ja: 'ロゴは事務所を作成してからアップロードしてください。',
     'zh-Hans': '请在创建经纪公司后再上传标志。',
     'zh-Hant': '請在建立經紀公司後再上傳標誌。',
+    vi: 'Vui lòng tải logo lên sau khi tạo công ty quản lý.',
   },
   AGENCY_STAFF_ROLE_REQUIRED: {
     ko: '소속사 스태프(AGENCY_STAFF) 계정만 소속사에 배정할 수 있어요.',
@@ -862,6 +964,7 @@ export const ERROR_MESSAGES = {
     ja: '事務所に割り当てられるのは事務所スタッフ（AGENCY_STAFF）アカウントのみです。',
     'zh-Hans': '只有经纪公司员工（AGENCY_STAFF）账号可以分配到经纪公司。',
     'zh-Hant': '只有經紀公司員工（AGENCY_STAFF）帳號可以指派到經紀公司。',
+    vi: 'Chỉ tài khoản nhân viên công ty quản lý (AGENCY_STAFF) mới được gán cho công ty quản lý.',
   },
   ACTOR_LINK_ROLE_REQUIRED: {
     ko: '아티스트(ACTOR) 역할 계정만 연결할 수 있어요 — 회원 관리에서 역할을 먼저 바꿔 주세요.',
@@ -870,6 +973,7 @@ export const ERROR_MESSAGES = {
     ja: 'アーティスト（ACTOR）ロールのアカウントのみ連携できます。先に会員管理でロールを変更してください。',
     'zh-Hans': '只能关联艺人（ACTOR）角色的账号，请先在会员管理中更改角色。',
     'zh-Hant': '只能連結藝人（ACTOR）角色的帳號，請先在會員管理中變更角色。',
+    vi: 'Chỉ có thể liên kết tài khoản có vai trò nghệ sĩ (ACTOR). Hãy đổi vai trò trong quản lý người dùng trước.',
   },
   ACCOUNT_ALREADY_LINKED: {
     ko: '이미 다른 아티스트에 연결된 계정이에요.',
@@ -878,6 +982,7 @@ export const ERROR_MESSAGES = {
     ja: 'すでにほかのアーティストに連携されているアカウントです。',
     'zh-Hans': '该账号已关联其他艺人。',
     'zh-Hant': '此帳號已連結其他藝人。',
+    vi: 'Tài khoản này đã được liên kết với nghệ sĩ khác.',
   },
   SUBSCRIBED_FAN_ROLE_CHANGE: {
     ko: '구독 중인 팬 계정은 아티스트·소속사 계정으로 바꿀 수 없어요.',
@@ -886,6 +991,7 @@ export const ERROR_MESSAGES = {
     ja: '購読中のファンアカウントはアーティスト・事務所アカウントに変更できません。',
     'zh-Hans': '正在订阅的粉丝账号不能改为艺人或经纪公司账号。',
     'zh-Hant': '訂閱中的粉絲帳號不能改為藝人或經紀公司帳號。',
+    vi: 'Tài khoản fan đang có gói đăng ký không thể chuyển thành tài khoản nghệ sĩ hoặc công ty quản lý.',
   },
   ADMIN_ROLE_LOCKED: {
     ko: '운영자 계정의 역할은 여기서 바꿀 수 없어요.',
@@ -894,6 +1000,7 @@ export const ERROR_MESSAGES = {
     ja: '運営者アカウントのロールはここでは変更できません。',
     'zh-Hans': '无法在此更改管理员账号的角色。',
     'zh-Hant': '無法在此變更管理員帳號的角色。',
+    vi: 'Không thể đổi vai trò của tài khoản quản trị viên tại đây.',
   },
 } satisfies Record<string, Record<SupportedLocale, Text>>;
 

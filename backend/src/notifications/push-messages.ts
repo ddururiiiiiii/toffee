@@ -2,7 +2,7 @@ import { MessageMediaType } from '../generated/prisma/enums.js';
 import { resolveLocale, type SupportedLocale } from '../common/i18n/locales.js';
 
 // 서버가 만드는 푸시 문구 — 받는 사람의 User.locale로 고름. 앱 쪽 번역과 마찬가지로 th/ja/zh는
-// 원어민 검수 전(2026-09-28 기계 작성).
+// 원어민 검수 전(2026-09-28 기계 작성, vi는 2026-10-02).
 interface PushStrings {
   media: Record<MessageMediaType, string>;
   staffNewMessageTitle: (actor: string) => string;
@@ -119,6 +119,21 @@ const STRINGS: Record<SupportedLocale, PushStrings> = {
     idleRefundBody: (days, fans) => `已 ${days} 天沒有訊息。30 天沒有訊息的話，${fans} 位粉絲可以申請當月訂閱費退款。現在就傳一句吧。`,
     retiredFanTitle: (actor) => `${actor} 已結束活動`,
     retiredFanBody: (days) => `仍可查看以往的訊息。如果是 ${days} 天內付款的，可以在訂閱管理中申請本月退款。`,
+  },
+  vi: {
+    media: { TEXT: 'Bạn có tin nhắn mới', PHOTO: 'Đã gửi một ảnh', AUDIO: 'Đã gửi một tin nhắn thoại', VIDEO: 'Đã gửi một video' },
+    staffNewMessageTitle: (actor) => `${actor} đã gửi tin nhắn mới`,
+    quotedReplyTitle: (actor) => `${actor} đã trả lời tin nhắn của bạn`,
+    staffNewStoryTitle: (actor) => `${actor} đã đăng story mới`,
+    staffNewStoryBody: 'Xem ngay',
+    idleActorTitle: (fans) => `${fans} fan đang chờ bạn`,
+    idleActorBody: (days, room) => `${room ? `${room} · ` : ''}Tin nhắn gần nhất của bạn là ${days} ngày trước. Gửi một lời chào ngắn nhé?`,
+    idleStaffTitle: (actor, days) => `${actor} đã ${days} ngày không gửi tin nhắn`,
+    idleStaffBody: (fans) => `${fans} người đang đăng ký`,
+    idleRefundTitle: (room, left) => `${room} · fan có thể yêu cầu hoàn tiền ${left === 1 ? 'từ ngày mai' : `sau ${left} ngày`}`,
+    idleRefundBody: (days, fans) => `Đã ${days} ngày không có tin nhắn. Nếu 30 ngày không có tin nhắn, ${fans} fan có thể yêu cầu hoàn phí đăng ký của tháng đó. Hãy gửi một tin nhắn ngay nhé.`,
+    retiredFanTitle: (actor) => `${actor} đã ngừng hoạt động`,
+    retiredFanBody: (days) => `Bạn vẫn xem được các tin nhắn cũ. Nếu bạn thanh toán trong ${days} ngày qua, bạn có thể yêu cầu hoàn tiền tháng này trong Quản lý gói đăng ký.`,
   },
 };
 
