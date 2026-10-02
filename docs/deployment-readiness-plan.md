@@ -22,6 +22,27 @@
 
 ---
 
+## 2026-10-02 (이어서) — 실기기 테스트 빌드 준비(iOS)
+
+- **원인**: 사업화 1단계 마지막 "실기기 테스트 빌드". 사용자 폰은 아이폰, 컴퓨터는 맥·윈도우 둘 다. 바로 위 세션이 넘긴 다섯 가지부터.
+- **결정**: iOS는 TestFlight가 아니라 **EAS 내부 배포(ad hoc, `preview` 프로필)** 먼저 — App Store Connect 앱 등록·심사 없이 등록한 기기에
+  바로 설치, 데모 서버에 붙음. TestFlight는 테스터가 늘거나 인앱 결제 샌드박스 확인 때. 안드로이드(SHA-1·키 해시 등록)는 테스트 기기가 없어서 보류.
+  푸시는 EAS가 만들어 주는 APNs 키가 아니라 **직접 만든 APNs 키를 Firebase에** 넣음(토피는 Expo 푸시가 아니라 FCM으로 보냄).
+- **구현**: ① `eas.json` preview에 `EXPO_PUBLIC_API_URL`(api-demo)·`EXPO_PUBLIC_ENABLE_DEV_LOGIN`·`EXPO_PUBLIC_SUPPORT_EMAIL`·
+  `SENTRY_DISABLE_AUTO_UPLOAD`, development에도 `SENTRY_DISABLE_AUTO_UPLOAD`. ② **카카오 플러그인 버그 수정** — 리눅스에서 `expo prebuild`로
+  네이티브 설정을 뽑아 보니 `@react-native-kakao/core` 플러그인에 `ios`/`android` 옵션을 안 넘겨서 키 확인만 하고 아무것도 안 하고 있었음
+  (iOS `kakao{키}` URL scheme·`LSApplicationQueriesSchemes`·AppDelegate 처리, 안드로이드 `AuthCodeHandlerActivity` 전부 빠짐 → 카카오톡 앱으로
+  로그인하면 앱으로 못 돌아왔을 것). `ios: { handleKakaoOpenUrl: true }, android: { authCodeHandlerActivity: true }`로 고친 뒤 다시 뽑아 확인.
+  구글·네이버·LINE·애플 설정(URL scheme·AppDelegate·entitlements)은 정상. ③ 서버 Sentry에 `SENTRY_ENVIRONMENT`(비우면 `NODE_ENV`) — 데모 서버도
+  `NODE_ENV=production`이라 나중에 운영 서버 오류와 섞이지 않게 `demo`로.
+  절차는 `docs/engineering/device-build.md`(기기 등록 → 푸시 키 → 빌드 → 설치 → 확인 목록).
+- **사용자가 할 일**: 네이버 Secret을 EAS 변수로, `eas device:create`, APNs 키 → Firebase, 서비스 계정 JSON → Railway
+  `FIREBASE_SERVICE_ACCOUNT_JSON`, Sentry `toffee-backend` DSN → Railway `SENTRY_DSN`(+ `SENTRY_ENVIRONMENT=demo`, 이 변경이 main에 들어간 뒤),
+  `eas build -p ios --profile preview`.
+- **남은 일**: 실제 빌드·설치 후 확인 결과를 STATUS에. 안드로이드 빌드와 서명값 등록. 소스맵 업로드(`SENTRY_AUTH_TOKEN`).
+
+---
+
 ## 2026-10-02 — 웹 데모 화면(Cloudflare Pages)
 
 - PR toffeechat/toffee#18(웹 SPA 내보내기) 머지 후 Cloudflare Pages 프로젝트 `toffee-demo` 생성 — Cloudflare가 Workers 위주로

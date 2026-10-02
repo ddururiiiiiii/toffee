@@ -8,7 +8,8 @@ import { SENSITIVE_HEADERS, scrubEvent } from './common/sentry/scrub-event.js';
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
-  environment: process.env.NODE_ENV,
+  // 데모 서버도 NODE_ENV=production이라 운영 서버와 섞이지 않게 SENTRY_ENVIRONMENT(예: demo)로 따로 이름 붙일 수 있게(2026-10-02)
+  environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV,
   // 1차 방어: 애초에 수집 범위를 좁힘(쿠키/쿼리스트링/응답 바디/사용자 IP 등 자동 수집 끔).
   // 요청 바디는 디버깅에 필요해서 받되, 2차 방어로 beforeSend에서 민감 필드를 가림.
   dataCollection: {

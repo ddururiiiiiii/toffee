@@ -1002,6 +1002,12 @@ Bubble 실제 약관("만 14세 미만은 가입 전 법정대리인 동의 필�
   **EAS 연결(2026-10-01)**: `owner: 'toffeechat-team'`(Expo 조직 — 개인 계정 `toffeechat`이 아니라 조직 소유), `extra.eas.projectId`
   `994e5a33-…`. 운영·개발 변형이 같은 EAS 프로젝트(slug `toffee`)를 쓰고 빌드 프로필로만 나뉨. `expo-updates`는 아직 없음
   (OTA 쓸 때 `updates.url = https://u.expo.dev/<projectId>` 추가).
+  **실기기 빌드(2026-10-02)**: 절차는 `device-build.md`. `preview` = 내부 배포 + 데모 서버 + 입장 코드 로그인, Sentry 소스맵 업로드는
+  `SENTRY_DISABLE_AUTO_UPLOAD=true`(토큰 넣으면 제거). 카카오 플러그인은 `ios.handleKakaoOpenUrl`·`android.authCodeHandlerActivity`를 꼭
+  넘겨야 함(안 넘기면 키 확인만 하고 URL scheme·AppDelegate·Activity를 안 넣음). 네이티브 설정은 리눅스에서도
+  `npx expo prebuild --no-install --clean`(eas.json 해당 프로필 env를 export한 상태)으로 뽑아 `ios/*/Info.plist`·`AppDelegate.swift`·
+  `*.entitlements`를 확인할 수 있음 — 확인 후 `ios/`·`android/` 삭제, prebuild가 바꾼 `package.json` 되돌리기.
+  서버 Sentry `environment`는 `SENTRY_ENVIRONMENT || NODE_ENV`.
 
 ## 구매(Purchase)·묶음(Bundle)·방 이용권(Subscription), 성인만 가입 (2026-09-29)
 
