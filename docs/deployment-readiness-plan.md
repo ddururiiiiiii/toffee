@@ -40,6 +40,11 @@
   `FIREBASE_SERVICE_ACCOUNT_JSON`, Sentry `toffee-backend` DSN → Railway `SENTRY_DSN`(+ `SENTRY_ENVIRONMENT=demo`, 이 변경이 main에 들어간 뒤),
   `eas build -p ios --profile preview`.
 - **남은 일**: 실제 빌드·설치 후 확인 결과를 STATUS에. 안드로이드 빌드와 서명값 등록. 소스맵 업로드(`SENTRY_AUTH_TOKEN`).
+- **같은 날 사용자 진행(웹으로)**: Expo 로그인이 안 돼서 `dev@`로 비밀번호 재설정(처음엔 젤리 개인 계정으로 들어가짐 — 브라우저 로그인 상태
+  주의). 네이버 Secret → EAS 변수(preview·development, Sensitive). Railway `SENTRY_DSN`(toffee-backend)·`SENTRY_ENVIRONMENT=demo`.
+  애플 푸시 키 `Toffee APNs`(Key ID `7C42B4S59J`) → Firebase 클라우드 메시징 개발·프로덕션 둘 다, Firebase 서비스 계정 → Railway
+  `FIREBASE_SERVICE_ACCOUNT_JSON`, `/health/ready` 정상. 애플 멤버십 2027-08-14까지, 배포 인증서는 젤리 것 1개(토피 첫 빌드 때 새로 생성 예정).
+  남은 건 맥에서 `eas login` → `eas device:create` → `eas build -p ios --profile preview`.
 
 ---
 
