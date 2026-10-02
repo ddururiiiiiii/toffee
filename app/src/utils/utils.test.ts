@@ -57,8 +57,9 @@ describe('기타', () => {
     expect(STORE_PRODUCT_ID_PATTERN.test('.toffee')).toBe(false);
   });
 
-  it('로그인 버튼 순서: 한국어면 카카오·네이버 먼저, 그 외엔 LINE 먼저(키 있는 것만)', () => {
-    expect(orderedProviders(['google', 'kakao', 'line', 'apple'], 'ko')).toEqual(['kakao', 'apple', 'google', 'line']);
-    expect(orderedProviders(['google', 'kakao', 'line', 'apple'], 'th')).toEqual(['line', 'apple', 'google', 'kakao']);
+  it('로그인 버튼 순서(2026-10-02): 한국어면 카카오·네이버·구글·애플·LINE, 그 외엔 LINE·구글·애플만(키 있는 것만)', () => {
+    expect(orderedProviders(['google', 'kakao', 'line', 'apple', 'naver'], 'ko')).toEqual(['kakao', 'naver', 'google', 'apple', 'line']);
+    expect(orderedProviders(['google', 'kakao', 'line', 'apple', 'naver'], 'th')).toEqual(['line', 'google', 'apple']);
+    expect(orderedProviders(['google', 'kakao'], 'ja')).toEqual(['google']);
   });
 });
