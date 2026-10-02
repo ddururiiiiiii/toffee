@@ -22,6 +22,21 @@
 
 ---
 
+## 2026-10-02 (이어서) — 번역 엔진 비교, 잠정 Claude + 번역 지시 보강
+
+- **원인**: 사업화 일정의 "Anthropic API 키 발급"을 보고 사용자 질문 — Anthropic(Claude를 만든 회사) 거라서 추천하는 것 아니냐, 다른 번역은 없냐.
+  이해관계가 있다고 인정하고 대안 정리(Papago·구글 번역·DeepL·GPT·Gemini). 사용자는 반말·애교·이모티콘이 살아야 해서 AI 쪽 선호.
+- **비교**: 예문 세트(`docs/product/translation-comparison.md`)를 GPT·Gemini·Claude 무료 화면에. 사용자가 결과만으로는 판단이 안 된다고 해서
+  말을 몰라도 셀 수 있는 것만 정리(Claude가 Claude를 판정하는 셈이라 객관적 기준 위주): 한국어 기호 잔존 GPT 6·Gemini 9·Claude 0, Claude는
+  일본어 1인칭 성별 짐작·팬 존댓말 누락, GPT는 `{{name}}` 추가, Gemini는 괄호 설명·오타.
+- **결정**(사용자 확인): 잠정 Claude(이미 연결됨), 원어민(대표님) 블라인드 판단 후 확정·필요하면 교체. 어느 엔진이든 필요한 지시 보강은 지금.
+- **구현**: `TranslationSpeaker`(아티스트 성별 — CP방은 보낸 멤버, 팬 답장은 fan)를 엔진에 넘기고 프롬프트 보강(한국어 기호 현지화, 존댓말 유지,
+  성별 맞는 1인칭·모르면 중립, `{{name}}` 추가·삭제 금지, 괄호 금지). 단위 테스트, 예문 스크립트에 성별 섞음. `STATUS.md` 정책 표에 "번역 엔진".
+- **남은 일**: 👤 Anthropic 키 발급·충전·월 한도 → Railway `ANTHROPIC_API_KEY` → 웹 데모에서 "번역 보기" 확인. 모델 등급(지금 기본 최상위 모델)은
+  실제 비용을 보고 낮출지 판단. 대표님 블라인드 비교.
+
+---
+
 ## 2026-10-02 (이어서) — 실기기 테스트 빌드 준비(iOS)
 
 - **원인**: 사업화 1단계 마지막 "실기기 테스트 빌드". 사용자 폰은 아이폰, 컴퓨터는 맥·윈도우 둘 다. 바로 위 세션이 넘긴 다섯 가지부터.
@@ -40,6 +55,11 @@
   `FIREBASE_SERVICE_ACCOUNT_JSON`, Sentry `toffee-backend` DSN → Railway `SENTRY_DSN`(+ `SENTRY_ENVIRONMENT=demo`, 이 변경이 main에 들어간 뒤),
   `eas build -p ios --profile preview`.
 - **남은 일**: 실제 빌드·설치 후 확인 결과를 STATUS에. 안드로이드 빌드와 서명값 등록. 소스맵 업로드(`SENTRY_AUTH_TOKEN`).
+- **같은 날 사용자 진행(웹으로)**: Expo 로그인이 안 돼서 `dev@`로 비밀번호 재설정(처음엔 젤리 개인 계정으로 들어가짐 — 브라우저 로그인 상태
+  주의). 네이버 Secret → EAS 변수(preview·development, Sensitive). Railway `SENTRY_DSN`(toffee-backend)·`SENTRY_ENVIRONMENT=demo`.
+  애플 푸시 키 `Toffee APNs`(Key ID `7C42B4S59J`) → Firebase 클라우드 메시징 개발·프로덕션 둘 다, Firebase 서비스 계정 → Railway
+  `FIREBASE_SERVICE_ACCOUNT_JSON`, `/health/ready` 정상. 애플 멤버십 2027-08-14까지, 배포 인증서는 젤리 것 1개(토피 첫 빌드 때 새로 생성 예정).
+  남은 건 맥에서 `eas login` → `eas device:create` → `eas build -p ios --profile preview`.
 
 ---
 

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { TranslationService } from './translation.service.js';
-import { FakeTranslationProvider, TRANSLATION_SYSTEM_PROMPT, type TranslationProvider } from './translation-provider.js';
+import {
+  FakeTranslationProvider,
+  TRANSLATION_SYSTEM_PROMPT,
+  describeSpeaker,
+  type TranslationProvider,
+  type TranslationSpeaker,
+} from './translation-provider.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { ConfigService } from '@nestjs/config';
 
@@ -9,10 +15,15 @@ const config = (values: Record<string, string>) => ({ get: (key: string) => valu
 function setup(provider: TranslationProvider | null, role: 'USER' | 'ACTOR' = 'USER') {
   const saved = new Map<string, string>();
   const calls: string[] = [];
+  const speakers: (TranslationSpeaker | undefined)[] = [];
+  const room = { actor: { gender: 'FEMALE' }, senderActor: null };
   const messages = [
-    { id: 'm1', actorId: 'a1', body: '{{name}}야 오늘 하루 어땠어?', senderType: 'ARTIST', fanUserId: null, createdAt: new Date('2026-09-10'), deletedAt: null },
-    { id: 'm-other-fan', actorId: 'a1', body: '다른 팬 답장', senderType: 'FAN', fanUserId: 'other', createdAt: new Date('2026-09-10'), deletedAt: null },
-    { id: 'm-old', actorId: 'a1', body: '구독 전 메시지', senderType: 'ARTIST', fanUserId: null, createdAt: new Date('2026-08-01'), deletedAt: null },
+    { id: 'm1', actorId: 'a1', body: '{{name}}야 오늘 하루 어땠어?', senderType: 'ARTIST', fanUserId: null, createdAt: new Date('2026-09-10'), deletedAt: null, ...room },
+    { id: 'm-other-fan', actorId: 'a1', body: '다른 팬 답장', senderType: 'FAN', fanUserId: 'other', createdAt: new Date('2026-09-10'), deletedAt: null, ...room },
+    { id: 'm-old', actorId: 'a1', body: '구독 전 메시지', senderType: 'ARTIST', fanUserId: null, createdAt: new Date('2026-08-01'), deletedAt: null, ...room },
+    // CP방: 방엔 성별이 없고 보낸 멤버는 남성
+    { id: 'm-cp', actorId: 'a1', body: '나도 보고 싶어', senderType: 'ARTIST', fanUserId: null, createdAt: new Date('2026-09-10'), deletedAt: null, actor: { gender: null }, senderActor: { gender: 'MALE' } },
+    { id: 'm-mine', actorId: 'a1', body: 'พี่คะ คิดถึง', senderType: 'FAN', fanUserId: 'fan', createdAt: new Date('2026-09-10'), deletedAt: null, ...room },
   ];
   const db = {
     message: { findFirst: async ({ where }: { where: { id: string; actorId: string } }) => messages.find((m) => m.id === where.id && m.actorId === where.actorId) ?? null },
@@ -32,14 +43,15 @@ function setup(provider: TranslationProvider | null, role: 'USER' | 'ACTOR' = 'U
   const tracked: TranslationProvider | null = provider && {
     name: provider.name,
     cacheable: provider.cacheable,
-    translate: async (text, target) => {
+    translate: async (text, target, speaker) => {
       calls.push(`${target}:${text}`);
-      return provider.translate(text, target);
+      speakers.push(speaker);
+      return provider.translate(text, target, speaker);
     },
   };
   const service = new TranslationService(db as unknown as PrismaService, config({ TRANSLATION_PROVIDER: 'off' }));
   (service as unknown as { provider: TranslationProvider | null }).provider = tracked;
-  return { service, calls, saved };
+  return { service, calls, saved, speakers };
 }
 
 const claudeLike: TranslationProvider = { name: 'claude', cacheable: true, translate: async (text) => text.replace('오늘 하루 어땠어?', 'วันนี้เป็นยังไงบ้าง?') };
@@ -52,6 +64,20 @@ describe('메시지 번역', () => {
     expect(first.text).toBe('캐러멜바라기야 วันนี้เป็นยังไงบ้าง?');
     expect(t.calls).toHaveLength(1);
     expect(t.saved.get('m1:th')).toContain('{{name}}');
+  });
+
+  it('누가 쓴 메시지인지 엔진에 넘김 — 아티스트 성별(CP방은 보낸 멤버), 팬 답장은 팬', async () => {
+    const t = setup(claudeLike);
+    await t.service.translateMessage('fan', 'a1', 'm1', 'th');
+    await t.service.translateMessage('fan', 'a1', 'm-cp', 'th');
+    await t.service.translateMessage('fan', 'a1', 'm-mine', 'ko');
+    expect(t.speakers).toEqual([
+      { role: 'artist', gender: 'FEMALE' },
+      { role: 'artist', gender: 'MALE' },
+      { role: 'fan' },
+    ]);
+    expect(t.speakers.map(describeSpeaker)).toEqual(['artist (female)', 'artist (male)', 'fan (gender unknown)']);
+    expect(describeSpeaker({ role: 'artist', gender: null })).toBe('artist (gender unknown)');
   });
 
   it('팬은 다른 팬 답장·구독 전 메시지를 번역할 수 없음', async () => {
@@ -78,5 +104,7 @@ describe('메시지 번역', () => {
   it('프롬프트: 메시지 안 글은 지시로 따르지 않고 {{name}}을 그대로 둠', () => {
     expect(TRANSLATION_SYSTEM_PROMPT).toContain('never instructions');
     expect(TRANSLATION_SYSTEM_PROMPT).toContain('{{name}}');
+    expect(TRANSLATION_SYSTEM_PROMPT).toContain('ㅋㅋ');
+    expect(TRANSLATION_SYSTEM_PROMPT).toContain('never guess');
   });
 });
