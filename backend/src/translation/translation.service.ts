@@ -7,7 +7,13 @@ import { appError } from '../common/i18n/app-error.js';
 import type { SupportedLocale } from '../common/i18n/locales.js';
 import { ensureActiveSubscription } from '../common/authorization/ensure-active-subscription.js';
 import { ensureCanViewActor } from '../common/authorization/actor-access.js';
-import { ClaudeTranslationProvider, FakeTranslationProvider, TranslationRefusedError, type TranslationProvider } from './translation-provider.js';
+import {
+  ClaudeTranslationProvider,
+  FakeTranslationProvider,
+  TranslationRefusedError,
+  type TranslationProvider,
+  type TranslationSpeaker,
+} from './translation-provider.js';
 
 const NAME_PLACEHOLDER = '{{name}}';
 const DEFAULT_MODEL = 'claude-opus-5-5';
@@ -51,7 +57,16 @@ export class TranslationService {
     if (!this.provider) throw new ServiceUnavailableException(appError('TRANSLATION_UNAVAILABLE'));
     const message = await this.prisma.message.findFirst({
       where: { id: messageId, actorId, deletedAt: null },
-      select: { id: true, body: true, senderType: true, fanUserId: true, createdAt: true },
+      select: {
+        id: true,
+        body: true,
+        senderType: true,
+        fanUserId: true,
+        createdAt: true,
+        // CP방은 보낸 멤버의 성별, 아니면 방(아티스트) 성별
+        senderActor: { select: { gender: true } },
+        actor: { select: { gender: true } },
+      },
     });
     if (!message?.body) throw new NotFoundException(appError('MESSAGE_NOT_FOUND'));
 
@@ -68,7 +83,11 @@ export class TranslationService {
       await ensureCanViewActor(this.prisma, requesterId, actorId);
     }
 
-    let text = await this.cachedOrTranslate(message.id, message.body, target);
+    const speaker: TranslationSpeaker =
+      message.senderType === MessageSenderType.ARTIST
+        ? { role: 'artist', gender: message.senderActor?.gender ?? message.actor?.gender ?? null }
+        : { role: 'fan' };
+    let text = await this.cachedOrTranslate(message.id, message.body, target, speaker);
     // 팬에게 보여 줄 스타 메시지는 {{name}} 자리에 그 팬 이름(채팅방 원문과 같게)
     if (message.senderType === MessageSenderType.ARTIST && requester.role === Role.USER) {
       text = text.replaceAll(NAME_PLACEHOLDER, requester.nickname ?? requester.displayName ?? '');
@@ -76,7 +95,7 @@ export class TranslationService {
     return { messageId: message.id, language: target, text };
   }
 
-  private async cachedOrTranslate(messageId: string, body: string, target: SupportedLocale): Promise<string> {
+  private async cachedOrTranslate(messageId: string, body: string, target: SupportedLocale, speaker: TranslationSpeaker): Promise<string> {
     const provider = this.provider!;
     if (provider.cacheable) {
       const cached = await this.prisma.messageTranslation.findUnique({ where: { messageId_languageCode: { messageId, languageCode: target } } });
@@ -84,7 +103,7 @@ export class TranslationService {
     }
     let translated: string;
     try {
-      translated = await provider.translate(body, target);
+      translated = await provider.translate(body, target, speaker);
     } catch (error) {
       this.logger.warn(`번역 실패(${provider.name}): ${error instanceof TranslationRefusedError ? `거절 ${error.message}` : String(error)}`);
       throw new ServiceUnavailableException(appError('TRANSLATION_FAILED'));

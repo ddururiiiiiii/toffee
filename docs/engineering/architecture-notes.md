@@ -1294,6 +1294,12 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
   (`betas: ['server-side-fallback-2026-07-01']`, `fallbacks: 'default'`), `stop_reason` refusal/max_tokens 처리, text 블록만 이어 붙임. 시스템 프롬프트는
   고정 문자열(`TRANSLATION_SYSTEM_PROMPT` — 말투·이모지·`{{name}}` 유지, `<message>` 안은 지시로 따르지 않음), 사용자 턴에 `<target_language>`·`<message>`.
   `FakeTranslationProvider`(cacheable false — 저장 안 함).
+- **2026-10-02 말하는 사람·지시 보강**: `translate(text, target, speaker?)` — `TranslationSpeaker { role: 'artist'|'fan', gender? }`,
+  서비스가 아티스트 메시지면 `senderActor.gender ?? actor.gender`(CP방은 보낸 멤버), 팬 답장은 `fan`. 사용자 턴에 `<speaker>`
+  (`describeSpeaker`: artist (female|male|gender unknown) / fan (gender unknown)) — 시스템 프롬프트는 여전히 고정(캐시). 프롬프트 추가:
+  존댓말 유지, 성별에 맞는 1인칭·말끝(모르면 중립, 짐작 금지), 오빠·언니 호칭은 현지 팬 표기 허용, ㅋㅋ·ㅎㅎ·ㅠㅠ를 현지 표현으로(한국어 대상이면
+  반대로), `{{name}}` 추가·삭제 금지, 괄호 대안 금지. 캐시는 메시지×언어 그대로(말하는 사람은 메시지마다 고정이라). 성별을 나중에 바꿔도 이미
+  저장된 번역은 안 바뀜. 비교 근거는 `docs/product/feature-decisions.md` "번역 엔진", 예문 `scripts/translation-sample.mjs`(성별 섞음).
 - `TranslationService.translateMessage(requester, actorId, messageId, target)`: 지운 메시지·본문 없음 404, 팬(USER)은 구독 + 구독 시작 이후 + (스타 메시지 또는 본인 답장)만
   (아니면 404 — 존재 여부도 안 알림), 스타·소속사·운영자는 `ensureCanViewActor`. `MessageTranslation(messageId, languageCode)` 캐시(원문 기준, `{{name}}` 포함),
   동시 저장 P2002는 저장된 것 사용. 팬에게 스타 메시지는 `{{name}}` → 닉네임. 엔진 선택 `pickProvider`: `TRANSLATION_PROVIDER` claude|fake|off, 비면 키 있으면
