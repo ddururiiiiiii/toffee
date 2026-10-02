@@ -71,13 +71,15 @@ export default function SubscriptionDetailScreen() {
     if (ok) unsubscribe.mutate(undefined, { onSuccess: () => router.back() });
   };
 
+  // 스토어에서 자동 갱신을 끈 방(2026-10-02) — "해지 예정" + 이용 종료일
+  const endsOn = sub.endsAt ? new Date(sub.endsAt).toLocaleDateString(i18n.language) : null;
   const rows: [string, string][] = [
-    [t('manage.status'), t('manage.active')],
+    [t('manage.status'), endsOn ? t('manage.ending') : t('manage.active')],
     bundleCover?.bundle
       ? [t('manage.price'), t('bundle.via', { name: bundleCover.bundle.name })]
       : [t('manage.price'), `${formatPrice(t, sub.actor.monthlyPriceCents)} ${t('actorProfile.perMonth')}`],
     [t('manage.started'), new Date(sub.startedAt).toLocaleDateString(i18n.language)],
-    [t('manage.nextBilling'), t('manage.nextBillingStore')],
+    endsOn ? [t('manage.endsOn'), endsOn] : [t('manage.nextBilling'), t('manage.nextBillingStore')],
   ];
 
   return (
@@ -97,7 +99,7 @@ export default function SubscriptionDetailScreen() {
           </View>
         ))}
         <ThemedText type="caption" themeColor="textTertiary">
-          {t('manage.autoRenew')}
+          {endsOn ? t('manage.endingNote') : t('manage.autoRenew')}
         </ThemedText>
       </View>
 

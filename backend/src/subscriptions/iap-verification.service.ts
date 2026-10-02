@@ -23,6 +23,8 @@ export interface StoreTransaction {
   accountToken?: string;
   storeAmountMilli?: number;
   storeCurrency?: string;
+  // 스토어 자동 갱신 상태(2026-10-02) — 구글 API의 autoRenewing, 애플 알림의 갱신 정보(autoRenewStatus). 모르면 비움(앱의 영수증 확인 등)
+  willRenew?: boolean;
 }
 
 /** 애플 서버 알림(App Store Server Notifications V2)을 검증·해석한 결과 */
@@ -41,6 +43,7 @@ interface GooglePlaySubscriptionResponse {
   priceAmountMicros?: string;
   priceCurrencyCode?: string;
   obfuscatedExternalAccountId?: string;
+  autoRenewing?: boolean;
 }
 
 /**
@@ -101,10 +104,13 @@ export class IapVerificationService {
       notification.data?.signedTransactionInfo ? verifier.verifyAndDecodeTransaction(notification.data.signedTransactionInfo) : null,
       notification.data?.signedRenewalInfo ? verifier.verifyAndDecodeRenewalInfo(notification.data.signedRenewalInfo) : null,
     ]);
+    const transaction = (transactionPayload && appleTransaction(transactionPayload)) || undefined;
+    // 갱신 정보의 autoRenewStatus: 1 켜짐 / 0 꺼짐(팬이 해지) — 없으면 모름
+    const willRenew = renewal?.autoRenewStatus === undefined ? undefined : Number(renewal.autoRenewStatus) === 1;
     return {
       type: String(notification.notificationType),
       subtype: notification.subtype ? String(notification.subtype) : undefined,
-      transaction: (transactionPayload && appleTransaction(transactionPayload)) || undefined,
+      transaction: transaction ? { ...transaction, willRenew } : undefined,
       gracePeriodExpiresAt: renewal?.gracePeriodExpiresDate ? new Date(renewal.gracePeriodExpiresDate) : undefined,
     };
   }
@@ -204,5 +210,6 @@ export function googleTransaction(purchaseToken: string, productId: string, body
     accountToken: body.obfuscatedExternalAccountId || undefined,
     storeAmountMilli: body.priceAmountMicros ? Math.round(Number(body.priceAmountMicros) / 1000) : undefined,
     storeCurrency: body.priceCurrencyCode,
+    willRenew: body.autoRenewing,
   };
 }

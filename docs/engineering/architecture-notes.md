@@ -1365,3 +1365,13 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
 - 용어 일괄 치환: 주석이 아닌 줄의 문자열만(`배우`/`스타`(스타일·스타트 제외)/`俳優`/`スター`(スタート 제외)/`นักแสดง`/`演员`/`明星` 등, 영어는 서버 문구
   파일의 `en` 블록에서만 단어 경계로). 식별자·라우트(`/actor/[id]`)·API 이름은 그대로.
 
+## 해지 예정(`willRenew`)·지난 구독 (2026-10-02)
+
+- `Purchase.willRenew Boolean @default(true)`. 바뀌는 곳: `StoreEvent` `RENEWAL { originalTransactionId, willRenew }`(애플 `DID_CHANGE_RENEWAL_STATUS` 서브타입,
+  구글 type 3) → `applyStoreEvent`가 값만 바꾸고 방은 그대로. 그리고 `StoreTransaction.willRenew`(애플 알림의 `signedRenewalInfo.autoRenewStatus`,
+  구글 API `autoRenewing`)가 있으면 `upsertStorePurchase`가 같이 기록 — 앱의 영수증 확인엔 이 정보가 없어서 건드리지 않음(undefined면 그대로).
+  구글 7 RESTARTED는 PAID로 다시 받으며 `autoRenewing: true`로 되돌아감.
+- `endsAtOf(purchases)`: 방을 여는 구매가 전부 `willRenew=false`이고 `iapExpiresAt`이 있으면 그 최댓값, 아니면 null → `listMine`의 `endsAt`.
+- `GET /me/subscriptions/past` → `listPast`: `Subscription.cancelledAt != null`(방 이용권 기준 — 재구독하면 같은 행이 다시 열려서 목록에서 빠짐),
+  `cancelledAt desc` 50개, `roomRetired`면 제외, 공식 이름·`official ?? chat` 사진만.
+

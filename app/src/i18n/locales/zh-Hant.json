@@ -346,7 +346,8 @@
     "emptyTitle": "還沒有訂閱的藝人",
     "emptyBody": "訂閱喜愛的藝人，就能在這裡收到 TA 的訊息。",
     "discover": "探索藝人",
-    "loadFailed": "訊息列表載入失敗"
+    "loadFailed": "訊息列表載入失敗",
+    "endsOn": "可使用至 {{date}}"
   },
   "actorProfile": {
     "back": "返回",
@@ -418,7 +419,14 @@
     "restore": "恢復購買",
     "restoreDone": "已恢復 {{count}} 個訂閱",
     "restoreNone": "沒有可恢復的訂閱",
-    "restoreFailed": "恢復失敗，請稍後再試。"
+    "restoreFailed": "恢復失敗，請稍後再試。",
+    "ending": "即將到期",
+    "endsOn": "使用截止日",
+    "endingNote": "已在商店關閉自動續訂。到這一天前仍可查看聊天，之後聊天室將關閉。重新開啟自動續訂即可繼續使用。",
+    "pastTitle": "過往訂閱",
+    "pastHint": "重新訂閱也無法查看之前的聊天。",
+    "endedOn": "{{date}} 結束",
+    "resubscribe": "重新訂閱"
   },
   "welcome": {
     "headline": "真實的人，\n真實的訊息，\n更近的世界。",

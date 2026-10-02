@@ -15,7 +15,9 @@ export interface Subscription {
   actor: { id: string; chatDisplayName: string; chatProfileImageUrl: string | null; monthlyPriceCents: number };
   /** 이 방을 열어 주는 구매 — 개인 구독(bundle null) 또는 묶음. 묶음으로만 열렸으면 해지는 묶음 단위 */
   coveredBy: { purchaseId: string; iapPlatform?: 'IOS' | 'ANDROID' | null; bundle: { id: string; name: string; priceCents: number } | null }[];
-  /** 마지막으로 채팅방을 본 뒤 온 스타 메시지 수 */
+  /** 스토어에서 자동 갱신을 끈 방의 이용 종료 시각(2026-10-02) — 계속 갱신되면 null. "○월 ○일까지 이용" 표시 */
+  endsAt?: string | null;
+  /** 마지막으로 채팅방을 본 뒤 온 아티스트 메시지 수 */
   unreadCount: number;
   /** 인박스 미리보기(서버가 최근 대화 순으로 정렬해서 줌) */
   lastMessage: {
@@ -35,6 +37,23 @@ export function useMySubscriptions(options: { live?: boolean } = {}) {
     queryFn: () => apiClient.get<Subscription[]>('/me/subscriptions'),
     enabled: !!token,
     refetchInterval: options.live ? interval : false,
+  });
+}
+
+/** 지난 구독(구독 관리 "지난 구독") — 대화 내용 없이 다시 구독하기 안내용. 구독 전 화면처럼 공식 이름·공식 사진 */
+export interface PastSubscription {
+  actorId: string;
+  startedAt: string;
+  endedAt: string;
+  actor: { id: string; legalName: string; kind: 'SOLO' | 'COUPLE'; monthlyPriceCents: number; photoUrl: string | null };
+}
+
+export function usePastSubscriptions() {
+  const { token } = useAuth();
+  return useQuery({
+    queryKey: ['past-subscriptions'],
+    queryFn: () => apiClient.get<PastSubscription[]>('/me/subscriptions/past'),
+    enabled: !!token,
   });
 }
 

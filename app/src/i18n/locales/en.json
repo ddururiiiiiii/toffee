@@ -346,7 +346,8 @@
     "emptyTitle": "No subscriptions yet",
     "emptyBody": "Subscribe to an artist you love to receive their messages here.",
     "discover": "Discover artists",
-    "loadFailed": "Couldn't load your inbox"
+    "loadFailed": "Couldn't load your inbox",
+    "endsOn": "Until {{date}}"
   },
   "actorProfile": {
     "back": "Back",
@@ -418,7 +419,14 @@
     "restore": "Restore purchases",
     "restoreDone": "Restored {{count}} subscription(s)",
     "restoreNone": "No subscriptions to restore",
-    "restoreFailed": "Couldn't restore. Please try again later."
+    "restoreFailed": "Couldn't restore. Please try again later.",
+    "ending": "Ending",
+    "endsOn": "Access ends",
+    "endingNote": "Auto-renew is off in the store. You can keep chatting until this date, then the chat closes. Turn auto-renew back on to keep going.",
+    "pastTitle": "Past subscriptions",
+    "pastHint": "Previous chats aren't restored if you subscribe again.",
+    "endedOn": "Ended {{date}}",
+    "resubscribe": "Subscribe again"
   },
   "welcome": {
     "headline": "Real people.\nReal messages.\nA closer world.",

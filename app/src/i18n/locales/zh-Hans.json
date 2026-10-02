@@ -346,7 +346,8 @@
     "emptyTitle": "还没有订阅的艺人",
     "emptyBody": "订阅喜爱的艺人，就能在这里收到 TA 的消息。",
     "discover": "发现艺人",
-    "loadFailed": "消息列表加载失败"
+    "loadFailed": "消息列表加载失败",
+    "endsOn": "可使用至 {{date}}"
   },
   "actorProfile": {
     "back": "返回",
@@ -418,7 +419,14 @@
     "restore": "恢复购买",
     "restoreDone": "已恢复 {{count}} 个订阅",
     "restoreNone": "没有可恢复的订阅",
-    "restoreFailed": "恢复失败，请稍后重试。"
+    "restoreFailed": "恢复失败，请稍后重试。",
+    "ending": "即将到期",
+    "endsOn": "使用截止日",
+    "endingNote": "已在商店关闭自动续订。到这一天前仍可查看聊天，之后聊天室将关闭。重新开启自动续订即可继续使用。",
+    "pastTitle": "过往订阅",
+    "pastHint": "重新订阅也无法查看之前的聊天。",
+    "endedOn": "{{date}} 结束",
+    "resubscribe": "重新订阅"
   },
   "welcome": {
     "headline": "真实的人，\n真实的消息，\n更近的世界。",

@@ -337,6 +337,9 @@ model Purchase {
   // Apple의 originalTransactionId 또는 Google의 purchaseToken — 스토어 쪽 구독 인스턴스 식별자
   iapTransactionId String?      @unique
   iapExpiresAt     DateTime?
+  // 스토어 자동 갱신이 켜져 있나(2026-10-02) — 팬이 스토어에서 해지(자동 갱신 끔)하면 false, 기간(iapExpiresAt) 끝까지는 이용.
+  // 앱 대화 목록·구독 관리의 "○월 ○일까지 이용" 표시용. 스토어 알림·영수증이 알려 줄 때만 바뀜(모르면 그대로)
+  willRenew        Boolean      @default(true)
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   actor  Actor?  @relation(fields: [actorId], references: [id], onDelete: Cascade)
