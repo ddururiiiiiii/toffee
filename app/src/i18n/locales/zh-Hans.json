@@ -70,8 +70,8 @@
     "resubscribe": "重新订阅",
     "repliesLeft": "这条消息还可回复 {{count}} 条",
     "noRepliesLeft": "每条消息最多可回复 {{limit}} 条，请等待明星的下一条消息。",
-    "notificationsOn": "通知已开启",
-    "notificationsOff": "通知已关闭",
+    "mute": "关闭通知",
+    "unmute": "开启通知",
     "muted": "已关闭此聊天的通知，仍会照常收到消息。",
     "unmuted": "已开启此聊天的通知。",
     "report": "举报",
@@ -82,7 +82,14 @@
     "waitingTitle": "已开始订阅",
     "copy": "复制",
     "copied": "已复制",
-    "copyFailed": "复制失败"
+    "copyFailed": "复制失败",
+    "more": "更多"
+  },
+  "chatProfile": {
+    "open": "查看资料",
+    "close": "关闭",
+    "viewPhoto": "查看头像大图",
+    "members": "成员"
   },
   "mypage": {
     "title": "我的",

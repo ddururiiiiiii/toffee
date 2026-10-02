@@ -110,7 +110,7 @@ export default function ActorProfileScreen() {
                 </ThemedText>
               </View>
             </View>
-            <MembershipBenefits name={actor.chatDisplayName} />
+            <MembershipBenefits name={actor.legalName} />
             {isSubscribed ? (
               <Button title={t('actorProfile.openChat')} iconRight={ArrowRight} onPress={() => router.push(`/chat/${id}`)} />
             ) : actor.retiredAt ? (

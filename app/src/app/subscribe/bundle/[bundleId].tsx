@@ -127,7 +127,7 @@ export default function SubscribeBundleScreen() {
         </View>
 
         {/* "OO님과 1:1 메시지"의 이름 자리엔 묶음 이름 대신 배우 이름들("A · B님과") */}
-        <MembershipBenefits name={bundle.actors.map((actor) => actor.chatDisplayName).join(' · ')} detailed />
+        <MembershipBenefits name={bundle.actors.map((actor) => actor.legalName).join(' · ')} detailed />
 
         {alreadySingle.length > 0 ? (
           <ThemedText type="small" themeColor="textSecondary" style={styles.center}>

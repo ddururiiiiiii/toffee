@@ -70,8 +70,8 @@
     "resubscribe": "もう一度購読する",
     "repliesLeft": "このメッセージへの返信はあと{{count}}件",
     "noRepliesLeft": "1つのメッセージにつき返信は{{limit}}件までです。スターの次のメッセージをお待ちください。",
-    "notificationsOn": "通知オン",
-    "notificationsOff": "通知オフ",
+    "mute": "通知をオフ",
+    "unmute": "通知をオン",
     "muted": "このトークの通知をオフにしました。メッセージは引き続き届きます。",
     "unmuted": "このトークの通知をオンにしました。",
     "report": "通報",
@@ -82,7 +82,14 @@
     "waitingTitle": "購読を開始しました",
     "copy": "コピー",
     "copied": "コピーしました",
-    "copyFailed": "コピーできませんでした"
+    "copyFailed": "コピーできませんでした",
+    "more": "その他"
+  },
+  "chatProfile": {
+    "open": "プロフィールを見る",
+    "close": "閉じる",
+    "viewPhoto": "プロフィール写真を拡大",
+    "members": "メンバー"
   },
   "mypage": {
     "title": "マイページ",

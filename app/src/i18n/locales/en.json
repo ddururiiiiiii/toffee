@@ -70,8 +70,8 @@
     "resubscribe": "Subscribe again",
     "repliesLeft": "{{count}} replies left for this message",
     "noRepliesLeft": "You can send up to {{limit}} replies per message. Please wait for the star's next message.",
-    "notificationsOn": "Notifications on",
-    "notificationsOff": "Notifications off",
+    "mute": "Mute notifications",
+    "unmute": "Unmute notifications",
     "muted": "Notifications for this chat are off. You'll still receive messages.",
     "unmuted": "Notifications for this chat are on.",
     "report": "Report",
@@ -82,7 +82,14 @@
     "waitingTitle": "You're subscribed",
     "copy": "Copy",
     "copied": "Copied",
-    "copyFailed": "Couldn't copy"
+    "copyFailed": "Couldn't copy",
+    "more": "More"
+  },
+  "chatProfile": {
+    "open": "View profile",
+    "close": "Close",
+    "viewPhoto": "View profile photo",
+    "members": "Members"
   },
   "mypage": {
     "title": "My page",

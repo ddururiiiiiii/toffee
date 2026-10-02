@@ -174,6 +174,7 @@ function RootLayout() {
               <Stack.Screen name="settings/nickname" options={{ headerShown: true, title: t('profile.editNickname') }} />
               <Stack.Screen name="settings/notifications" options={{ headerShown: true, title: t('profile.notifications') }} />
               <Stack.Screen name="chat/[actorId]" options={{ headerShown: true, title: '' }} />
+              <Stack.Screen name="chat-profile/[actorId]" options={{ headerShown: false, presentation: 'modal' }} />
               <Stack.Screen name="report" options={{ headerShown: true, title: t('report.title'), presentation: 'modal' }} />
               <Stack.Screen name="blocks/[actorId]" options={{ headerShown: true, title: t('block.manage') }} />
               <Stack.Screen name="media-viewer" options={{ headerShown: false, presentation: 'fullScreenModal' }} />

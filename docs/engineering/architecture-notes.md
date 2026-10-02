@@ -1333,3 +1333,14 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
   출력 `dist`, 변수 `EXPO_PUBLIC_API_URL`·`EXPO_PUBLIC_ENABLE_DEV_LOGIN=true`·`EXPO_PUBLIC_SUPPORT_EMAIL`·`NODE_VERSION=22`.
   서버 CORS는 `app.enableCors()`(전체 허용)라 추가 설정 없음.
 
+
+## 채팅방 묶음 기준·헤더·대화방 프로필 카드 (2026-10-02)
+
+- 말풍선 묶음: `GROUP_GAP_MS`(5분) 제거 → `sameMinute`(`floor(ms / 60_000)` 비교) + 같은 보낸 사람(커플방은 `sender.id`까지). `startsGroup`이면
+  아바타(36px, 위 정렬)·이름(1인 방도), `endsGroup`이면 시간·넓은 아래 여백. `MessageRow`의 `showAvatarAndTime`/`senderLabel` 대신
+  `startsGroup`/`endsGroup`/`onOpenProfile`.
+- 헤더: `headerTitleAlign: 'center'`, `Pressable` 두 줄(`chatDisplayName` + 다르면 `legalName`). `headerRight`는 검색 + `Ellipsis` — ⋯ 메뉴는
+  네이티브 헤더 밖이라 화면 본문 위에 `absoluteFill` 배경(누르면 닫힘) + 절대 위치 메뉴로 그림.
+- 새 라우트 `chat-profile/[actorId]`(`presentation: 'modal'`, 헤더 없음, `?memberId=`면 커플방 멤버). `useActor` 캐시를 그대로 씀(추가 API 없음).
+  사진 확대는 `media-viewer`에 `actorId` 없이 넘겨 단일 이미지로.
+- 구독 전 화면(`actor/[id]`, `subscribe/[actorId]`, `subscribe/bundle/[bundleId]`)의 `MembershipBenefits name`은 `legalName`.
