@@ -483,10 +483,10 @@
     "offline": "网络已断开"
   },
   "couple": {
-    "sectionTitle": "情侣房间",
+    "sectionTitle": "CP",
     "sectionHint": "两位艺人一起给你发消息的房间，需与个人房间分开订阅。",
-    "discoverTitle": "情侣房间",
-    "roomLabel": "情侣房间",
+    "discoverTitle": "CP",
+    "roomLabel": "CP",
     "soloLabel": "个人房间"
   },
   "chatSearch": {
@@ -528,9 +528,9 @@
     "total": "合计",
     "share": "分成 {{percent}}%",
     "soloRoom": "个人房间",
-    "coupleRoom": "情侣房间（{{name}}）",
+    "coupleRoom": "CP房间（{{name}}）",
     "empty": "本月没有付款",
-    "note": "根据付款记录估算（按泰国时间计月）。商店手续费 {{fee}}%、默认分成 {{share}}% 为暂定值，因各经纪公司合同而异。套餐按单独定价比例分配，情侣房间由两位艺人平分。实际到账金额（各国价格、汇率、税费）需与商店结算报告核对。",
+    "note": "根据付款记录估算（按泰国时间计月）。商店手续费 {{fee}}%、默认分成 {{share}}% 为暂定值，因各经纪公司合同而异。套餐按单独定价比例分配，CP房间由两位艺人平分。实际到账金额（各国价格、汇率、税费）需与商店结算报告核对。",
     "adjustment": "调整（上月）",
     "close": "本月结账",
     "reopen": "取消结账",

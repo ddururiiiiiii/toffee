@@ -21,7 +21,7 @@ function ActorRow({ actor }: { actor: AdminActor }) {
       <AdminAvatar uri={actor.officialProfileImageUrl ?? actor.chatProfileImageUrl} name={actor.legalName} />
       <ThemedView style={styles.rowBody}>
         <ThemedText type="smallBold">
-          {actor.kind === 'COUPLE' ? '[커플방] ' : ''}
+          {actor.kind === 'COUPLE' ? '[CP] ' : ''}
           {actor.legalName}
           {actor.verified ? ' ✓' : ''}
         </ThemedText>
@@ -65,7 +65,7 @@ export default function AdminActorsScreen() {
           style={[styles.search, { color: theme.text, backgroundColor: theme.backgroundElement }]}
         />
         <AdminButton label="+ 아티스트 등록" onPress={() => router.push('/admin/actors/new')} />
-        <AdminButton label="+ 커플방 만들기" onPress={() => router.push('/admin/actors/new-couple')} />
+        <AdminButton label="+ CP방 만들기" onPress={() => router.push('/admin/actors/new-couple')} />
       </ThemedView>
 
       {isLoading ? (

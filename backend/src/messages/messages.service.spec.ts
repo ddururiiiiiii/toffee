@@ -64,7 +64,7 @@ describe('MessagesService.sendBroadcast 푸시 문구', () => {
     });
   });
 
-  it('커플방: 보낸 아티스트가 기록되고, 팬 알림은 "방 이름" 제목 + "보낸 아티스트: 내용"', async () => {
+  it('CP방: 보낸 아티스트가 기록되고, 팬 알림은 "방 이름" 제목 + "보낸 아티스트: 내용"', async () => {
     const { service, fanPushes, prisma } = setup();
     const actor = (prisma as unknown as { actor: Record<string, ReturnType<typeof vi.fn>> }).actor;
     (prisma as unknown as { user: { findUniqueOrThrow: ReturnType<typeof vi.fn> } }).user.findUniqueOrThrow.mockResolvedValue({ role: Role.ACTOR });

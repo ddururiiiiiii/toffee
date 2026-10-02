@@ -483,10 +483,10 @@
     "offline": "網路已中斷"
   },
   "couple": {
-    "sectionTitle": "情侶房間",
+    "sectionTitle": "CP",
     "sectionHint": "兩位藝人一起傳訊息給你的房間，需與個人房間分開訂閱。",
-    "discoverTitle": "情侶房間",
-    "roomLabel": "情侶房間",
+    "discoverTitle": "CP",
+    "roomLabel": "CP",
     "soloLabel": "個人房間"
   },
   "chatSearch": {
@@ -528,9 +528,9 @@
     "total": "合計",
     "share": "分成 {{percent}}%",
     "soloRoom": "個人房間",
-    "coupleRoom": "情侶房間（{{name}}）",
+    "coupleRoom": "CP房間（{{name}}）",
     "empty": "本月沒有付款",
-    "note": "根據付款記錄估算（按泰國時間計月）。商店手續費 {{fee}}%、預設分成 {{share}}% 為暫定值，依各經紀公司合約而異。套裝按單獨定價比例分配，情侶房間由兩位藝人平分。實際入帳金額（各國價格、匯率、稅費）需與商店結算報告核對。",
+    "note": "根據付款記錄估算（按泰國時間計月）。商店手續費 {{fee}}%、預設分成 {{share}}% 為暫定值，依各經紀公司合約而異。套裝按單獨定價比例分配，CP房間由兩位藝人平分。實際入帳金額（各國價格、匯率、稅費）需與商店結算報告核對。",
     "adjustment": "調整（上月）",
     "close": "本月結帳",
     "reopen": "取消結帳",

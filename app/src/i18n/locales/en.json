@@ -483,10 +483,10 @@
     "offline": "You're offline"
   },
   "couple": {
-    "sectionTitle": "Couple rooms",
+    "sectionTitle": "CP",
     "sectionHint": "A room where two artists message you together. Subscribed to separately from individual rooms.",
-    "discoverTitle": "Couple rooms",
-    "roomLabel": "Couple room",
+    "discoverTitle": "CP",
+    "roomLabel": "CP",
     "soloLabel": "My room"
   },
   "chatSearch": {
@@ -528,9 +528,9 @@
     "total": "Total",
     "share": "Share {{percent}}%",
     "soloRoom": "Solo room",
-    "coupleRoom": "Couple room ({{name}})",
+    "coupleRoom": "CP room ({{name}})",
     "empty": "No payments this month",
-    "note": "Estimates from payment records (month in Thailand time). The {{fee}}% store fee and default {{share}}% share are provisional and vary by agency contract. Bundles are split by list-price ratio; couple rooms 50/50 between the two artists. Reconcile with store payout reports for actual amounts (local prices, FX, taxes).",
+    "note": "Estimates from payment records (month in Thailand time). The {{fee}}% store fee and default {{share}}% share are provisional and vary by agency contract. Bundles are split by list-price ratio; CP rooms 50/50 between the two artists. Reconcile with store payout reports for actual amounts (local prices, FX, taxes).",
     "adjustment": "Adjustments",
     "close": "Close month",
     "reopen": "Reopen",

@@ -18,7 +18,7 @@ const ACTION_LABELS: Record<string, string> = {
   ACTOR_PRICE: '가격·스토어 상품 변경',
   BUNDLE_CREATE: '묶음 만들기',
   BUNDLE_UPDATE: '묶음 변경',
-  COUPLE_CREATE: '커플방 만들기',
+  COUPLE_CREATE: 'CP방 만들기',
   AGENCY_SHARE: '소속사 정산 배분율 변경',
   SETTLEMENT_CLOSE: '정산 마감',
   SETTLEMENT_REOPEN: '정산 마감 취소',

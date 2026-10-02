@@ -71,7 +71,7 @@ describe('미발송 알림 보내기', () => {
     expect(await t.service.run(new Date(now.getTime() + DAY))).toBe(0);
   });
 
-  it('7일째엔 아티스트 + 소속사, 커플방은 두 아티스트에게 방 이름과 함께', async () => {
+  it('7일째엔 아티스트 + 소속사, CP방은 두 아티스트에게 방 이름과 함께', async () => {
     const couple = room('ab', {
       kind: 'COUPLE',
       chatDisplayName: '캐러멜 & 누가',
