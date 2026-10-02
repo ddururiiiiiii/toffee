@@ -22,6 +22,15 @@
 
 ---
 
+## 2026-10-02 — 웹 데모 화면(Cloudflare Pages)
+
+- PR toffeechat/toffee#18(웹 SPA 내보내기) 머지 후 Cloudflare Pages 프로젝트 `toffee-demo` 생성 — Cloudflare가 Workers 위주로
+  안내해서 "Continue to Pages"(옛 Pages 흐름)로 들어감. Pages GitHub 앱은 `toffeechat` 조직의 `toffee` 저장소에만. 루트 `app`,
+  `npm run build:web`, 출력 `dist`, 변수 `EXPO_PUBLIC_API_URL`(Railway 임시 주소)·`EXPO_PUBLIC_ENABLE_DEV_LOGIN=true`·
+  `EXPO_PUBLIC_SUPPORT_EMAIL`·`NODE_VERSION=22`. 첫 빌드 성공 → `https://toffee-demo.pages.dev`.
+- 남은 일: 입장 코드로 로그인·데모 초기화 한 번(고정 ID로 바꾸기) 확인 → `demo.toffeechat.app`·`api-demo.toffeechat.app` 연결
+  (Pages 웹 주소 바꾸면 `EXPO_PUBLIC_API_URL`도 새 API 주소로 바꾸고 다시 빌드, 서버 `API_PUBLIC_URL`도).
+
 ## 2026-10-01 — 도메인·전용 Gmail·계정 장부
 
 - **원인**: 1단계(계정·기반) 시작. Cloudflare에서 도메인을 사려면 가입 이메일이 먼저 필요한데, 도메인 메일은
