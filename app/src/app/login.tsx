@@ -18,7 +18,7 @@ import { useAuth } from '@/lib/auth-context';
 import { Radius, Spacing } from '@/constants/theme';
 
 /**
- * 첫 화면 — 브랜드 보드의 스플래시(어두운 배경 + 흰 워드마크 + "Real people. Real messages. A closer world.")와
+ * 첫 화면 — 어두운 배경 + 흰 워드마크 + 공식 슬로건 "Closer to what matters"(2026-10-02: 모든 언어에서 영어 그대로 — 슬로건은 번역하지 않음)와
  * DESIGN_GUIDE §3 온보딩 목표: 배우를 찾고 → 구독하면 DM이 열리고 → 사진·음성·영상이 오고 → 유료라는 걸 한눈에.
  * 로그인: 소셜 로그인(키가 설정된 것만 — 앱은 애플·구글·LINE·카카오·네이버, PC 웹은 구글, 2026-09-29) + 개발용 이메일 로그인(개발 빌드나
  * EXPO_PUBLIC_ENABLE_DEV_LOGIN=true일 때만 — 운영 빌드엔 안 보임, 서버도 운영에선 막음).

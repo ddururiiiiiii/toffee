@@ -48,6 +48,9 @@
   번들 ID, REST API 키에 리다이렉트 URI `…/oauth/kakao`·클라이언트 시크릿). 동의항목 닉네임 필수·프로필 사진 선택(이메일은 비즈 앱 필요).
   서버 `KAKAO_APP_ID`·`KAKAO_REST_API_KEY`·`KAKAO_CLIENT_SECRET`·`WEB_LOGIN_ORIGINS`, 웹 `EXPO_PUBLIC_WEB_KAKAO_REST_API_KEY`, 앱
   `eas.json` 네이티브 키. 웹 데모에서 로그인 확인.
+- **첫 화면 문구 → 공식 슬로건**(사용자 지적: 원래 다른 걸 쓰기로 했던 것 같다): 로그인 화면 큰 문구가 브랜드 보드 시안의 "Real people…"
+  번역이었음 → 가이드의 공식 슬로건 "Closer to what matters"로, 6개 언어 모두 영어 그대로(A안 — 로고에도 영어로 박혀 있고 슬로건은
+  번역하지 않는 게 브랜드 기억에 유리). `brand-guide.md`에 뜻·규칙 추가.
 - **로그인 버튼 통일**(사용자 지적: 웹에서 구글 버튼과 카카오 버튼 모양이 너무 다름): 구글은 공식 버튼(GIS, 320×40 알약)이라 바꿀 수
   없어서 나머지를 맞춤 — `SocialButton`(알약, 왼쪽 로고, 웹 320×40 가운데·앱은 폭 가득 48) + `SocialProviderIcon`(애플·네이버·LINE은
   simple-icons CC0 모양, 카카오 말풍선, 구글 4색 G). 앱·웹 버튼이 같은 컴포넌트를 씀.
