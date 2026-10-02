@@ -14,7 +14,8 @@
         "EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY_DEV": "9eb9afd3e5ccd658db2d2ffe93ab0d70",
         "EXPO_PUBLIC_NAVER_CONSUMER_KEY_DEV": "BYoIY2nZcrD5mdA4UhZc",
         "EXPO_PUBLIC_NAVER_URL_SCHEME_DEV": "toffeenaverdev",
-        "EXPO_PUBLIC_LINE_CHANNEL_ID_DEV": "2011830249"
+        "EXPO_PUBLIC_LINE_CHANNEL_ID_DEV": "2011830249",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
     "development-simulator": {
@@ -27,6 +28,10 @@
       "distribution": "internal",
       "channel": "preview",
       "env": {
+        "EXPO_PUBLIC_API_URL": "https://api-demo.toffeechat.app",
+        "EXPO_PUBLIC_ENABLE_DEV_LOGIN": "true",
+        "EXPO_PUBLIC_SUPPORT_EMAIL": "support@toffeechat.app",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true",
         "EXPO_PUBLIC_SENTRY_DSN": "https://5f9a9ea9b060b2a7305843c94f8895c2@o4512179342606336.ingest.us.sentry.io/4512179350274048",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "887521312316-q0gnbre54fcul8j3fujuusdem4npejrc.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID_DEV": "887521312316-79p201t716dumodfdvs0dmkklsui9nur.apps.googleusercontent.com",

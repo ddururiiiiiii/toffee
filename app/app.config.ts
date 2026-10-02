@@ -126,7 +126,16 @@ const config: ExpoConfig = {
     // LINE — 채널 ID는 런타임(JS)에서 setup, 플러그인은 URL 콜백 연결만
     '@xmartlabs/react-native-line',
     ...(GOOGLE_IOS_URL_SCHEME ? [['@react-native-google-signin/google-signin', { iosUrlScheme: GOOGLE_IOS_URL_SCHEME }] as [string, object]] : []),
-    ...(KAKAO_NATIVE_APP_KEY ? [['@react-native-kakao/core', { nativeAppKey: KAKAO_NATIVE_APP_KEY }] as [string, object]] : []),
+    // ios·android 옵션을 안 넘기면 플러그인이 키만 확인하고 아무것도 안 함(카카오톡에서 돌아오는 URL scheme·AppDelegate 처리·안드로이드
+    // AuthCodeHandlerActivity가 빠져서 카톡 로그인 후 앱으로 못 돌아옴) — 2026-10-02 실기기 빌드 준비 중 prebuild로 확인
+    ...(KAKAO_NATIVE_APP_KEY
+      ? [
+          [
+            '@react-native-kakao/core',
+            { nativeAppKey: KAKAO_NATIVE_APP_KEY, ios: { handleKakaoOpenUrl: true }, android: { authCodeHandlerActivity: true } },
+          ] as [string, object],
+        ]
+      : []),
     ...(NAVER_URL_SCHEME ? [['@react-native-seoul/naver-login', { urlScheme: NAVER_URL_SCHEME }] as [string, object]] : []),
   ],
   experiments: {
