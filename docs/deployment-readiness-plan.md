@@ -37,6 +37,12 @@
 - `JWT_SECRET`이 대화에 노출돼서 새 값으로 교체(데모라 피해 없음, 로그인한 사람만 로그아웃).
 - Pages 빌드 줄이기: Preview 브랜치 빌드 끔(작업 브랜치 push마다 빌드되고 있었음, 무료 월 500회), Build watch paths `app/*`.
 - 남은 일: 데모 영상·제안서(2단계). 운영 서버는 데모와 분리해 6단계에.
+- **구글 로그인 등록**(1단계 소셜 로그인 시작 — 개인정보처리방침 주소가 생겨서 가능해짐): 새 클라우드 프로젝트 대신 **Firebase 프로젝트
+  `toffee-c6cba`** 사용(안드로이드 구글 로그인은 Firebase 설정과 같은 프로젝트여야 해서). "조직 없음"은 Gmail 소유라 정상 — 법인 후
+  `toffeechat.app`으로 Cloud Identity 조직을 만들어 옮길지 검토(ops-infra-backlog). 동의 화면 External·In production(기본 범위라 심사
+  없음, 로고는 심사 생겨서 안 올림), 개인정보·약관은 `api-demo.toffeechat.app/legal/*`. 클라이언트: Web(서버 audience 겸, 허용 출처
+  demo·pages.dev·localhost:8081) + iOS 개발용(`com.toffeechat.app.dev`). Client ID는 공개 값이라 `eas.json`(development·preview·
+  production의 웹 ID)과 `.env.example`에 커밋. 안드로이드 클라이언트는 EAS 서명 SHA-1이 필요해 실기기 빌드 때.
 
 ## 2026-10-01 — 도메인·전용 Gmail·계정 장부
 
