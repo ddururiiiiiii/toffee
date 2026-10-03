@@ -1,7 +1,7 @@
 import { resolveLocale, SUPPORTED_LOCALES, type SupportedLocale } from '../common/i18n/locales.js';
 
 // 부모(법정대리인) 동의 메일·웹 페이지 문구 — 부모는 앱을 쓰지 않으므로 서버가 직접 언어를 골라 만듦.
-// th/ja/zh는 원어민 검수 전(2026-09-28 기계 작성), 동의 안내 문구는 👤 변호사 검토 대상.
+// th/ja/zh는 원어민 검수 전(2026-09-28 기계 작성, vi는 2026-10-02), 동의 안내 문구는 👤 변호사 검토 대상.
 
 interface ConsentTexts {
   emailSubject: string;
@@ -134,6 +134,25 @@ export const CONSENT_TEXTS: Record<SupportedLocale, ConsentTexts> = {
     invalidTitle: '連結無效或已過期',
     invalidBody: '請讓孩子在應用程式中重新傳送同意請求郵件。',
   },
+  vi: {
+    emailSubject: 'Toffee: yêu cầu đồng ý cho tài khoản của con bạn',
+    intro: 'Con bạn đã đề nghị bạn, với tư cách cha mẹ hoặc người giám hộ, đồng ý cho con sử dụng Toffee.',
+    about: 'Toffee là dịch vụ trả phí, nơi fan đăng ký để nhận tin nhắn từ nghệ sĩ mình yêu thích.',
+    emailAction: 'Vui lòng nhấn nút bên dưới để xem nội dung và đồng ý. Liên kết có hiệu lực trong 7 ngày.',
+    emailButton: 'Xem và đồng ý',
+    emailIgnore: 'Nếu bạn không mong đợi email này, bạn có thể bỏ qua. Nếu không có sự đồng ý của bạn, tài khoản của con bạn không thể đăng ký.',
+    pageTitle: 'Đồng ý cho tài khoản của con bạn',
+    points: [
+      'Gói đăng ký là dịch vụ trả phí, thanh toán qua App Store hoặc Google Play. Giá khác nhau tùy nghệ sĩ.',
+      'Con bạn có thể nhận tin nhắn từ nghệ sĩ và trả lời bằng văn bản. Nghệ sĩ và công ty quản lý của họ có thể xem câu trả lời; nếu nghệ sĩ trích dẫn câu trả lời, những người đăng ký khác cũng có thể thấy câu trả lời cùng biệt danh của con bạn.',
+      'Bạn có thể rút lại sự đồng ý bất cứ lúc nào bằng cách liên hệ hỗ trợ trong ứng dụng.',
+    ],
+    agreeButton: 'Tôi đồng ý',
+    doneTitle: 'Đã đồng ý',
+    doneBody: 'Con bạn giờ có thể tiếp tục sử dụng ứng dụng. Bạn có thể đóng cửa sổ này.',
+    invalidTitle: 'Liên kết không hợp lệ hoặc đã hết hạn',
+    invalidBody: 'Vui lòng nhờ con bạn gửi lại yêu cầu đồng ý từ ứng dụng.',
+  },
 };
 
 // 언어 선택 줄에 보여줄 이름(항상 그 언어 자신의 표기)
@@ -144,6 +163,7 @@ const NATIVE_NAMES: Record<SupportedLocale, string> = {
   ja: '日本語',
   'zh-Hans': '简体中文',
   'zh-Hant': '繁體中文',
+  vi: 'Tiếng Việt',
 };
 
 // 자녀 계정에 앱 언어가 없을 때 국가로 추정
@@ -157,6 +177,7 @@ const LOCALE_BY_COUNTRY: Record<string, SupportedLocale> = {
   TW: 'zh-Hant',
   HK: 'zh-Hant',
   MO: 'zh-Hant',
+  VN: 'vi',
 };
 
 /** 자녀 계정 기준 언어 — 앱 언어 → 가입 국가 → 영어 */

@@ -1,0 +1,6 @@
+{
+  "NSCameraUsageDescription": "Toffee dùng máy ảnh khi bạn chụp ảnh hoặc quay video để gửi cho fan.",
+  "NSMicrophoneUsageDescription": "Toffee dùng micrô để ghi tin nhắn thoại và âm thanh của video bạn gửi cho fan.",
+  "NSPhotoLibraryUsageDescription": "Toffee mở thư viện ảnh khi bạn chọn ảnh hoặc video để gửi cho fan.",
+  "NSPhotoLibraryAddUsageDescription": "Toffee lưu ảnh và video bạn nhận được vào thư viện ảnh khi bạn nhấn Lưu."
+}

@@ -48,7 +48,7 @@ const config: ExpoConfig = {
       NSPhotoLibraryAddUsageDescription: 'Toffee saves photos and videos you received to your photo library when you tap Save.',
     },
   },
-  // iOS 권한 안내 문구를 기기 언어로(심사·사용자 모두 자기 언어로 보게) — 앱 화면 언어 6개와 같음
+  // iOS 권한 안내 문구를 기기 언어로(심사·사용자 모두 자기 언어로 보게) — 앱 화면 언어 7개와 같음
   locales: {
     ko: './locales/ko.json',
     th: './locales/th.json',
@@ -56,6 +56,7 @@ const config: ExpoConfig = {
     ja: './locales/ja.json',
     'zh-Hans': './locales/zh-Hans.json',
     'zh-Hant': './locales/zh-Hant.json',
+    vi: './locales/vi.json',
   },
   android: {
     package: APP_ID,

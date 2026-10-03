@@ -14,7 +14,7 @@ const PERIODS = [7, 30, 90] as const;
 const COUNTRY_NAMES: Record<string, string> = { TH: '태국', KR: '한국', JP: '일본', TW: '대만', CN: '중국', HK: '홍콩', US: '미국', unknown: '알 수 없음' };
 const PROVIDER_NAMES: Record<string, string> = { GOOGLE: '구글', APPLE: '애플', NAVER: '네이버', KAKAO: '카카오', LINE: '라인', unknown: '알 수 없음' };
 const PLATFORM_NAMES: Record<string, string> = { ios: 'iOS', android: '안드로이드', web: '웹', unknown: '알 수 없음' };
-const LOCALE_NAMES: Record<string, string> = { ko: '한국어', th: '태국어', en: '영어', ja: '일본어', 'zh-Hans': '중국어(간체)', 'zh-Hant': '중국어(번체)', unknown: '기기 언어' };
+const LOCALE_NAMES: Record<string, string> = { ko: '한국어', th: '태국어', en: '영어', ja: '일본어', 'zh-Hans': '중국어(간체)', 'zh-Hant': '중국어(번체)', vi: '베트남어', unknown: '기기 언어' };
 
 function Metric({ label, value, hint }: { label: string; value: string; hint?: string }) {
   const theme = useTheme();

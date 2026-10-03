@@ -18,6 +18,7 @@ describe('부모 동의 문구', () => {
     expect(childLocale({ locale: 'ja', countryCode: 'TH' })).toBe('ja');
     expect(childLocale({ locale: null, countryCode: 'TH' })).toBe('th');
     expect(childLocale({ locale: null, countryCode: 'tw' })).toBe('zh-Hant');
+    expect(childLocale({ locale: null, countryCode: 'VN' })).toBe('vi');
     expect(childLocale({ locale: null, countryCode: 'FR' })).toBe('en');
   });
 

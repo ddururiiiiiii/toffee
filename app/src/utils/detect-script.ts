@@ -1,8 +1,13 @@
 /**
  * 글이 어떤 글자로 쓰였는지 대충 보고(한글·태국 문자·일본 가나·한자·라틴) 지금 앱 언어와 다르면 "번역 보기"를 보여 줌(2026-09-29).
+ * 베트남어(2026-10-02)는 라틴 문자라 영어와 구분이 안 돼서, 베트남어에만 있는 글자(ă·đ·ơ·ư, 성조가 붙은 글자)가 있으면 따로 봄 —
+ * 성조 없이 쓴 베트남어는 영어와 같은 것으로 취급(번역 보기가 안 뜸).
  * 서버 번역 호출 없이 판단하려고 — 정확한 언어 판별이 아니라 "다른 글자인가"만 봄. 이모지·숫자만 있는 글은 번역할 게 없어서 null.
  */
-export type Script = 'hangul' | 'thai' | 'japanese' | 'han' | 'latin';
+export type Script = 'hangul' | 'thai' | 'japanese' | 'han' | 'latin' | 'vietnamese';
+
+// 베트남어에만 쓰는 글자: ă â đ ê ô ơ ư(대소문자) + 성조가 붙은 라틴 확장 추가 영역(U+1EA0–U+1EF9)
+const VIETNAMESE_ONLY = /[ăĂđĐơƠưƯ\u1EA0-\u1EF9]/;
 
 export function detectScript(text: string): Script | null {
   let hangul = 0;
@@ -27,10 +32,11 @@ export function detectScript(text: string): Script | null {
     ['latin', latin],
   ];
   const [best, count] = counts.reduce((a, b) => (b[1] > a[1] ? b : a));
-  return count > 0 ? best : null;
+  if (count === 0) return null;
+  return best === 'latin' && VIETNAMESE_ONLY.test(text) ? 'vietnamese' : best;
 }
 
-const SCRIPT_OF_LANGUAGE: Record<string, Script> = { ko: 'hangul', th: 'thai', ja: 'japanese', en: 'latin', 'zh-Hans': 'han', 'zh-Hant': 'han' };
+const SCRIPT_OF_LANGUAGE: Record<string, Script> = { ko: 'hangul', th: 'thai', ja: 'japanese', en: 'latin', 'zh-Hans': 'han', 'zh-Hant': 'han', vi: 'vietnamese' };
 
 /** 이 글을 지금 앱 언어로 번역해 볼 만한지 — 글자 종류가 다를 때만 */
 export function needsTranslation(text: string | null | undefined, language: string): boolean {

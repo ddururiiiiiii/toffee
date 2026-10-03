@@ -1387,3 +1387,14 @@ idToken aud로 채널 선택). 카카오는 `KAKAO_APP_ID`가 있으면 `/v1/use
 - `GET /me/subscriptions/past` → `listPast`: `Subscription.cancelledAt != null`(방 이용권 기준 — 재구독하면 같은 행이 다시 열려서 목록에서 빠짐),
   `cancelledAt desc` 50개, `roomRetired`면 제외, 공식 이름·`official ?? chat` 사진만.
 
+
+## 베트남어 추가 (2026-10-02)
+
+- 언어 목록 `SUPPORTED_LANGUAGES`(app `src/i18n/languages.ts`)·`SUPPORTED_LOCALES`(backend `common/i18n/locales.ts`)에 `vi`. 백엔드는
+  `Record<SupportedLocale, …>` 타입이라 빠진 곳을 tsc가 다 잡음: 오류 문구 105개(`error-messages.ts`, 제재 사유·`vi-VN` 날짜 형식 포함),
+  푸시(`push-messages.ts`), 보호자 동의(`consent-texts.ts`, 국가 `VN` → vi), 약관·고객센터 페이지 제목(`legal-*.ts`), 번역 대상 이름.
+- 앱: `src/i18n/locales/vi.json`(en.json과 키·`{{…}}` 자리 일치 확인), iOS 권한 문구 `app/locales/vi.json` + `app.config.ts` `locales.vi`,
+  운영자 통계 언어 이름. 글꼴은 Pretendard가 베트남어 성조 글자를 전부 포함해서 그대로(fontTools로 확인).
+- "번역 보기" 표시(`utils/detect-script.ts`): 베트남어는 라틴 문자라 영어와 구분이 안 돼서 베트남어 전용 글자(ă·đ·ơ·ư, U+1EA0–1EF9)가
+  있으면 `vietnamese`로 봄. 성조 없이 쓴 베트남어는 latin(영어와 같음) 취급.
+- 언어 선택은 기기 언어(`getDeviceLanguage`) → 없으면 en, 사용자가 프로필에서 바꿈. 서버는 Accept-Language·`User.locale`.

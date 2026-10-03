@@ -9,6 +9,7 @@ const NATIVE_NAMES: Record<SupportedLocale, string> = {
   ja: '日本語',
   'zh-Hans': '简体中文',
   'zh-Hant': '繁體中文',
+  vi: 'Tiếng Việt',
 };
 
 export const SUPPORT_TITLES: Record<SupportedLocale, { title: string; body: string; noEmail: string }> = {
@@ -18,6 +19,7 @@ export const SUPPORT_TITLES: Record<SupportedLocale, { title: string; body: stri
   ja: { title: 'サポート', body: 'お問い合わせは下記のメールアドレスまでお送りください。アプリのプロフィール → お問い合わせを使うと会員番号が自動で添付され、より早く対応できます。', noEmail: 'お問い合わせ窓口を準備中です。' },
   'zh-Hans': { title: '客服中心', body: '请发送邮件至以下地址。使用应用中的“个人资料 → 联系我们”会自动附上会员编号，便于我们更快处理。', noEmail: '客服渠道正在准备中。' },
   'zh-Hant': { title: '客服中心', body: '請寄信至以下地址。使用 App 中的「個人資料 → 聯絡我們」會自動附上會員編號，方便我們更快處理。', noEmail: '客服管道正在準備中。' },
+  vi: { title: 'Hỗ trợ', body: 'Vui lòng gửi email đến địa chỉ bên dưới. Dùng mục Hồ sơ → Liên hệ trong ứng dụng sẽ tự động đính kèm mã thành viên để chúng tôi hỗ trợ nhanh hơn.', noEmail: 'Kênh hỗ trợ đang được chuẩn bị.' },
 };
 
 function shell(locale: SupportedLocale, title: string, body: string): string {
