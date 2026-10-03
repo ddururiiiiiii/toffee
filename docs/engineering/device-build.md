@@ -14,12 +14,17 @@
 
 ## 0. 준비 (처음 한 번)
 
+1. Node.js LTS 설치(nodejs.org, 맥은 .pkg).
+2. 저장소 받기 — 비공개 저장소라 터미널 `git clone`은 GitHub 토큰을 물어서 번거로움. **GitHub Desktop**(desktop.github.com)으로
+   로그인 → File → Clone repository → `toffeechat/toffee` → 기본 위치(`~/Documents/GitHub/toffee`).
+3. 터미널:
+
 ```bash
-npm install -g eas-cli          # 18.1 이상
-git clone https://github.com/toffeechat/toffee.git && cd toffee/app
+cd ~/Documents/GitHub/toffee/app
 npm ci
-eas login                       # 토피 Expo 계정(toffeechat-team 조직 멤버)
-eas whoami
+sudo npm install -g eas-cli     # 18.1 이상, 맥 비밀번호 물음
+eas login                       # dev@toffeechat.app + 비밀번호 + 인증 앱 코드
+eas whoami                      # toffeechat 나오면 성공
 ```
 
 ## 1. 네이버 Secret을 EAS 변수로
